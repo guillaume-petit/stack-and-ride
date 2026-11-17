@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="DishData" format=3]
+
+[ext_resource type="Script" path="res://core/data/dish_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"pizza"
+cells = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)])
+temperature = 1

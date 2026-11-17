@@ -37,9 +37,17 @@ if (-not $godot) {
 	exit 2
 }
 
-# On a fresh clone the class cache (.godot/) does not exist yet:
-# importing once lets the tests resolve class_name declarations.
-if (-not (Test-Path ".godot")) {
+# Godot keeps a cache of the class_name declarations in .godot/. It does not exist on a
+# fresh clone and is stale after a pull that adds classes: import again in both cases.
+$classCache = ".godot/global_script_class_cache.cfg"
+$stale = -not (Test-Path $classCache)
+if (-not $stale) {
+	$cacheTime = (Get-Item $classCache).LastWriteTime
+	$stale = [bool](Get-ChildItem -Recurse -Filter *.gd -File |
+		Where-Object { $_.FullName -notmatch '[\\/]\.godot[\\/]' -and $_.LastWriteTime -gt $cacheTime } |
+		Select-Object -First 1)
+}
+if ($stale) {
 	& $godot --headless --path . --import | Out-Null
 }
 

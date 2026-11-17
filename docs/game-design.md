@@ -38,19 +38,27 @@ Trois systèmes s'emboîtent :
 
 ## 3. Le quartier
 
-- Grille de **8 × 8** cases.
-- Le **point de départ** `[base]` est en colonne 3, rangée 4 (en partant de 0). Le livreur y revient au début de chaque soir.
-- Contenu placé au hasard sur les autres cases :
-  - **3 restaurants**, de types différents, tirés parmi les 5 types (voir §8) ;
-  - **12 maisons de clients**, numérotées de 1 à 12 ;
-  - **7 chantiers** `[work]` : infranchissables ;
-  - **6 rues pavées** `[pave]` : franchissables, mais elles secouent le sac (voir §6.6) ;
+> **Écart volontaire avec le prototype.** Le prototype utilise une grille de 8 × 8 cases où le livreur traverse
+> les maisons et les restaurants. Le jeu utilise à la place un plan de rues entre des pâtés de maisons
+> (décision du 17/11/2026). Les chiffres ci-dessous sont un premier jet à rééquilibrer avec le bot.
+
+- Le quartier est une grille de **7 × 6 carrefours** (7 colonnes, 6 rangées), donc **6 × 5 pâtés de maisons**.
+  Deux carrefours voisins (gauche, droite, haut, bas) sont reliés par un **tronçon de rue** (71 tronçons en tout).
+- Le livreur se tient toujours **sur un carrefour**.
+- **Lieux** : chaque lieu est un bâtiment posé dans un coin d'un pâté de maisons, qui donne sur le carrefour de ce coin.
+  Être sur ce carrefour, c'est être chez lui. Un carrefour porte **au plus un lieu**.
+  - Le **point de départ** `[base]` est au carrefour colonne 3, rangée 3 (en partant de 0). Le livreur y revient au début de chaque soir.
+  - **3 restaurants**, de types différents, tirés parmi les 5 types (voir §8), sur des carrefours tirés au hasard ;
+  - **12 maisons de clients**, numérotées de 1 à 12, sur des carrefours tirés au hasard ;
+  - les autres carrefours n'ont pas de lieu.
+- **Rues** : chaque tronçon est tiré au hasard parmi :
+  - **7 chantiers** `[work]` : tronçons barrés, infranchissables ;
+  - **6 rues pavées** `[pave]` : tronçons franchissables, mais ils secouent le sac (voir §6.6) ;
   - le reste : des rues normales.
-- **Contrainte** : toutes les cases sauf les chantiers doivent être accessibles depuis le point de départ.
+- **Contrainte** : tous les carrefours doivent être accessibles depuis le point de départ.
   Si le tirage ne le permet pas, on recommence (200 essais au maximum).
-- **Déplacements** : orthogonaux uniquement (haut, bas, gauche, droite), 1 pas par case.
-  Les restaurants, maisons, pavés et le point de départ sont franchissables.
-- **Distance** : le plus court chemin en pas (parcours en largeur), sans traverser les chantiers.
+- **Déplacements** : de carrefour en carrefour, le long des rues, **1 pas par tronçon**.
+- **Distance** : le plus court chemin en pas (parcours en largeur), sans emprunter les chantiers.
 
 ## 4. Un tour de jeu
 
@@ -155,8 +163,8 @@ Lors d'une secousse, chaque plat **non calé** et pas encore abîmé devient **a
 ### 6.6 Sources de secousse
 
 - Jouer **Sprint** ou **Scooter de prêt** (sauf avec le profil Sprinteur).
-- Un déplacement qui passe sur au moins une **rue pavée** : **une seule** secousse par déplacement,
-  au premier pavé traversé. La Fourche suspendue supprime cette source.
+- Un déplacement qui emprunte au moins un **tronçon pavé** : **une seule** secousse par déplacement,
+  au premier tronçon pavé emprunté. La Fourche suspendue supprime cette source.
 
 ### 6.7 Retombée et écrasement
 
@@ -181,12 +189,12 @@ et n'est jamais secoué.
 
 ### 7.1 États d'une course
 
-`à récupérer` → (le joueur est sur la case du restaurant et la prend) → `en main` → `dans le sac` ou `à côté du sac` → livrée.
+`à récupérer` → (le livreur est au carrefour du restaurant et la prend) → `en main` → `dans le sac` ou `à côté du sac` → livrée.
 
 ### 7.2 Livrer
 
-La livraison est **automatique** quand le livreur est sur la case du client avec la course **dans le sac** :
-en entrant sur la case, en rangeant le plat sur place ou en jouant une carte sur place.
+La livraison est **automatique** quand le livreur est au carrefour du client avec la course **dans le sac** :
+en arrivant au carrefour, en rangeant le plat sur place ou en jouant une carte sur place.
 
 **5ᵉ étage** : la livraison coûte **1 pas**. Sans pas disponible, elle attend (un message le signale une fois).
 
@@ -249,7 +257,7 @@ Les cartes **gratuites** ne comptent pas dans la limite de cartes par tour.
 | `orange` | Feu orange | 2 | +2 pas si une carte non gratuite a déjà été jouée ce tour |
 | `sprint` | Sprint | 5 | Secousse ; ajoute une Fatigue à la défausse |
 | `scooter` | Scooter de prêt | 6 | Secousse |
-| `wrong` | Contresens | 3 | Les chantiers sont franchissables jusqu'à la fin du tour ; note −0,1 (sauf Gilet fluo) |
+| `wrong` | Contresens | 3 | Les tronçons en chantier sont franchissables jusqu'à la fin du tour ; note −0,1 (sauf Gilet fluo) |
 | `kebab` | Pause kebab | 0 | Pioche 3 cartes |
 | `call` | Coup de fil | 0 | Toutes les courses en cours gagnent +1 tour de délai |
 | `coffee` | Café serré | 0 | **Gratuite.** Pioche 2 cartes |
@@ -287,7 +295,7 @@ Achetables en boutique, une seule fois chacun. Ils sont permanents.
 | `wide` | Sac plus large | +1 colonne | 22 € | largeur < 6 |
 | `tall` | Sac plus haut | +1 rangée | 24 € | hauteur < 5 |
 | `trim` | Désencombrer | Retire une carte Pédaler du paquet | 8 € | le paquet contient un Pédaler |
-| `resto` | Nouveau partenaire | Un restaurant d'un type absent ouvre sur une rue normale (ni pavée, ni sous le livreur) | — (récompense gratuite uniquement) | il reste un type absent |
+| `resto` | Nouveau partenaire | Un restaurant d'un type absent ouvre sur un carrefour sans lieu (pas celui du livreur) | — (récompense gratuite uniquement) | il reste un type absent |
 
 Prix des cartes en boutique : Scooter 12 €, Sprint 8 €, Coup de fil 8 €, Contresens 7 €, Feu orange 7 €, Café serré 7 €,
 Pause kebab 6 €, Caler le sac 6 €.
@@ -342,7 +350,7 @@ Le soir 1 est toujours calme. L'événement des soirs suivants est tiré à la f
 | `rain` | Soir de pluie | +1 proposition par tour, paie × 1,3, −1 pas par carte |
 | `match` | Soir de match | +1 proposition par tour, commandes groupées à 50 % |
 | `strike` | Grève des transports | +2 tours de délai sur toutes les courses proposées |
-| `works` | Nuit de travaux | Les chantiers sont redistribués sur les rues normales, en gardant le quartier entièrement accessible |
+| `works` | Nuit de travaux | Les chantiers sont redistribués sur les tronçons normaux (pas les pavés), en gardant le quartier entièrement accessible |
 | `heat` | Canicule | Plats froids : paie × 1,5, délai −1 (minimum 2) |
 
 ## 13. Points ouverts
@@ -352,4 +360,6 @@ Le soir 1 est toujours calme. L'événement des soirs suivants est tiré à la f
 - Les secousses peuvent être très punitives avec un sac de 4 colonnes : à surveiller.
 - L'écrasement des fragiles lors de la retombée est peut-être trop sévère.
 - Sur téléphone, la taille des cases du sac (itération 5).
+- Le plan de rues (§3) change les distances par rapport au prototype : délais et paies (§5.3) à revérifier avec le bot.
+- Idée pour après le MVP : des rues à sens unique, que la carte Contresens permettrait de prendre à l'envers.
 - Le prototype ne contient ni sauvegarde, ni progression entre les parties.

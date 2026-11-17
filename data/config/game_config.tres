@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="GameConfig" format=3]
+
+[ext_resource type="Script" path="res://core/data/game_config.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+nights = 6
+turns_per_night = 10
+rent_per_night = Array[int]([25, 35, 48, 62, 78, 95])
+starting_rating_tenths = 50
+max_rating_tenths = 50
+min_rating_tenths = 40
+starting_acceptance = 100
+max_acceptance = 100
+starting_wallet = 0
+bag_columns = 4
+bag_rows = 3
+starting_deck = Array[StringName]([&"ped2", &"ped2", &"ped2", &"ped3", &"ped3", &"orange", &"orange", &"sprint", &"call", &"coffee"])
+hand_size = 4
+max_active_orders = 4
+max_paid_cards_per_turn = 2
+city_columns = 7
+city_rows = 6
+base_cell = Vector2i(3, 3)
+restaurant_count = 3
+client_count = 12
+works_count = 7
+paved_count = 6
+city_generation_attempts = 200
+works_relocation_attempts = 100

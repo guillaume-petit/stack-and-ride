@@ -18,3 +18,313 @@ msgstr "Version %s"
 
 msgid "MENU_COMING_SOON"
 msgstr "Le jeu arrive bientôt. Cette version ne contient que le socle du projet."
+
+# Plats (data/dishes)
+
+msgid "DISH_BURGER"
+msgstr "Menu burger"
+
+msgid "DISH_SODA"
+msgstr "Soda"
+
+msgid "DISH_PIZZA"
+msgstr "Pizza"
+
+msgid "DISH_SUSHI"
+msgstr "Plateau sushi"
+
+msgid "DISH_POKE"
+msgstr "Poke bowl"
+
+msgid "DISH_TACOS"
+msgstr "Tacos XL"
+
+msgid "DISH_GLACE"
+msgstr "Pot de glace"
+
+msgid "DISH_FAMILY"
+msgstr "Menu famille"
+
+
+# Restaurants (data/restaurants)
+
+msgid "RESTAURANT_BURGER"
+msgstr "Smash Corner"
+
+msgid "RESTAURANT_PIZZA"
+msgstr "Pizzeria Nonna"
+
+msgid "RESTAURANT_SUSHI"
+msgstr "Maki Express"
+
+msgid "RESTAURANT_TACOS"
+msgstr "Tacos Loco"
+
+msgid "RESTAURANT_GLACIER"
+msgstr "Glacier Polaire"
+
+
+# Cartes (data/cards)
+
+msgid "CARD_PED2"
+msgstr "Pédaler"
+
+msgid "CARD_PED2_DESC"
+msgstr "2 pas."
+
+msgid "CARD_PED3"
+msgstr "Pédaler fort"
+
+msgid "CARD_PED3_DESC"
+msgstr "3 pas."
+
+msgid "CARD_ORANGE"
+msgstr "Feu orange"
+
+msgid "CARD_ORANGE_DESC"
+msgstr "2 pas, +2 si tu as déjà joué une carte ce tour."
+
+msgid "CARD_SPRINT"
+msgstr "Sprint"
+
+msgid "CARD_SPRINT_DESC"
+msgstr "5 pas. Secoue le sac et ajoute une Fatigue à ta défausse."
+
+msgid "CARD_SCOOTER"
+msgstr "Scooter de prêt"
+
+msgid "CARD_SCOOTER_DESC"
+msgstr "6 pas. Secoue le sac."
+
+msgid "CARD_WRONG"
+msgstr "Contresens"
+
+msgid "CARD_WRONG_DESC"
+msgstr "3 pas, chantiers franchissables ce tour. Un client te signale : −0,1 étoile."
+
+msgid "CARD_KEBAB"
+msgstr "Pause kebab"
+
+msgid "CARD_KEBAB_DESC"
+msgstr "0 pas. Pioche 3 cartes."
+
+msgid "CARD_CALL"
+msgstr "Coup de fil"
+
+msgid "CARD_CALL_DESC"
+msgstr "« J'arrive ! » Toutes tes courses gagnent 1 tour."
+
+msgid "CARD_COFFEE"
+msgstr "Café serré"
+
+msgid "CARD_COFFEE_DESC"
+msgstr "Gratuite. Pioche 2 cartes."
+
+msgid "CARD_STRAP"
+msgstr "Caler le sac"
+
+msgid "CARD_STRAP_DESC"
+msgstr "Gratuite. La prochaine secousse de ce tour n'abîme rien."
+
+msgid "CARD_FATIGUE"
+msgstr "Fatigue"
+
+msgid "CARD_FATIGUE_DESC"
+msgstr "Ne fait rien. La jouer pour t'en débarrasser compte comme une carte. Disparaît en fin de soirée."
+
+
+# Équipements (data/equipment)
+
+msgid "EQUIPMENT_SEPARATOR"
+msgstr "Séparateur isotherme"
+
+msgid "EQUIPMENT_SEPARATOR_DESC"
+msgstr "Le chaud et le froid peuvent se toucher."
+
+msgid "EQUIPMENT_CUPHOLDER"
+msgstr "Porte-gobelet"
+
+msgid "EQUIPMENT_CUPHOLDER_DESC"
+msgstr "Les sodas vont dans un support à part : pas de place, pas de secousse."
+
+msgid "EQUIPMENT_STRAPS"
+msgstr "Sangles"
+
+msgid "EQUIPMENT_STRAPS_DESC"
+msgstr "Les secousses n'abîment plus que les plats fragiles."
+
+msgid "EQUIPMENT_SHOCKS"
+msgstr "Fourche suspendue"
+
+msgid "EQUIPMENT_SHOCKS_DESC"
+msgstr "Les pavés ne secouent plus le sac."
+
+msgid "EQUIPMENT_BATTERY"
+msgstr "Batterie longue durée"
+
+msgid "EQUIPMENT_BATTERY_DESC"
+msgstr "Tu peux jouer 3 cartes par tour."
+
+msgid "EQUIPMENT_EBIKE"
+msgstr "Vélo électrique"
+
+msgid "EQUIPMENT_EBIKE_DESC"
+msgstr "+1 pas sur chaque carte qui donne des pas."
+
+msgid "EQUIPMENT_THERMOS"
+msgstr "Sac isotherme pro"
+
+msgid "EQUIPMENT_THERMOS_DESC"
+msgstr "Chaque course acceptée gagne 1 tour de délai."
+
+msgid "EQUIPMENT_GILET"
+msgstr "Gilet fluo"
+
+msgid "EQUIPMENT_GILET_DESC"
+msgstr "Le Contresens ne coûte plus d'étoile."
+
+msgid "EQUIPMENT_BADGE"
+msgstr "Badge Superlivreur"
+
+msgid "EQUIPMENT_BADGE_DESC"
+msgstr "Plus de clients VIP, même avec un taux d'acceptation bas."
+
+msgid "EQUIPMENT_BONUS"
+msgstr "Compteur de primes"
+
+msgid "EQUIPMENT_BONUS_DESC"
+msgstr "+2 € par livraison à l'heure et intacte."
+
+
+# Autres récompenses (data/upgrades)
+
+msgid "UPGRADE_WIDE"
+msgstr "Sac plus large"
+
+msgid "UPGRADE_WIDE_DESC"
+msgstr "+1 colonne."
+
+msgid "UPGRADE_TALL"
+msgstr "Sac plus haut"
+
+msgid "UPGRADE_TALL_DESC"
+msgstr "+1 rangée."
+
+msgid "UPGRADE_TRIM"
+msgstr "Désencombrer"
+
+msgid "UPGRADE_TRIM_DESC"
+msgstr "Retire une carte Pédaler (2 pas) de ton paquet."
+
+msgid "UPGRADE_RESTO"
+msgstr "Nouveau partenaire"
+
+msgid "UPGRADE_RESTO_DESC"
+msgstr "Un restaurant de plus ouvre dans le quartier."
+
+
+# Profils (data/profiles)
+
+msgid "PROFILE_MULE"
+msgstr "La mule"
+
+msgid "PROFILE_MULE_DESC"
+msgstr "Sac de 5 colonnes. Mais dès que 3 plats sont dans le sac, chaque carte de déplacement donne 1 pas de moins."
+
+msgid "PROFILE_SPRINTER"
+msgstr "Le sprinteur"
+
+msgid "PROFILE_SPRINTER_DESC"
+msgstr "Sac de 3 colonnes seulement. Tes cartes ne secouent jamais le sac, et tu commences avec un Sprint de plus."
+
+msgid "PROFILE_DARLING"
+msgstr "Le chouchou"
+
+msgid "PROFILE_DARLING_DESC"
+msgstr "Pourboires doublés. Mais chaque problème (retard, plat abîmé, annulation) coûte 0,1 étoile de plus."
+
+msgid "PROFILE_COMBO"
+msgstr "Le roi du groupé"
+
+msgid "PROFILE_COMBO_DESC"
+msgstr "Chaque livraison parfaite rapporte +3 € par livraison déjà faite dans le même tour."
+
+
+# Événements (data/events)
+
+msgid "EVENT_CALM"
+msgstr "Soir calme"
+
+msgid "EVENT_CALM_DESC"
+msgstr "Rien de spécial ce soir."
+
+msgid "EVENT_RAIN"
+msgstr "Soir de pluie"
+
+msgid "EVENT_RAIN_DESC"
+msgstr "Tout le monde commande : une proposition de plus par tour et +30 % de paie. Mais chaque carte de déplacement donne 1 pas de moins."
+
+msgid "EVENT_MATCH"
+msgstr "Soir de match"
+
+msgid "EVENT_MATCH_DESC"
+msgstr "Une proposition de plus par tour, et une sur deux est une commande groupée."
+
+msgid "EVENT_STRIKE"
+msgstr "Grève des transports"
+
+msgid "EVENT_STRIKE_DESC"
+msgstr "Les clients sont coincés chez eux : +2 tours de délai sur toutes les courses."
+
+msgid "EVENT_WORKS"
+msgstr "Nuit de travaux"
+
+msgid "EVENT_WORKS_DESC"
+msgstr "Les chantiers ont changé de place dans tout le quartier."
+
+msgid "EVENT_HEAT"
+msgstr "Canicule"
+
+msgid "EVENT_HEAT_DESC"
+msgstr "Les plats froids paient +50 %, mais leur délai est réduit d'un tour."
+
+# Écran de debug du quartier (ui/debug/city_debug.tscn, itération 1)
+
+msgid "DEBUG_CITY_TITLE"
+msgstr "Debug : le quartier"
+
+msgid "DEBUG_CITY_SEED"
+msgstr "Graine :"
+
+msgid "DEBUG_CITY_NEXT_SEED"
+msgstr "Graine suivante"
+
+msgid "DEBUG_CITY_RANDOM_SEED"
+msgstr "Graine au hasard"
+
+msgid "DEBUG_CITY_RELOCATE_WORKS"
+msgstr "Nuit de travaux (déplacer les chantiers)"
+
+msgid "DEBUG_CITY_CROSS_WORKS"
+msgstr "Contresens (passer dans les rues en chantier)"
+
+msgid "DEBUG_CITY_CONNECTED"
+msgstr "Tout le quartier est accessible."
+
+msgid "DEBUG_CITY_NOT_CONNECTED"
+msgstr "Attention : des carrefours sont inaccessibles."
+
+msgid "DEBUG_CITY_CLICK_HINT"
+msgstr "Clique sur un carrefour pour voir le plus court chemin depuis le départ."
+
+msgid "DEBUG_CITY_DISTANCE"
+msgstr "Carrefour %s : %d pas depuis le départ."
+
+msgid "DEBUG_CITY_UNREACHABLE"
+msgstr "Carrefour %s : inaccessible."
+
+msgid "DEBUG_CITY_BASE"
+msgstr "Départ"
+
+msgid "DEBUG_CITY_LEGEND"
+msgstr "Chaque bâtiment donne sur le carrefour qu'il touche. Noir : départ. Bleu : restaurant. Vert : client (numéro). Rue orange barrée : chantier. Rue grise à pois : pavés. Rue blanche : rue normale."

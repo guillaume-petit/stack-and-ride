@@ -4,6 +4,7 @@ extends SceneTree
 ## Usage: godot --headless --path . --script res://tests/run_tests.gd
 ## Optional filter: append "-- name_part" to run only files whose path contains it.
 ## Exits with code 0 when every test passes, 1 otherwise.
+## A test also fails when the engine reports an error while it runs (see ErrorCatcher).
 
 const TESTS_ROOT := "res://tests"
 
@@ -14,6 +15,8 @@ func _initialize() -> void:
 	if not user_args.is_empty():
 		filter = user_args[0]
 
+	var catcher := ErrorCatcher.new()
+	OS.add_logger(catcher)
 	var files := _find_test_files(TESTS_ROOT)
 	files.sort()
 	var passed := 0
@@ -37,9 +40,11 @@ func _initialize() -> void:
 			var method_name: String = method["name"]
 			if not method_name.begins_with("test_"):
 				continue
+			catcher.take_errors()
 			suite.before_each()
 			suite.call(method_name)
 			var failures: PackedStringArray = suite.take_failures()
+			failures.append_array(catcher.take_errors())
 			if failures.is_empty():
 				passed += 1
 				print("  ✓ %s" % method_name)
@@ -49,6 +54,7 @@ func _initialize() -> void:
 				for f in failures:
 					print("      %s" % f)
 
+	OS.remove_logger(catcher)
 	print("\n%d passed, %d failed" % [passed, failed])
 	quit(0 if failed == 0 and passed > 0 else 1)
 
