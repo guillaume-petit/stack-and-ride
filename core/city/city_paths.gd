@@ -2,10 +2,14 @@ class_name CityPaths
 extends RefCounted
 ## Shortest paths from one crossroads to every other one (breadth-first search).
 ##
-## Built by City.paths_from(). One step per street segment.
+## Built by City.paths_from(), which keeps it in a cache: it never changes once built.
+## One step per street segment.
 
-var start: Vector2i
+var start: Vector2i:
+	get:
+		return _start
 
+var _start: Vector2i
 var _columns: int
 var _rows: int
 ## Number of steps to reach each crossroads (indexed by y * columns + x), -1 if unreachable.
@@ -15,7 +19,7 @@ var _previous: PackedInt32Array
 
 
 func _init(p_start: Vector2i, columns: int, rows: int, distance: PackedInt32Array, previous: PackedInt32Array) -> void:
-	start = p_start
+	_start = p_start
 	_columns = columns
 	_rows = rows
 	_distance = distance
@@ -58,12 +62,12 @@ func reachable_within(max_steps: int) -> Array[Vector2i]:
 
 
 func _is_inside(crossroads: Vector2i) -> bool:
-	return crossroads.x >= 0 and crossroads.y >= 0 and crossroads.x < _columns and crossroads.y < _rows
+	return City.is_in_grid(crossroads, _columns, _rows)
 
 
 func _index(crossroads: Vector2i) -> int:
-	return crossroads.y * _columns + crossroads.x
+	return City.grid_index(crossroads, _columns)
 
 
 func _crossroads(index: int) -> Vector2i:
-	return Vector2i(index % _columns, index / _columns)
+	return City.grid_crossroads(index, _columns)

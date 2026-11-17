@@ -21,12 +21,16 @@ var columns: int
 var rows: int
 var base: Vector2i
 
+## Every change to a street after the first paths_from() call must empty _paths_cache.
 var _streets: Dictionary[Vector4i, Street] = {}
 var _places: Dictionary[Vector2i, Place] = {}
 var _restaurant_kinds: Dictionary[Vector2i, StringName] = {}
 var _client_numbers: Dictionary[Vector2i, int] = {}
 ## Block whose corner holds the building of each place (for drawing only).
 var _building_blocks: Dictionary[Vector2i, Vector2i] = {}
+## Shortest paths already computed, by Vector3i(start.x, start.y, cross_works).
+## Emptied whenever a street changes.
+var _paths_cache: Dictionary[Vector3i, CityPaths] = {}
 
 
 func _init(p_columns: int, p_rows: int, p_base: Vector2i) -> void:
@@ -44,14 +48,15 @@ func _init(p_columns: int, p_rows: int, p_base: Vector2i) -> void:
 
 
 ## Draws a new city. Everything is drawn again until every crossroads can be reached from
-## the base; after config.city_generation_attempts failures the last draw is kept
-## (check is_fully_connected()).
+## the base. Returns null, with an error, when the config makes it impossible or when
+## config.city_generation_attempts draws all failed.
 static func generate(config: GameConfig, restaurant_ids: Array[StringName], rng: GameRng) -> City:
-	var places_needed := 1 + config.restaurant_count + config.client_count
-	var streets_count := (config.city_columns - 1) * config.city_rows + config.city_columns * (config.city_rows - 1)
-	assert(places_needed <= config.city_columns * config.city_rows, "not enough crossroads for the places")
-	assert(config.works_count + config.paved_count <= streets_count, "not enough streets")
-	assert(restaurant_ids.size() >= config.restaurant_count, "not enough restaurant types")
+	var problems := config.city_problems()
+	if restaurant_ids.size() < config.restaurant_count:
+		problems.append("not enough restaurant types")
+	if not problems.is_empty():
+		push_error("City.generate: " + "; ".join(problems))
+		return null
 	var city: City = null
 	for _attempt in config.city_generation_attempts:
 		city = City.new(config.city_columns, config.city_rows, config.base_cell)
@@ -76,7 +81,8 @@ static func generate(config: GameConfig, restaurant_ids: Array[StringName], rng:
 			city._streets[streets[config.works_count + i]] = Street.PAVED
 		if city.is_fully_connected():
 			return city
-	return city
+	push_error("City.generate: no connected city in %d attempts" % config.city_generation_attempts)
+	return null
 
 
 ## Builds a city from a drawing, mostly for tests. Even lines are crossroads rows, odd lines
@@ -95,6 +101,7 @@ static func from_text(lines: PackedStringArray, restaurant_kind: StringName = &"
 	for y in range(0, lines.size(), 2):
 		var x := lines[y].find("B")
 		if x != -1:
+			assert(x % 2 == 0, "line %d: the base must be on a crossroads (even position)" % y)
 			base_cell = Vector2i(x / 2, y / 2)
 	assert(base_cell != NOWHERE, "the drawing needs a base (B)")
 	var city := City.new((lines[0].length() + 1) / 2, (lines.size() + 1) / 2, base_cell)
@@ -141,7 +148,20 @@ static func manhattan(a: Vector2i, b: Vector2i) -> int:
 
 
 func is_inside(crossroads: Vector2i) -> bool:
-	return crossroads.x >= 0 and crossroads.y >= 0 and crossroads.x < columns and crossroads.y < rows
+	return is_in_grid(crossroads, columns, rows)
+
+
+## Grid helpers shared with CityPaths: crossroads are stored in flat arrays, row by row.
+static func is_in_grid(crossroads: Vector2i, p_columns: int, p_rows: int) -> bool:
+	return crossroads.x >= 0 and crossroads.y >= 0 and crossroads.x < p_columns and crossroads.y < p_rows
+
+
+static func grid_index(crossroads: Vector2i, p_columns: int) -> int:
+	return crossroads.y * p_columns + crossroads.x
+
+
+static func grid_crossroads(index: int, p_columns: int) -> Vector2i:
+	return Vector2i(index % p_columns, index / p_columns)
 
 
 ## State of the street between two neighbouring crossroads.
@@ -228,8 +248,16 @@ func building_block(crossroads: Vector2i) -> Vector2i:
 
 
 ## Shortest paths from a crossroads (breadth-first search), one step per street segment;
-## road works are avoided unless cross_works is true.
+## road works are avoided unless cross_works is true. Computed once per start until a
+## street changes.
 func paths_from(start: Vector2i, cross_works: bool = false) -> CityPaths:
+	var key := Vector3i(start.x, start.y, 1 if cross_works else 0)
+	if not _paths_cache.has(key):
+		_paths_cache[key] = _search_paths(start, cross_works)
+	return _paths_cache[key]
+
+
+func _search_paths(start: Vector2i, cross_works: bool) -> CityPaths:
 	var distance := PackedInt32Array()
 	distance.resize(columns * rows)
 	distance.fill(-1)
@@ -281,10 +309,12 @@ func relocate_works(rng: GameRng, attempts: int) -> bool:
 		rng.shuffle(normal)
 		for i in mini(works.size(), normal.size()):
 			_streets[normal[i]] = Street.WORKS
+		_paths_cache.clear()
 		if is_fully_connected():
 			return true
 		_streets = cleared.duplicate()
 	_streets = saved
+	_paths_cache.clear()
 	return false
 
 
@@ -357,4 +387,4 @@ static func _pick_or_nowhere(blocks: Array[Vector2i], rng: GameRng) -> Vector2i:
 
 
 func _index(crossroads: Vector2i) -> int:
-	return crossroads.y * columns + crossroads.x
+	return grid_index(crossroads, columns)

@@ -36,6 +36,7 @@ var courier_position: Vector2i
 
 
 ## Starts a new run: the city is drawn from the seed and every value is reset.
+## Returns null, with an error, if no valid city can be drawn (see City.generate()).
 static func new_run(p_content: GameContent, seed: int) -> GameState:
 	var state := GameState.new()
 	state.content = p_content
@@ -47,6 +48,9 @@ static func new_run(p_content: GameContent, seed: int) -> GameState:
 	state.bag = Bag.new(state.config.bag_columns, state.config.bag_rows)
 	state.deck = state.config.starting_deck.duplicate()
 	state.city = City.generate(state.config, p_content.restaurant_ids(), state.rng)
+	if state.city == null:
+		push_error("GameState.new_run: no valid city for seed %d" % seed)
+		return null
 	state.courier_position = state.city.base
 	return state
 

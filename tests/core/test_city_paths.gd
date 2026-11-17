@@ -126,3 +126,21 @@ func test_street_key_ignores_the_order_of_the_ends() -> void:
 
 func test_manhattan_distance() -> void:
 	assert_eq(City.manhattan(Vector2i(1, 2), Vector2i(4, 0)), 5)
+
+
+func test_paths_are_computed_once_per_start() -> void:
+	var city := City.from_text(PackedStringArray(["B-+-C"]))
+	assert_true(city.paths_from(city.base) == city.paths_from(city.base), "same object from the cache")
+	assert_false(city.paths_from(city.base) == city.paths_from(city.base, true), "Contresens has its own paths")
+	assert_false(city.paths_from(city.base) == city.paths_from(Vector2i(1, 0)))
+
+
+func test_moving_the_works_refreshes_the_paths() -> void:
+	var content := GameContent.load_from()
+	for seed in 20:
+		var city := City.generate(content.config, content.restaurant_ids(), GameRng.new(seed))
+		var target := city.crossroads_with(City.Place.CLIENT)[0]
+		city.distance(city.base, target)
+		city.relocate_works(GameRng.new(seed + 500), content.config.works_relocation_attempts)
+		var fresh := City.from_text(city.to_text().split("\n"))
+		assert_eq(city.distance(city.base, target), fresh.distance(fresh.base, target), "seed %d" % seed)

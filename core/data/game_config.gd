@@ -46,5 +46,29 @@ extends Resource
 @export var works_relocation_attempts: int = 100
 
 
+## Rent of a night (1 to nights). A night out of range is a bug in the caller: it is
+## reported and the closest night is used.
 func rent_for_night(night: int) -> int:
+	if night < 1 or night > rent_per_night.size():
+		push_error("rent_for_night: no night %d" % night)
 	return rent_per_night[clampi(night, 1, rent_per_night.size()) - 1]
+
+
+## Problems that make the city impossible to draw, one line each (empty when it is fine).
+## Checked by GameContent.validate() and before drawing a city, in every build.
+func city_problems() -> PackedStringArray:
+	var problems := PackedStringArray()
+	if city_columns < 1 or city_rows < 1:
+		problems.append("the city needs at least one crossroads")
+		return problems
+	var crossroads := city_columns * city_rows
+	var streets := (city_columns - 1) * city_rows + city_columns * (city_rows - 1)
+	if base_cell.x < 0 or base_cell.y < 0 or base_cell.x >= city_columns or base_cell.y >= city_rows:
+		problems.append("base_cell %s is outside the city" % base_cell)
+	if 1 + restaurant_count + client_count > crossroads:
+		problems.append("not enough crossroads (%d) for the base, %d restaurants and %d clients"
+				% [crossroads, restaurant_count, client_count])
+	if works_count + paved_count > streets:
+		problems.append("not enough streets (%d) for %d works and %d paved streets"
+				% [streets, works_count, paved_count])
+	return problems

@@ -323,6 +323,9 @@ msgstr "Carrefour %s : %d pas depuis le départ."
 msgid "DEBUG_CITY_UNREACHABLE"
 msgstr "Carrefour %s : inaccessible."
 
+msgid "DEBUG_CITY_NO_VALID_CITY"
+msgstr "Graine %d : impossible de tirer un quartier valide avec cette configuration."
+
 msgid "DEBUG_CITY_BASE"
 msgstr "Départ"
 

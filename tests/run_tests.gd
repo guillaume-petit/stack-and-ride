@@ -44,7 +44,7 @@ func _initialize() -> void:
 			suite.before_each()
 			suite.call(method_name)
 			var failures: PackedStringArray = suite.take_failures()
-			failures.append_array(catcher.take_errors())
+			failures.append_array(suite.check_engine_errors(catcher.take_errors()))
 			if failures.is_empty():
 				passed += 1
 				print("  ✓ %s" % method_name)

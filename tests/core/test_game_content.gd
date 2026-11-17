@@ -121,3 +121,16 @@ func test_validate_reports_broken_references() -> void:
 	var problems := content.validate()
 	assert_true(problems.has("restaurant broken: unknown dish caviar"), str(problems))
 	assert_true(problems.has("starting deck: unknown card teleport"), str(problems))
+
+
+func test_validate_reports_an_impossible_city() -> void:
+	content.config = content.config.duplicate()
+	content.config.base_cell = Vector2i(-1, 2)
+	assert_true(_problems_contain(content.validate(), "outside the city"))
+
+
+func _problems_contain(problems: PackedStringArray, text: String) -> bool:
+	for problem in problems:
+		if problem.contains(text):
+			return true
+	return false
