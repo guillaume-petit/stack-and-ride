@@ -14,7 +14,8 @@ func test_new_run_starts_with_the_design_values() -> void:
 	assert_eq(state.rating(), 5.0)
 	assert_eq(state.acceptance, 100)
 	assert_eq(state.wallet, 0)
-	assert_eq([state.bag_columns, state.bag_rows], [4, 3])
+	assert_eq([state.bag.columns, state.bag.rows], [4, 3])
+	assert_true(state.bag.is_empty())
 	assert_eq(state.event, &"calm")
 	assert_eq(state.profile, &"")
 	assert_eq(state.equipment, [])
@@ -44,3 +45,18 @@ func test_rent_follows_the_night() -> void:
 	var state := GameState.new_run(content, 4)
 	state.night = 6
 	assert_eq(state.rent_tonight(), 95)
+
+
+func test_rent_of_a_night_that_does_not_exist_is_an_error() -> void:
+	expect_engine_error("no night 7")
+	assert_eq(content.config.rent_for_night(7), 95)
+	expect_engine_error("no night 0")
+	assert_eq(content.config.rent_for_night(0), 25)
+
+
+func test_no_run_without_a_valid_city() -> void:
+	content.config = content.config.duplicate()
+	content.config.client_count = 50
+	expect_engine_error("not enough crossroads")
+	expect_engine_error("no valid city for seed 5")
+	assert_null(GameState.new_run(content, 5))

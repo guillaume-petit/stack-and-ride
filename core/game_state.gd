@@ -2,8 +2,8 @@ class_name GameState
 extends RefCounted
 ## Everything that describes a run in progress. The UI reads it; only core rules change it.
 ##
-## This first version holds the starting values (design doc §2) and the city. The bag,
-## orders, offers and the card piles are added with the rules that use them.
+## It holds the starting values (design doc §2), the city and the bag. The orders, offers
+## and card piles are added with the rules that use them.
 
 var content: GameContent
 var config: GameConfig
@@ -19,8 +19,8 @@ var rating_tenths: int
 var acceptance: int
 ## Money in the wallet, in euros.
 var wallet: int
-var bag_columns: int
-var bag_rows: int
+## The delivery bag; its size grows with the rewards (§8.5).
+var bag: Bag
 ## Permanent deck (card ids). The draw pile, hand and discard pile are built from it each night.
 var deck: Array[StringName] = []
 ## Profile id, or &"" before the player picks one.
@@ -36,6 +36,7 @@ var courier_position: Vector2i
 
 
 ## Starts a new run: the city is drawn from the seed and every value is reset.
+## Returns null, with an error, if no valid city can be drawn (see City.generate()).
 static func new_run(p_content: GameContent, seed: int) -> GameState:
 	var state := GameState.new()
 	state.content = p_content
@@ -44,10 +45,12 @@ static func new_run(p_content: GameContent, seed: int) -> GameState:
 	state.rating_tenths = state.config.starting_rating_tenths
 	state.acceptance = state.config.starting_acceptance
 	state.wallet = state.config.starting_wallet
-	state.bag_columns = state.config.bag_columns
-	state.bag_rows = state.config.bag_rows
+	state.bag = Bag.new(state.config.bag_columns, state.config.bag_rows)
 	state.deck = state.config.starting_deck.duplicate()
 	state.city = City.generate(state.config, p_content.restaurant_ids(), state.rng)
+	if state.city == null:
+		push_error("GameState.new_run: no valid city for seed %d" % seed)
+		return null
 	state.courier_position = state.city.base
 	return state
 

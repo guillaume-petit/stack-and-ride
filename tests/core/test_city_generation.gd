@@ -138,3 +138,36 @@ func test_text_round_trip() -> void:
 	assert_eq(city.street_between(Vector2i(1, 0), Vector2i(2, 0)), City.Street.PAVED)
 	assert_eq(city.street_between(Vector2i(1, 1), Vector2i(1, 0)), City.Street.WORKS, "order does not matter")
 	assert_eq(city.place_at(Vector2i(0, 1)), City.Place.CLIENT)
+
+
+func test_the_default_config_can_draw_a_city() -> void:
+	assert_eq(config.city_problems(), PackedStringArray())
+
+
+func test_an_impossible_config_gives_no_city() -> void:
+	var custom := config.duplicate() as GameConfig
+	custom.client_count = 50
+	expect_engine_error("not enough crossroads")
+	assert_null(City.generate(custom, content.restaurant_ids(), GameRng.new(1)))
+
+
+func test_no_city_when_every_draw_is_disconnected() -> void:
+	var custom := config.duplicate() as GameConfig
+	# Most streets closed: a connected draw is practically impossible.
+	custom.works_count = 60
+	custom.paved_count = 0
+	custom.city_generation_attempts = 3
+	expect_engine_error("no connected city in 3 attempts")
+	assert_null(City.generate(custom, content.restaurant_ids(), GameRng.new(1)))
+
+
+func test_config_problems_are_reported() -> void:
+	var custom := config.duplicate() as GameConfig
+	custom.base_cell = Vector2i(7, 0)
+	custom.client_count = 40
+	custom.works_count = 70
+	var problems := custom.city_problems()
+	assert_eq(problems.size(), 3, str(problems))
+	assert_true(problems[0].contains("outside the city"), str(problems))
+	assert_true(problems[1].contains("not enough crossroads"), str(problems))
+	assert_true(problems[2].contains("not enough streets"), str(problems))

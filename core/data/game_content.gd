@@ -42,6 +42,11 @@ func restaurant_ids() -> Array[StringName]:
 	return _sorted_keys(restaurants)
 
 
+## Dish ids, sorted alphabetically.
+func dish_ids() -> Array[StringName]:
+	return _sorted_keys(dishes)
+
+
 ## Checks the references between content files. Returns one line per problem.
 func validate() -> PackedStringArray:
 	var problems := load_errors.duplicate()
@@ -67,6 +72,7 @@ func validate() -> PackedStringArray:
 		problems.append("rent_per_night needs one value per night (%d)" % config.nights)
 	if restaurants.size() < config.restaurant_count:
 		problems.append("not enough restaurant types for the city")
+	problems.append_array(config.city_problems())
 	return problems
 
 

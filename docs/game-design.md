@@ -147,6 +147,8 @@ Le joueur choisit une **colonne** : le plat est lâché depuis le haut et **tomb
 
 On peut reprendre en main un plat déjà rangé **seulement si aucun autre plat n'est posé dessus**
 (aucune case d'un autre plat juste au-dessus d'une de ses cases). Annuler remet le plat exactement à sa place.
+Si, entre-temps, un autre plat a quitté le sac et que cette place n'est plus libre, ne repose plus sur rien
+ou enfreint une règle de pose, le plat est posé à côté du sac à la place (ajout du 17/11/2026, cas non prévu par le prototype).
 
 ### 6.4 Plat calé
 

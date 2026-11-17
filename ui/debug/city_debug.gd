@@ -60,7 +60,6 @@ func _build_layout() -> void:
 
 	# The map is a plain Control whose drawing and clicks are handled here.
 	_map = Control.new()
-	_map.custom_minimum_size = Vector2(SPACING * 6, SPACING * 5) + Vector2.ONE * MAP_MARGIN * 2
 	_map.mouse_filter = Control.MOUSE_FILTER_STOP
 	_map.draw.connect(_draw_map)
 	_map.gui_input.connect(_on_map_input)
@@ -114,12 +113,22 @@ func _set_seed(value: int) -> void:
 
 
 func _generate() -> void:
-	_city = City.generate(_content.config, _content.restaurant_ids(), GameRng.new(_seed))
+	var city := City.generate(_content.config, _content.restaurant_ids(), GameRng.new(_seed))
+	if city == null:
+		# The previous city (if any) stays on screen.
+		_info.text = tr("DEBUG_CITY_NO_VALID_CITY") % _seed
+		return
+	_city = city
 	_target = City.NOWHERE
+	# Sized here rather than while drawing: changing it in the draw callback relayouts the screen.
+	_map.custom_minimum_size = Vector2((_city.columns - 1) * SPACING, (_city.rows - 1) * SPACING) \
+			+ Vector2.ONE * MAP_MARGIN * 2
 	_refresh()
 
 
 func _relocate_works() -> void:
+	if _city == null:
+		return
 	# Its own random source, so the same seed always gives the same first city.
 	var moved := _city.relocate_works(GameRng.new(randi()), _content.config.works_relocation_attempts)
 	if not moved:
@@ -145,7 +154,7 @@ func _describe_target() -> String:
 
 func _on_map_input(event: InputEvent) -> void:
 	var click := event as InputEventMouseButton
-	if click == null or not click.pressed or click.button_index != MOUSE_BUTTON_LEFT:
+	if _city == null or click == null or not click.pressed or click.button_index != MOUSE_BUTTON_LEFT:
 		return
 	# Nearest crossroads to the click.
 	var crossroads := Vector2i(((click.position - Vector2.ONE * MAP_MARGIN) / SPACING).round())
@@ -155,8 +164,8 @@ func _on_map_input(event: InputEvent) -> void:
 
 
 func _draw_map() -> void:
-	_map.custom_minimum_size = Vector2((_city.columns - 1) * SPACING, (_city.rows - 1) * SPACING) \
-			+ Vector2.ONE * MAP_MARGIN * 2
+	if _city == null:
+		return
 	# Blocks first, then the streets over their edges, then the buildings in the block corners.
 	_map.draw_rect(Rect2(_point(Vector2i.ZERO), Vector2((_city.columns - 1) * SPACING, (_city.rows - 1) * SPACING)),
 			BLOCK_COLOR)

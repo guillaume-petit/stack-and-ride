@@ -7,6 +7,8 @@ extends RefCounted
 ## before_each() runs before every test.
 
 var _failures: PackedStringArray = PackedStringArray()
+## Engine errors the current test expects (see expect_engine_errors()).
+var _expected_engine_errors: PackedStringArray = PackedStringArray()
 
 
 func before_each() -> void:
@@ -18,6 +20,33 @@ func take_failures() -> PackedStringArray:
 	var out := _failures
 	_failures = PackedStringArray()
 	return out
+
+
+## Declares that the test triggers an engine error (push_error...) containing this text.
+## Call it once per expected error; the test fails if the errors do not match.
+func expect_engine_error(text: String) -> void:
+	_expected_engine_errors.append(text)
+
+
+## Called by the runner with the engine errors reported during the test: returns the
+## unexpected ones and the expected ones that did not happen, then resets the expectations.
+func check_engine_errors(errors: PackedStringArray) -> PackedStringArray:
+	var problems := PackedStringArray()
+	var expected := _expected_engine_errors
+	_expected_engine_errors = PackedStringArray()
+	for error in errors:
+		var matched := -1
+		for i in expected.size():
+			if error.contains(expected[i]):
+				matched = i
+				break
+		if matched >= 0:
+			expected.remove_at(matched)
+		else:
+			problems.append(error)
+	for text in expected:
+		problems.append("expected an engine error containing \"%s\"" % text)
+	return problems
 
 
 func fail(message: String) -> void:

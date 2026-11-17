@@ -9,6 +9,8 @@ enum Temperature { NEUTRAL, HOT, COLD }
 @export var temperature: Temperature = Temperature.NEUTRAL
 ## A fragile dish cannot have another dish placed right above it.
 @export var fragile: bool = false
+## Goes in the cup holder (equipment) instead of the bag grid (§6.9).
+@export var fits_cup_holder: bool = false
 
 
 func cell_count() -> int:

@@ -75,7 +75,8 @@ func test_card_properties() -> void:
 	for card: CardData in content.cards.values():
 		if card.free:
 			free_cards.append(card.id)
-	free_cards.sort()
+	# Array.sort() orders StringNames by internal address, not alphabetically.
+	free_cards.sort_custom(func(a: StringName, b: StringName) -> bool: return String(a) < String(b))
 	assert_eq(free_cards, [&"coffee", &"strap"])
 
 
@@ -120,3 +121,16 @@ func test_validate_reports_broken_references() -> void:
 	var problems := content.validate()
 	assert_true(problems.has("restaurant broken: unknown dish caviar"), str(problems))
 	assert_true(problems.has("starting deck: unknown card teleport"), str(problems))
+
+
+func test_validate_reports_an_impossible_city() -> void:
+	content.config = content.config.duplicate()
+	content.config.base_cell = Vector2i(-1, 2)
+	assert_true(_problems_contain(content.validate(), "outside the city"))
+
+
+func _problems_contain(problems: PackedStringArray, text: String) -> bool:
+	for problem in problems:
+		if problem.contains(text):
+			return true
+	return false
