@@ -1,0 +1,20 @@
+msgid ""
+msgstr ""
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# Écran d'accueil provisoire (itération 0)
+
+msgid "GAME_TITLE"
+msgstr "Stack & Ride"
+
+msgid "GAME_TAGLINE"
+msgstr "Roguelite de livraison à vélo"
+
+msgid "MENU_VERSION"
+msgstr "Version %s"
+
+msgid "MENU_COMING_SOON"
+msgstr "Le jeu arrive bientôt. Cette version ne contient que le socle du projet."

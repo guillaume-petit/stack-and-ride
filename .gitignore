@@ -1,0 +1,16 @@
+# Godot 4 cache and imports (regenerated when the project is opened)
+.godot/
+
+# Builds and Android build template
+/build/
+/android/
+
+# Export credentials (keystores, passwords) must never be committed
+export_credentials.cfg
+*.keystore
+*.jks
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+*.tmp
