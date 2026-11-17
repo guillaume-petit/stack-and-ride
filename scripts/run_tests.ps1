@@ -9,8 +9,9 @@ Set-Location (Join-Path $PSScriptRoot "..")
 
 function Find-Godot {
 	if ($env:GODOT) { return $env:GODOT }
-	foreach ($name in @("godot", "godot4")) {
-		$cmd = Get-Command $name -ErrorAction SilentlyContinue
+	# Official downloads keep their versioned name: look for the console build in the PATH first.
+	foreach ($name in @("Godot_v4*_win64_console.exe", "godot", "godot4")) {
+		$cmd = Get-Command $name -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
 		if ($cmd) { return $cmd.Source }
 	}
 	$folders = @(

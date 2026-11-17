@@ -32,7 +32,7 @@ Sous Windows (PowerShell) :
 scripts\run_tests.ps1
 ```
 
-Les scripts cherchent Godot dans le PATH puis dans les dossiers Téléchargements, Bureau et `~/Godot`.
+Les scripts cherchent Godot dans le PATH (y compris sous son nom d'origine, `Godot_v4.x-stable_...`), puis dans les dossiers Téléchargements, Bureau et `~/Godot`.
 Sinon, indique le chemin de l'exécutable. **Sous Windows, utilise `Godot_v4.x-stable_win64_console.exe`** :
 l'autre version n'affiche rien dans le terminal.
 

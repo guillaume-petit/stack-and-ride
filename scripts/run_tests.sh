@@ -17,6 +17,20 @@ find_godot() {
 			return
 		fi
 	done
+	# Official downloads keep their versioned name (Godot_v4.x-stable_...):
+	# look for them in every PATH folder, console build first on Windows.
+	local dir
+	IFS=: read -r -a path_dirs <<< "${PATH:-}"
+	for pattern in "Godot_v4*_win64_console.exe" "Godot_v4*_linux.x86_64"; do
+		for dir in "${path_dirs[@]}"; do
+			for candidate in "$dir"/$pattern; do
+				if [ -x "$candidate" ]; then
+					echo "$candidate"
+					return
+				fi
+			done
+		done
+	done
 	# Usual install locations (macOS app bundle, Linux and Windows downloads).
 	# On Windows, prefer the *_console.exe build: the other one does not print to the terminal.
 	for candidate in \
