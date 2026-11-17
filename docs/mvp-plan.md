@@ -35,8 +35,8 @@ Les règles et les chiffres sont décrits dans [game-design.md](game-design.md) 
 
 | # | Contenu | À vérifier | Statut |
 |---|---------|------------|--------|
-| 0 | Socle : projet Godot, dossiers, tests, traduction, écran d'accueil provisoire | Le projet s'ouvre, les tests passent | En revue |
-| 1 | Noyau : état de jeu, fichiers de données, génération du quartier, chemins | Tests : quartier connecté, chemins corrects, même graine = même quartier | À faire |
+| 0 | Socle : projet Godot, dossiers, tests, traduction, écran d'accueil provisoire | Le projet s'ouvre, les tests passent | Fait |
+| 1 | Noyau : état de jeu, fichiers de données, génération du quartier, chemins | Tests : quartier connecté, chemins corrects, même graine = même quartier | En revue |
 | 2 | Noyau : le sac (toutes ses règles) | Tests sur chaque règle et ses cas limites | À faire |
 | 3 | Noyau : déroulé de partie (cartes, propositions, livraisons, note, loyer, boutique, profils, événements) + bot | Tests + premier rapport d'équilibrage | À faire |
 | 4 | Interface jouable | Une partie complète sur PC | À faire |
