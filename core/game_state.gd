@@ -31,7 +31,8 @@ var event: StringName = &"calm"
 var equipment: Array[StringName] = []
 
 var city: City
-var courier_cell: Vector2i
+## Crossroads where the courier stands.
+var courier_position: Vector2i
 
 
 ## Starts a new run: the city is drawn from the seed and every value is reset.
@@ -47,7 +48,7 @@ static func new_run(p_content: GameContent, seed: int) -> GameState:
 	state.bag_rows = state.config.bag_rows
 	state.deck = state.config.starting_deck.duplicate()
 	state.city = City.generate(state.config, p_content.restaurant_ids(), state.rng)
-	state.courier_cell = state.city.base
+	state.courier_position = state.city.base
 	return state
 
 

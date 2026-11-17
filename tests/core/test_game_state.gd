@@ -23,7 +23,7 @@ func test_new_run_starts_with_the_design_values() -> void:
 
 func test_courier_starts_at_the_base() -> void:
 	var state := GameState.new_run(content, 2)
-	assert_eq(state.courier_cell, state.city.base)
+	assert_eq(state.courier_position, state.city.base)
 
 
 func test_deck_is_a_copy_of_the_starting_deck() -> void:

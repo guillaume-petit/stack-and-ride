@@ -1,135 +1,205 @@
 class_name City
 extends RefCounted
-## The neighbourhood: a grid of cells with the base, restaurants, client homes,
-## road works and paved streets (design doc §3).
+## The neighbourhood: a grid of crossroads linked by street segments, with buildings
+## in the corners of the blocks between the streets (design doc §3).
 ##
-## Cells are addressed with Vector2i(column, row), (0, 0) at the top left.
+## A crossroads is addressed with Vector2i(column, row), (0, 0) at the top left.
+## The courier always stands on a crossroads and moves one street segment per step.
+## A street segment is identified by its two ends, see street_key().
+## A place (base, restaurant, client) is a building that opens on one crossroads:
+## standing on that crossroads means being at the place.
 
-enum Tile { ROAD, PAVED, WORKS, BASE, RESTAURANT, CLIENT }
+enum Street { NORMAL, PAVED, WORKS }
+enum Place { NONE, BASE, RESTAURANT, CLIENT }
 
 ## Same order as the prototype, so that ties between shortest paths are broken the same way.
 const DIRECTIONS: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+const NOWHERE := Vector2i(-1, -1)
 
-var width: int
-var height: int
+## Number of crossroads across and down. There are (columns - 1) × (rows - 1) blocks.
+var columns: int
+var rows: int
 var base: Vector2i
 
-var _tiles: PackedInt32Array
+var _streets: Dictionary[Vector4i, Street] = {}
+var _places: Dictionary[Vector2i, Place] = {}
 var _restaurant_kinds: Dictionary[Vector2i, StringName] = {}
 var _client_numbers: Dictionary[Vector2i, int] = {}
+## Block whose corner holds the building of each place (for drawing only).
+var _building_blocks: Dictionary[Vector2i, Vector2i] = {}
 
 
-func _init(p_width: int, p_height: int, p_base: Vector2i) -> void:
-	width = p_width
-	height = p_height
+func _init(p_columns: int, p_rows: int, p_base: Vector2i) -> void:
+	columns = p_columns
+	rows = p_rows
 	base = p_base
-	_tiles = PackedInt32Array()
-	_tiles.resize(width * height)
-	_tiles.fill(Tile.ROAD)
-	_set_tile(base, Tile.BASE)
+	for y in rows:
+		for x in columns:
+			var crossroads := Vector2i(x, y)
+			for direction in [Vector2i(1, 0), Vector2i(0, 1)]:
+				if is_inside(crossroads + direction):
+					_streets[street_key(crossroads, crossroads + direction)] = Street.NORMAL
+	_places[base] = Place.BASE
+	_building_blocks[base] = _first_or_nowhere(blocks_around(base))
 
 
-## Draws a new city. Cells are drawn again until every cell but road works can be reached
-## from the base; after config.city_generation_attempts failures the last draw is kept
+## Draws a new city. Everything is drawn again until every crossroads can be reached from
+## the base; after config.city_generation_attempts failures the last draw is kept
 ## (check is_fully_connected()).
 static func generate(config: GameConfig, restaurant_ids: Array[StringName], rng: GameRng) -> City:
-	var needed := 1 + config.restaurant_count + config.client_count + config.works_count + config.paved_count
-	assert(needed <= config.city_width * config.city_height, "the city is too small for its content")
+	var places_needed := 1 + config.restaurant_count + config.client_count
+	var streets_count := (config.city_columns - 1) * config.city_rows + config.city_columns * (config.city_rows - 1)
+	assert(places_needed <= config.city_columns * config.city_rows, "not enough crossroads for the places")
+	assert(config.works_count + config.paved_count <= streets_count, "not enough streets")
 	assert(restaurant_ids.size() >= config.restaurant_count, "not enough restaurant types")
 	var city: City = null
 	for _attempt in config.city_generation_attempts:
-		city = City.new(config.city_width, config.city_height, config.base_cell)
-		var free := city.cells_of(Tile.ROAD)
+		city = City.new(config.city_columns, config.city_rows, config.base_cell)
+		var free := city.crossroads_without_place()
 		rng.shuffle(free)
 		var kinds := restaurant_ids.duplicate()
 		rng.shuffle(kinds)
 		for i in config.restaurant_count:
-			city._place_restaurant(free.pop_back(), kinds[i])
+			var restaurant: Vector2i = free.pop_back()
+			city._add_place(restaurant, Place.RESTAURANT, rng)
+			city._restaurant_kinds[restaurant] = kinds[i]
 		for number in range(1, config.client_count + 1):
-			var cell: Vector2i = free.pop_back()
-			city._set_tile(cell, Tile.CLIENT)
-			city._client_numbers[cell] = number
-		for _i in config.works_count:
-			city._set_tile(free.pop_back(), Tile.WORKS)
-		for _i in config.paved_count:
-			city._set_tile(free.pop_back(), Tile.PAVED)
+			var home: Vector2i = free.pop_back()
+			city._add_place(home, Place.CLIENT, rng)
+			city._client_numbers[home] = number
+		city._building_blocks[city.base] = _pick_or_nowhere(city.blocks_around(city.base), rng)
+		var streets := city.streets_of(Street.NORMAL)
+		rng.shuffle(streets)
+		for i in config.works_count:
+			city._streets[streets[i]] = Street.WORKS
+		for i in config.paved_count:
+			city._streets[streets[config.works_count + i]] = Street.PAVED
 		if city.is_fully_connected():
 			return city
 	return city
 
 
-## Builds a city from a drawing (same symbols as to_text()), mostly for tests.
+## Builds a city from a drawing, mostly for tests. Even lines are crossroads rows, odd lines
+## hold the vertical streets. On a crossroads row, even characters are crossroads
+## ("+" nothing, "B" base, "R" restaurant, "C" client) and odd characters are streets
+## ("-" normal, "~" paved, "#" works). On a street row, even characters are streets
+## ("|" normal, "~" paved, "#" works) and odd characters are blocks (any character).
 ## Clients are numbered in reading order; restaurants get the given kind.
+##     B-+-C
+##     | | #
+##     +~R-+
 static func from_text(lines: PackedStringArray, restaurant_kind: StringName = &"test") -> City:
-	const TILES := {".": Tile.ROAD, "~": Tile.PAVED, "#": Tile.WORKS, "B": Tile.BASE, "R": Tile.RESTAURANT, "C": Tile.CLIENT}
-	var base_cell := Vector2i(-1, -1)
-	for y in lines.size():
+	const PLACES := {"+": Place.NONE, "B": Place.BASE, "R": Place.RESTAURANT, "C": Place.CLIENT}
+	const STREETS := {"-": Street.NORMAL, "|": Street.NORMAL, "~": Street.PAVED, "#": Street.WORKS}
+	var base_cell := NOWHERE
+	for y in range(0, lines.size(), 2):
 		var x := lines[y].find("B")
 		if x != -1:
-			base_cell = Vector2i(x, y)
-	assert(base_cell != Vector2i(-1, -1), "the drawing needs a base (B)")
-	var city := City.new(lines[0].length(), lines.size(), base_cell)
+			base_cell = Vector2i(x / 2, y / 2)
+	assert(base_cell != NOWHERE, "the drawing needs a base (B)")
+	var city := City.new((lines[0].length() + 1) / 2, (lines.size() + 1) / 2, base_cell)
 	var next_client := 1
-	for y in lines.size():
-		assert(lines[y].length() == city.width, "every line must have the same length")
-		for x in city.width:
-			var cell := Vector2i(x, y)
-			var tile: Tile = TILES[lines[y][x]]
-			if tile == Tile.RESTAURANT:
-				city._place_restaurant(cell, restaurant_kind)
-			else:
-				city._set_tile(cell, tile)
-			if tile == Tile.CLIENT:
-				city._client_numbers[cell] = next_client
+	for y in city.rows:
+		var line := lines[y * 2]
+		assert(line.length() == city.columns * 2 - 1, "line %d has the wrong length" % (y * 2))
+		for x in city.columns:
+			var crossroads := Vector2i(x, y)
+			var place: Place = PLACES[line[x * 2]]
+			if place == Place.RESTAURANT:
+				city._add_place(crossroads, place, null)
+				city._restaurant_kinds[crossroads] = restaurant_kind
+			elif place == Place.CLIENT:
+				city._add_place(crossroads, place, null)
+				city._client_numbers[crossroads] = next_client
 				next_client += 1
+			if x + 1 < city.columns:
+				city._streets[street_key(crossroads, crossroads + Vector2i(1, 0))] = STREETS[line[x * 2 + 1]]
+			if y + 1 < city.rows:
+				var below := lines[y * 2 + 1]
+				city._streets[street_key(crossroads, crossroads + Vector2i(0, 1))] = STREETS[below[x * 2]]
 	return city
 
 
-## Grid distance ignoring obstacles (used to pick the second client of a grouped order).
+## Key of the street segment between two neighbouring crossroads, whatever their order:
+## Vector4i(first.x, first.y, second.x, second.y) with the top-left end first.
+static func street_key(a: Vector2i, b: Vector2i) -> Vector4i:
+	if b.y < a.y or (b.y == a.y and b.x < a.x):
+		var swap := a
+		a = b
+		b = swap
+	return Vector4i(a.x, a.y, b.x, b.y)
+
+
+## The two crossroads at the ends of a street segment.
+static func street_ends(key: Vector4i) -> Array[Vector2i]:
+	return [Vector2i(key.x, key.y), Vector2i(key.z, key.w)]
+
+
+## Grid distance ignoring streets (used to pick the second client of a grouped order).
 static func manhattan(a: Vector2i, b: Vector2i) -> int:
 	return absi(a.x - b.x) + absi(a.y - b.y)
 
 
-func is_inside(cell: Vector2i) -> bool:
-	return cell.x >= 0 and cell.y >= 0 and cell.x < width and cell.y < height
+func is_inside(crossroads: Vector2i) -> bool:
+	return crossroads.x >= 0 and crossroads.y >= 0 and crossroads.x < columns and crossroads.y < rows
 
 
-func tile_at(cell: Vector2i) -> Tile:
-	return _tiles[_index(cell)] as Tile
+## State of the street between two neighbouring crossroads.
+func street_between(a: Vector2i, b: Vector2i) -> Street:
+	return _streets[street_key(a, b)]
 
 
-## Road works block the way, unless the courier can cross them this turn (Contresens).
-func is_passable(cell: Vector2i, cross_works: bool = false) -> bool:
-	if not is_inside(cell):
+## Whether the courier can go from a crossroads to a neighbouring one. Road works block the
+## street, unless the courier can cross them this turn (Contresens).
+func can_walk(from: Vector2i, to: Vector2i, cross_works: bool = false) -> bool:
+	if not is_inside(from) or not is_inside(to) or manhattan(from, to) != 1:
 		return false
-	return cross_works or tile_at(cell) != Tile.WORKS
+	return cross_works or street_between(from, to) != Street.WORKS
 
 
-## Restaurant type on this cell, or &"" if there is no restaurant.
-func restaurant_kind_at(cell: Vector2i) -> StringName:
-	return _restaurant_kinds.get(cell, &"")
-
-
-## Client number (1 to 12) living on this cell, or 0 if there is none.
-func client_number_at(cell: Vector2i) -> int:
-	return _client_numbers.get(cell, 0)
-
-
-## Cell of the client with this number, or Vector2i(-1, -1) if there is none.
-func client_cell(number: int) -> Vector2i:
-	for cell: Vector2i in _client_numbers:
-		if _client_numbers[cell] == number:
-			return cell
-	return Vector2i(-1, -1)
-
-
-## Every cell with this tile, from the top-left corner, row by row.
-func cells_of(tile: Tile) -> Array[Vector2i]:
-	var out: Array[Vector2i] = []
-	for index in _tiles.size():
-		if _tiles[index] == tile:
-			out.append(_cell(index))
+## Every street segment in this state, in a stable order.
+func streets_of(street: Street) -> Array[Vector4i]:
+	var out: Array[Vector4i] = []
+	for key: Vector4i in _streets:
+		if _streets[key] == street:
+			out.append(key)
 	return out
+
+
+func place_at(crossroads: Vector2i) -> Place:
+	return _places.get(crossroads, Place.NONE)
+
+
+## Every crossroads with this kind of place, from the top left, row by row.
+func crossroads_with(place: Place) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	for y in rows:
+		for x in columns:
+			if place_at(Vector2i(x, y)) == place:
+				out.append(Vector2i(x, y))
+	return out
+
+
+func crossroads_without_place() -> Array[Vector2i]:
+	return crossroads_with(Place.NONE)
+
+
+## Restaurant type at this crossroads, or &"" if there is no restaurant.
+func restaurant_kind_at(crossroads: Vector2i) -> StringName:
+	return _restaurant_kinds.get(crossroads, &"")
+
+
+## Client number (1 to 12) at this crossroads, or 0 if there is none.
+func client_number_at(crossroads: Vector2i) -> int:
+	return _client_numbers.get(crossroads, 0)
+
+
+## Crossroads of the client with this number, or NOWHERE if there is none.
+func client_crossroads(number: int) -> Vector2i:
+	for crossroads: Vector2i in _client_numbers:
+		if _client_numbers[crossroads] == number:
+			return crossroads
+	return NOWHERE
 
 
 ## Restaurant types present in the city, sorted.
@@ -141,115 +211,150 @@ func restaurant_kinds() -> Array[StringName]:
 	return kinds
 
 
-## Shortest paths from a cell (breadth-first search). Moves are orthogonal, one step per
-## cell; road works are skipped unless cross_works is true.
+## Blocks touching a crossroads (1 to 4). Block (x, y) lies between crossroads (x, y) and (x + 1, y + 1).
+func blocks_around(crossroads: Vector2i) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	for offset in [Vector2i(-1, -1), Vector2i(0, -1), Vector2i(-1, 0), Vector2i(0, 0)]:
+		var block: Vector2i = crossroads + offset
+		if block.x >= 0 and block.y >= 0 and block.x < columns - 1 and block.y < rows - 1:
+			out.append(block)
+	return out
+
+
+## Block whose corner holds the building of the place at this crossroads (for drawing),
+## NOWHERE if there is no place or no block.
+func building_block(crossroads: Vector2i) -> Vector2i:
+	return _building_blocks.get(crossroads, NOWHERE)
+
+
+## Shortest paths from a crossroads (breadth-first search), one step per street segment;
+## road works are avoided unless cross_works is true.
 func paths_from(start: Vector2i, cross_works: bool = false) -> CityPaths:
 	var distance := PackedInt32Array()
-	distance.resize(width * height)
+	distance.resize(columns * rows)
 	distance.fill(-1)
 	var previous := PackedInt32Array()
-	previous.resize(width * height)
+	previous.resize(columns * rows)
 	previous.fill(-1)
 	if is_inside(start):
 		distance[_index(start)] = 0
 		var queue: Array[Vector2i] = [start]
 		var head := 0
 		while head < queue.size():
-			var cell := queue[head]
+			var current := queue[head]
 			head += 1
 			for direction in DIRECTIONS:
-				var next := cell + direction
-				if not is_passable(next, cross_works) or distance[_index(next)] != -1:
+				var next := current + direction
+				if not can_walk(current, next, cross_works) or distance[_index(next)] != -1:
 					continue
-				distance[_index(next)] = distance[_index(cell)] + 1
-				previous[_index(next)] = _index(cell)
+				distance[_index(next)] = distance[_index(current)] + 1
+				previous[_index(next)] = _index(current)
 				queue.append(next)
-	return CityPaths.new(start, width, height, distance, previous)
+	return CityPaths.new(start, columns, rows, distance, previous)
 
 
-## Number of steps between two cells, or -1 if b cannot be reached from a.
+## Number of steps between two crossroads, or -1 if b cannot be reached from a.
 func distance(a: Vector2i, b: Vector2i, cross_works: bool = false) -> int:
 	return paths_from(a, cross_works).distance_to(b)
 
 
-## True when every cell but road works can be reached from the base.
+## True when every crossroads can be reached from the base.
 func is_fully_connected() -> bool:
 	var paths := paths_from(base)
-	for index in _tiles.size():
-		if _tiles[index] != Tile.WORKS and not paths.is_reachable(_cell(index)):
-			return false
+	for y in rows:
+		for x in columns:
+			if not paths.is_reachable(Vector2i(x, y)):
+				return false
 	return true
 
 
-## "Works" event: road works move to other plain roads (not paved streets), keeping every
-## cell reachable. Returns false and leaves the city unchanged if no valid layout was found.
+## "Works" event: road works move to other normal streets (not paved ones), keeping every
+## crossroads reachable. Returns false and leaves the city unchanged if no valid layout was found.
 func relocate_works(rng: GameRng, attempts: int) -> bool:
-	var saved := _tiles.duplicate()
-	var works := cells_of(Tile.WORKS)
-	for cell in works:
-		_set_tile(cell, Tile.ROAD)
-	var original := _tiles.duplicate()
+	var saved := _streets.duplicate()
+	var works := streets_of(Street.WORKS)
+	for key in works:
+		_streets[key] = Street.NORMAL
+	var cleared := _streets.duplicate()
 	for _attempt in attempts:
-		var roads := cells_of(Tile.ROAD)
-		rng.shuffle(roads)
-		for i in mini(works.size(), roads.size()):
-			_set_tile(roads[i], Tile.WORKS)
+		var normal := streets_of(Street.NORMAL)
+		rng.shuffle(normal)
+		for i in mini(works.size(), normal.size()):
+			_streets[normal[i]] = Street.WORKS
 		if is_fully_connected():
 			return true
-		_tiles = original.duplicate()
-	_tiles = saved
+		_streets = cleared.duplicate()
+	_streets = saved
 	return false
 
 
-## "New partner" reward: a restaurant of this type opens on a plain road (not paved,
-## not under the courier). Returns its cell, or Vector2i(-1, -1) if there is no room.
-func add_restaurant(kind: StringName, rng: GameRng, courier_cell: Vector2i) -> Vector2i:
-	var roads := cells_of(Tile.ROAD)
-	roads.erase(courier_cell)
-	if roads.is_empty():
-		return Vector2i(-1, -1)
-	var cell: Vector2i = rng.pick(roads)
-	_place_restaurant(cell, kind)
-	return cell
+## "New partner" reward: a restaurant of this type opens on a crossroads without any place,
+## not the courier's. Returns its crossroads, or NOWHERE if there is no room.
+func add_restaurant(kind: StringName, rng: GameRng, courier: Vector2i) -> Vector2i:
+	var free := crossroads_without_place()
+	free.erase(courier)
+	if free.is_empty():
+		return NOWHERE
+	var crossroads: Vector2i = rng.pick(free)
+	_add_place(crossroads, Place.RESTAURANT, rng)
+	_restaurant_kinds[crossroads] = kind
+	return crossroads
 
 
 ## Plain data describing the layout, to compare two cities (and later to save a run).
 func snapshot() -> Dictionary:
 	return {
-		"width": width,
-		"height": height,
+		"columns": columns,
+		"rows": rows,
 		"base": base,
-		"tiles": Array(_tiles),
+		"streets": _streets.duplicate(),
+		"places": _places.duplicate(),
 		"restaurants": _restaurant_kinds.duplicate(),
 		"clients": _client_numbers.duplicate(),
+		"buildings": _building_blocks.duplicate(),
 	}
 
 
-## Text drawing of the city, for debugging and test failure messages.
-## B base, R restaurant, C client, # road works, ~ paved street, . road.
+## Text drawing of the city, in the from_text() format, for debugging and test messages.
 func to_text() -> String:
-	const SYMBOLS := {Tile.ROAD: ".", Tile.PAVED: "~", Tile.WORKS: "#", Tile.BASE: "B", Tile.RESTAURANT: "R", Tile.CLIENT: "C"}
+	const PLACE_SYMBOLS := {Place.NONE: "+", Place.BASE: "B", Place.RESTAURANT: "R", Place.CLIENT: "C"}
+	const ACROSS := {Street.NORMAL: "-", Street.PAVED: "~", Street.WORKS: "#"}
+	const DOWN := {Street.NORMAL: "|", Street.PAVED: "~", Street.WORKS: "#"}
 	var lines := PackedStringArray()
-	for y in height:
+	for y in rows:
 		var line := ""
-		for x in width:
-			line += SYMBOLS[tile_at(Vector2i(x, y))]
+		var below := ""
+		for x in columns:
+			var crossroads := Vector2i(x, y)
+			line += PLACE_SYMBOLS[place_at(crossroads)]
+			if x + 1 < columns:
+				line += ACROSS[street_between(crossroads, crossroads + Vector2i(1, 0))]
+			if y + 1 < rows:
+				below += DOWN[street_between(crossroads, crossroads + Vector2i(0, 1))]
+				if x + 1 < columns:
+					below += " "
 		lines.append(line)
+		if y + 1 < rows:
+			lines.append(below)
 	return "\n".join(lines)
 
 
-func _place_restaurant(cell: Vector2i, kind: StringName) -> void:
-	_set_tile(cell, Tile.RESTAURANT)
-	_restaurant_kinds[cell] = kind
+## Puts a place on a crossroads. Its building goes in a corner of a block drawn with rng,
+## or the first block when rng is null (drawings).
+func _add_place(crossroads: Vector2i, place: Place, rng: GameRng) -> void:
+	_places[crossroads] = place
+	var blocks := blocks_around(crossroads)
+	_building_blocks[crossroads] = _first_or_nowhere(blocks) if rng == null else _pick_or_nowhere(blocks, rng)
 
 
-func _set_tile(cell: Vector2i, tile: Tile) -> void:
-	_tiles[_index(cell)] = tile
+## A city one crossroads wide or high has no block: its buildings are then NOWHERE.
+static func _first_or_nowhere(blocks: Array[Vector2i]) -> Vector2i:
+	return NOWHERE if blocks.is_empty() else blocks[0]
 
 
-func _index(cell: Vector2i) -> int:
-	return cell.y * width + cell.x
+static func _pick_or_nowhere(blocks: Array[Vector2i], rng: GameRng) -> Vector2i:
+	return NOWHERE if blocks.is_empty() else rng.pick(blocks)
 
 
-func _cell(index: int) -> Vector2i:
-	return Vector2i(index % width, index / width)
+func _index(crossroads: Vector2i) -> int:
+	return crossroads.y * columns + crossroads.x

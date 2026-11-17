@@ -56,9 +56,10 @@ if [ -z "$GODOT_BIN" ]; then
 	exit 2
 fi
 
-# On a fresh clone the class cache (.godot/) does not exist yet:
-# importing once lets the tests resolve class_name declarations.
-if [ ! -d .godot ]; then
+# Godot keeps a cache of the class_name declarations in .godot/. It does not exist on a
+# fresh clone and is stale after a pull that adds classes: import again in both cases.
+CLASS_CACHE=.godot/global_script_class_cache.cfg
+if [ ! -f "$CLASS_CACHE" ] || [ -n "$(find . -path ./.godot -prune -o -name '*.gd' -newer "$CLASS_CACHE" -print -quit)" ]; then
 	"$GODOT_BIN" --headless --path . --import >/dev/null 2>&1 || true
 fi
 

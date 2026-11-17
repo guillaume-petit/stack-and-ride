@@ -28,14 +28,19 @@ extends Resource
 @export var max_paid_cards_per_turn: int = 2
 
 @export_group("City")
-@export var city_width: int = 8
-@export var city_height: int = 8
-@export var base_cell: Vector2i = Vector2i(3, 4)
+## Number of crossroads across and down (the blocks lie between them).
+@export var city_columns: int = 7
+@export var city_rows: int = 6
+## Crossroads of the base.
+@export var base_cell: Vector2i = Vector2i(3, 3)
 @export var restaurant_count: int = 3
 @export var client_count: int = 12
+
+## Street segments closed by road works.
 @export var works_count: int = 7
+## Paved street segments.
 @export var paved_count: int = 6
-## The city is drawn again until every cell but road works is reachable, at most this many times.
+## The city is drawn again until every crossroads is reachable, at most this many times.
 @export var city_generation_attempts: int = 200
 ## Same, when the "works" event moves the road works.
 @export var works_relocation_attempts: int = 100
