@@ -42,6 +42,11 @@ func restaurant_ids() -> Array[StringName]:
 	return _sorted_keys(restaurants)
 
 
+## Dish ids, sorted alphabetically.
+func dish_ids() -> Array[StringName]:
+	return _sorted_keys(dishes)
+
+
 ## Checks the references between content files. Returns one line per problem.
 func validate() -> PackedStringArray:
 	var problems := load_errors.duplicate()

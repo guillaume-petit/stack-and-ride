@@ -343,6 +343,15 @@ msgstr "Le chaud et le froid ne doivent pas se toucher."
 msgid "BAG_PROBLEM_SOMETHING_ON_TOP"
 msgstr "Un autre plat est posé dessus : retire-le d'abord."
 
+msgid "BAG_PROBLEM_HAND_BUSY"
+msgstr "Tu as déjà un plat en main."
+
+msgid "BAG_PROBLEM_NOTHING_HELD"
+msgstr "Tu n'as pas de plat en main."
+
+msgid "BAG_PROBLEM_NOT_IN_BAG"
+msgstr "Ce plat n'est pas rangé dans le sac."
+
 # Écran de debug du sac (ui/debug/bag_debug.tscn, itération 2)
 
 msgid "DEBUG_BAG_TITLE"
@@ -381,8 +390,11 @@ msgstr "Secousses"
 msgid "DEBUG_BAG_SHAKE"
 msgstr "Secouer le sac"
 
-msgid "DEBUG_BAG_BRACED"
+msgid "DEBUG_BAG_BRACE"
 msgstr "Caler le sac (prochaine secousse annulée)"
+
+msgid "DEBUG_BAG_IS_BRACED"
+msgstr " · sac calé"
 
 msgid "DEBUG_BAG_EQUIPMENT"
 msgstr "Équipements"
@@ -404,9 +416,6 @@ msgstr "rangement en cours : impossible de partir"
 
 msgid "DEBUG_BAG_READY"
 msgstr "prêt à partir"
-
-msgid "DEBUG_BAG_HAND_BUSY"
-msgstr "Tu as déjà un plat en main."
 
 msgid "DEBUG_BAG_TAKEN"
 msgstr "%s en main."

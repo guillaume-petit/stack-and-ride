@@ -27,8 +27,11 @@ const PROBLEM_KEYS := {
 	Bag.Problem.NO_ROOM: "BAG_PROBLEM_NO_ROOM",
 	Bag.Problem.ON_FRAGILE: "BAG_PROBLEM_ON_FRAGILE",
 	Bag.Problem.HOT_COLD_TOUCH: "BAG_PROBLEM_HOT_COLD_TOUCH",
+	Bag.Problem.SOMETHING_ON_TOP: "BAG_PROBLEM_SOMETHING_ON_TOP",
+	Bag.Problem.HAND_BUSY: "BAG_PROBLEM_HAND_BUSY",
+	Bag.Problem.NOTHING_HELD: "BAG_PROBLEM_NOTHING_HELD",
+	Bag.Problem.NOT_IN_BAG: "BAG_PROBLEM_NOT_IN_BAG",
 }
-const SIDES: Array[Vector2i] = [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
 
 var _content: GameContent
 var _bag: Bag
@@ -43,7 +46,9 @@ var _aside_row: HFlowContainer
 var _cup_holder_label: Label
 var _status: Label
 var _summary: Label
-var _braced_box: CheckBox
+var _separator_box: CheckBox
+var _straps_box: CheckBox
+var _cup_holder_box: CheckBox
 var _columns_box: SpinBox
 var _rows_box: SpinBox
 
@@ -104,7 +109,7 @@ func _build_layout() -> void:
 
 	side.add_child(_label(tr("DEBUG_BAG_TAKE"), 16, MUTED))
 	var dishes := HFlowContainer.new()
-	for dish_id in _sorted_dish_ids():
+	for dish_id in _content.dish_ids():
 		var dish := _content.dishes[dish_id]
 		dishes.add_child(_button(tr(dish.name_key()), func() -> void: _take(dish)))
 	side.add_child(dishes)
@@ -136,19 +141,16 @@ func _build_layout() -> void:
 	side.add_child(_label(tr("DEBUG_BAG_ACTIONS"), 16, MUTED))
 	var actions := HFlowContainer.new()
 	actions.add_child(_button(tr("DEBUG_BAG_SHAKE"), _shake))
-	_braced_box = _check_box(tr("DEBUG_BAG_BRACED"), func(on: bool) -> void: _bag.braced = on)
-	actions.add_child(_braced_box)
+	actions.add_child(_button(tr("DEBUG_BAG_BRACE"), _brace))
 	side.add_child(actions)
 
 	side.add_child(_label(tr("DEBUG_BAG_EQUIPMENT"), 16, MUTED))
 	var equipment := HFlowContainer.new()
-	equipment.add_child(_check_box(tr("EQUIPMENT_SEPARATOR"), func(on: bool) -> void:
-		_bag.hot_and_cold_may_touch = on
-		_refresh()))
-	equipment.add_child(_check_box(tr("EQUIPMENT_STRAPS"),
-			func(on: bool) -> void: _bag.only_fragile_dishes_shaken = on))
-	equipment.add_child(_check_box(tr("EQUIPMENT_CUPHOLDER"),
-			func(on: bool) -> void: _bag.has_cup_holder = on))
+	_separator_box = _check_box(tr("EQUIPMENT_SEPARATOR"), _equip)
+	_straps_box = _check_box(tr("EQUIPMENT_STRAPS"), _equip)
+	_cup_holder_box = _check_box(tr("EQUIPMENT_CUPHOLDER"), _equip)
+	for box in [_separator_box, _straps_box, _cup_holder_box]:
+		equipment.add_child(box)
 	side.add_child(equipment)
 
 	side.add_child(_label(tr("DEBUG_BAG_SIZE"), 16, MUTED))
@@ -175,7 +177,7 @@ func _build_layout() -> void:
 func _take(dish: DishData) -> void:
 	var item := BagItem.new(_next_order_id, dish)
 	if not _bag.take_from_restaurant(item):
-		_say(tr("DEBUG_BAG_HAND_BUSY"))
+		_say(tr(PROBLEM_KEYS[Bag.Problem.HAND_BUSY]))
 		return
 	_next_order_id += 1
 	if _bag.location_of(item.order_id) == Bag.Location.CUP_HOLDER:
@@ -213,10 +215,11 @@ func _drop(column: int) -> void:
 
 
 func _lift(item: BagItem) -> void:
-	if _bag.lift(item.order_id):
+	var problem := _bag.lift(item.order_id)
+	if problem == Bag.Problem.NONE:
 		_say(tr("DEBUG_BAG_LIFTED") % _name(item))
 	else:
-		_say(tr("BAG_PROBLEM_SOMETHING_ON_TOP"))
+		_say(tr(PROBLEM_KEYS[problem]))
 	_refresh()
 
 
@@ -231,7 +234,7 @@ func _deliver(item: BagItem) -> void:
 
 func _take_from_aside(item: BagItem) -> void:
 	if not _bag.take_from_aside(item.order_id):
-		_say(tr("DEBUG_BAG_HAND_BUSY"))
+		_say(tr(PROBLEM_KEYS[Bag.Problem.HAND_BUSY]))
 	_refresh()
 
 
@@ -246,12 +249,20 @@ func _shake() -> void:
 	_refresh()
 
 
+func _brace() -> void:
+	_bag.brace()
+	_refresh()
+
+
+func _equip(_on: bool) -> void:
+	_bag.set_equipment(_separator_box.button_pressed, _straps_box.button_pressed, _cup_holder_box.button_pressed)
+	_refresh()
+
+
 func _new_bag() -> void:
 	var old := _bag
 	_bag = Bag.new(int(_columns_box.value), int(_rows_box.value))
-	_bag.hot_and_cold_may_touch = old.hot_and_cold_may_touch
-	_bag.only_fragile_dishes_shaken = old.only_fragile_dishes_shaken
-	_bag.has_cup_holder = old.has_cup_holder
+	_bag.set_equipment(old.hot_and_cold_may_touch, old.only_fragile_dishes_shaken, old.has_cup_holder)
 	_say("")
 	_refresh()
 
@@ -303,7 +314,6 @@ func _set_hover(column: int) -> void:
 
 func _refresh() -> void:
 	_bag_view.custom_minimum_size = Vector2(_bag.columns, _bag.rows + 1) * CELL + Vector2(GAP, GAP) * 4
-	_braced_box.set_pressed_no_signal(_bag.braced)
 	for button in _hand_buttons:
 		button.disabled = _bag.held == null
 	for child in _aside_row.get_children():
@@ -321,6 +331,8 @@ func _refresh() -> void:
 	_summary.text = tr("DEBUG_BAG_SUMMARY") % [_bag.columns, _bag.rows, _bag.dish_count(),
 			_bag.loose_items().size(),
 			tr("DEBUG_BAG_SORTING") if _bag.is_sorting() else tr("DEBUG_BAG_READY")]
+	if _bag.braced:
+		_summary.text += tr("DEBUG_BAG_IS_BRACED")
 	_bag_view.queue_redraw()
 	_hand_view.queue_redraw()
 
@@ -378,13 +390,13 @@ func _draw_item(canvas: CanvasItem, item: BagItem, cells: Array[Vector2i], origi
 		var rect := Rect2(origin + Vector2(cell) * size, Vector2(size, size))
 		# Shrink the sides that are an edge of the dish, so that dishes stay apart.
 		var inset := {}
-		for side in SIDES:
+		for side in Bag.SIDES:
 			inset[side] = 0.0 if (cell + side) in cells else GAP
 		rect.position += Vector2(inset[Vector2i.LEFT], inset[Vector2i.UP])
 		rect.size -= Vector2(inset[Vector2i.LEFT] + inset[Vector2i.RIGHT], inset[Vector2i.UP] + inset[Vector2i.DOWN])
 		canvas.draw_rect(rect, color)
 		if loose:
-			for side in SIDES:
+			for side in Bag.SIDES:
 				if inset[side] > 0.0:
 					_draw_side(canvas, rect, side, LOOSE_COLOR, 3.0)
 		if item.damaged:
@@ -456,14 +468,6 @@ func _names(items: Array[BagItem]) -> String:
 
 func _state_text(item: BagItem) -> String:
 	return tr("DEBUG_BAG_DAMAGED") if item.damaged else tr("DEBUG_BAG_INTACT")
-
-
-func _sorted_dish_ids() -> Array[StringName]:
-	var ids: Array[StringName] = []
-	for id: StringName in _content.dishes:
-		ids.append(id)
-	ids.sort_custom(func(a: StringName, b: StringName) -> bool: return String(a) < String(b))
-	return ids
 
 
 func _label(text: String, size: int, color: Color) -> Label:

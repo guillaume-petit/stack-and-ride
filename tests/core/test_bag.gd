@@ -186,7 +186,7 @@ func test_same_temperatures_touch() -> void:
 
 func test_the_separator_lets_hot_and_cold_touch() -> void:
 	var bag := Bag.new(4, 3)
-	bag.hot_and_cold_may_touch = true
+	bag.set_equipment(true, false, false)
 	_put(bag, 1, &"burger", 0)
 	_put(bag, 2, &"poke", 2)
 	_put(bag, 3, &"poke", 0)
@@ -201,7 +201,7 @@ func test_the_fragile_rule_is_checked_before_the_temperature() -> void:
 
 func test_dropping_needs_a_dish_in_hand() -> void:
 	var bag := Bag.new(3, 3)
-	assert_eq(bag.drop_held(0), Bag.Problem.NO_ROOM)
+	assert_eq(bag.drop_held(0), Bag.Problem.NOTHING_HELD)
 	assert_true(bag.is_empty())
 
 
@@ -217,7 +217,7 @@ func test_only_one_dish_in_hand() -> void:
 func test_lifting_a_free_dish() -> void:
 	var bag := Bag.new(4, 3)
 	_put(bag, 1, &"burger", 0, 1)
-	assert_true(bag.lift(1))
+	assert_eq(bag.lift(1), Bag.Problem.NONE)
 	assert_eq(bag.held.order_id, 1)
 	assert_eq(bag.location_of(1), Bag.Location.HELD)
 	assert_eq(bag.held.shape, [Vector2i(0, 0), Vector2i(0, 1)] as Array[Vector2i], "keeps its orientation")
@@ -228,16 +228,16 @@ func test_a_dish_with_something_on_it_cannot_be_lifted() -> void:
 	var bag := Bag.new(3, 3)
 	_put(bag, 1, &"pizza", 0)
 	_put(bag, 2, &"burger", 1)
-	assert_false(bag.lift(1))
+	assert_eq(bag.lift(1), Bag.Problem.SOMETHING_ON_TOP)
 	assert_null(bag.held)
-	assert_true(bag.lift(2), "the top one can")
+	assert_eq(bag.lift(2), Bag.Problem.NONE, "the top one can")
 
 
 func test_a_dish_cannot_be_lifted_while_another_is_in_hand() -> void:
 	var bag := Bag.new(3, 3)
 	_put(bag, 1, &"burger", 0)
 	bag.take_from_restaurant(_item(2, &"pizza"))
-	assert_false(bag.lift(1))
+	assert_eq(bag.lift(1), Bag.Problem.HAND_BUSY)
 
 
 func test_cancel_puts_a_lifted_dish_back_exactly_in_place() -> void:
@@ -245,12 +245,60 @@ func test_cancel_puts_a_lifted_dish_back_exactly_in_place() -> void:
 	_put(bag, 1, &"pizza", 0)
 	_put(bag, 2, &"tacos", 2, 1)
 	var before := _grid(bag)
-	assert_true(bag.lift(2))
+	assert_eq(bag.lift(2), Bag.Problem.NONE)
 	bag.rotate_held()
 	bag.rotate_held()
 	assert_null(bag.cancel_held())
 	assert_eq(_grid(bag), before)
 	assert_eq(bag.find(2).shape, BagItem.normalized(bag.find(2).cells))
+
+
+func test_lifting_a_dish_that_is_not_in_the_grid() -> void:
+	var bag := Bag.new(3, 3)
+	assert_eq(bag.lift(1), Bag.Problem.NOT_IN_BAG)
+	bag.take_from_restaurant(_item(2, &"burger"))
+	bag.set_held_aside()
+	assert_eq(bag.lift(2), Bag.Problem.NOT_IN_BAG, "aside, not in the grid")
+
+
+func test_cancel_still_restores_when_another_dish_left_elsewhere() -> void:
+	var bag := Bag.new(4, 3)
+	_put(bag, 1, &"burger", 0)
+	_put(bag, 2, &"burger", 2)
+	bag.lift(1)
+	bag.remove(2)
+	assert_null(bag.cancel_held())
+	assert_eq(_grid(bag), ["....", "....", "11.."])
+
+
+func test_cancel_sets_the_dish_aside_when_its_place_no_longer_rests_on_anything() -> void:
+	var bag := Bag.new(2, 3)
+	_put(bag, 1, &"burger", 0)
+	_put(bag, 2, &"burger", 0)
+	_put(bag, 3, &"burger", 0)
+	assert_eq(bag.lift(3), Bag.Problem.NONE)
+	# Delivering the bottom burger while the top one is in hand: the middle one falls.
+	bag.remove(1)
+	assert_eq(_grid(bag), ["..", "..", "22"])
+	assert_null(bag.cancel_held())
+	assert_eq(_grid(bag), ["..", "..", "22"], "not left floating")
+	assert_eq(bag.location_of(3), Bag.Location.ASIDE)
+	assert_true(bag.is_sorting())
+
+
+func test_cancel_sets_the_dish_aside_when_another_dish_fell_into_its_place() -> void:
+	var bag := Bag.new(2, 4)
+	_put(bag, 1, &"soda", 0)
+	_put(bag, 2, &"burger", 1, 1)
+	_put(bag, 3, &"burger", 0)
+	assert_eq(_grid(bag), ["..", "33", ".2", "12"])
+	assert_eq(bag.lift(1), Bag.Problem.NONE)
+	# The burger on top rested on the standing one only: once delivered, it falls to the bottom.
+	bag.remove(2)
+	assert_eq(_grid(bag), ["..", "..", "..", "33"])
+	assert_null(bag.cancel_held())
+	assert_eq(bag.location_of(1), Bag.Location.ASIDE)
+	assert_eq(_grid(bag), ["..", "..", "..", "33"])
 
 
 func test_cancel_sends_a_dish_from_the_restaurant_back() -> void:
@@ -396,7 +444,7 @@ func test_a_dish_is_damaged_only_once() -> void:
 
 func test_the_straps_protect_the_non_fragile_dishes() -> void:
 	var bag := Bag.new(4, 3)
-	bag.only_fragile_dishes_shaken = true
+	bag.set_equipment(false, true, false)
 	var burger := _put(bag, 1, &"burger", 0)
 	var soda := _put(bag, 2, &"soda", 3)
 	assert_eq(bag.shake().damaged, [soda])
@@ -406,7 +454,7 @@ func test_the_straps_protect_the_non_fragile_dishes() -> void:
 func test_bracing_cancels_the_next_shake_only() -> void:
 	var bag := Bag.new(4, 3)
 	var burger := _put(bag, 1, &"burger", 0)
-	bag.braced = true
+	bag.brace()
 	var first := bag.shake()
 	assert_true(first.braced)
 	assert_eq(first.damaged, [])
@@ -417,7 +465,7 @@ func test_bracing_cancels_the_next_shake_only() -> void:
 
 func test_bracing_is_used_up_even_with_an_empty_bag() -> void:
 	var bag := Bag.new(4, 3)
-	bag.braced = true
+	bag.brace()
 	assert_true(bag.shake().braced)
 	assert_false(bag.braced)
 
@@ -442,7 +490,7 @@ func test_without_cup_holder_a_soda_goes_to_the_hand() -> void:
 
 func test_the_cup_holder_takes_sodas_straight_away() -> void:
 	var bag := Bag.new(3, 3)
-	bag.has_cup_holder = true
+	bag.set_equipment(false, false, true)
 	assert_true(bag.take_from_restaurant(_item(1, &"soda")))
 	assert_null(bag.held)
 	assert_eq(bag.location_of(1), Bag.Location.CUP_HOLDER)
@@ -454,14 +502,14 @@ func test_the_cup_holder_takes_sodas_straight_away() -> void:
 
 func test_the_cup_holder_only_takes_sodas() -> void:
 	var bag := Bag.new(3, 3)
-	bag.has_cup_holder = true
+	bag.set_equipment(false, false, true)
 	bag.take_from_restaurant(_item(1, &"glace"))
 	assert_eq(bag.location_of(1), Bag.Location.HELD)
 
 
 func test_sodas_in_the_cup_holder_are_never_shaken() -> void:
 	var bag := Bag.new(3, 3)
-	bag.has_cup_holder = true
+	bag.set_equipment(false, false, true)
 	bag.take_from_restaurant(_item(1, &"soda"))
 	assert_eq(bag.shake().damaged, [])
 	assert_false(bag.find(1).damaged)
@@ -509,7 +557,7 @@ func test_a_stack_falls_together() -> void:
 	var bag := Bag.new(2, 4)
 	_put(bag, 1, &"burger", 0)
 	_put(bag, 2, &"burger", 0)
-	bag.hot_and_cold_may_touch = true
+	bag.set_equipment(true, false, false)
 	_put(bag, 3, &"poke", 0)
 	_put(bag, 4, &"burger", 0)
 	assert_eq(_grid(bag), ["44", "33", "22", "11"])
@@ -549,7 +597,7 @@ func test_nothing_falls_when_the_removed_dish_held_nothing() -> void:
 
 func test_removing_a_dish_from_the_hand_aside_or_cup_holder() -> void:
 	var bag := Bag.new(3, 3)
-	bag.has_cup_holder = true
+	bag.set_equipment(false, false, true)
 	bag.take_from_restaurant(_item(1, &"soda"))
 	bag.take_from_restaurant(_item(2, &"burger"))
 	bag.set_held_aside()
@@ -589,8 +637,8 @@ func test_growing_while_a_dish_is_lifted_keeps_its_place() -> void:
 
 func test_clear_empties_everything_but_keeps_the_size_and_equipment() -> void:
 	var bag := Bag.new(4, 3)
-	bag.has_cup_holder = true
-	bag.braced = true
+	bag.set_equipment(false, false, true)
+	bag.brace()
 	_put(bag, 1, &"burger", 0)
 	bag.take_from_restaurant(_item(2, &"soda"))
 	bag.take_from_restaurant(_item(3, &"pizza"))
