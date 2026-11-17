@@ -18,12 +18,15 @@ find_godot() {
 		fi
 	done
 	# Usual install locations (macOS app bundle, Linux and Windows downloads).
+	# On Windows, prefer the *_console.exe build: the other one does not print to the terminal.
 	for candidate in \
 		"/Applications/Godot.app/Contents/MacOS/Godot" \
 		"$HOME/Applications/Godot.app/Contents/MacOS/Godot" \
+		"$HOME"/Downloads/Godot_v4*_win64_console.exe \
+		"$HOME"/Desktop/Godot_v4*_win64_console.exe \
+		"$HOME"/Godot/Godot_v4*_win64_console.exe \
 		"$HOME"/Downloads/Godot_v4*_linux.x86_64 \
-		"$HOME"/Downloads/Godot_v4*_win64.exe \
-		"$HOME"/Godot/Godot_v4*; do
+		"$HOME"/Godot/Godot_v4*_linux.x86_64; do
 		if [ -x "$candidate" ]; then
 			echo "$candidate"
 			return

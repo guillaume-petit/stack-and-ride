@@ -32,14 +32,16 @@ Sous Windows (PowerShell) :
 scripts\run_tests.ps1
 ```
 
-Si la commande `godot` n'est pas dans ton PATH, indique le chemin de l'exécutable :
+Les scripts cherchent Godot dans le PATH puis dans les dossiers Téléchargements, Bureau et `~/Godot`.
+Sinon, indique le chemin de l'exécutable. **Sous Windows, utilise `Godot_v4.x-stable_win64_console.exe`** :
+l'autre version n'affiche rien dans le terminal.
 
 ```bash
 GODOT=/chemin/vers/Godot scripts/run_tests.sh
 ```
 
 ```powershell
-$env:GODOT = "C:\chemin\vers\Godot.exe"; scripts\run_tests.ps1
+$env:GODOT = "C:\chemin\vers\Godot_v4.7.2-stable_win64_console.exe"; scripts\run_tests.ps1
 ```
 
 Pour ne lancer qu'une partie des tests, ajoute un filtre sur le nom du fichier : `scripts/run_tests.sh rng`.
