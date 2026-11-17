@@ -75,7 +75,8 @@ func test_card_properties() -> void:
 	for card: CardData in content.cards.values():
 		if card.free:
 			free_cards.append(card.id)
-	free_cards.sort()
+	# Array.sort() orders StringNames by internal address, not alphabetically.
+	free_cards.sort_custom(func(a: StringName, b: StringName) -> bool: return String(a) < String(b))
 	assert_eq(free_cards, [&"coffee", &"strap"])
 
 
