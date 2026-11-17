@@ -1,0 +1,965 @@
+<title>Dernier Kilomètre</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: plateau-ville 8×8 à gauche avec la main de cartes dessous ; à droite l'appli (propositions, commandes) et le sac vu de face */
+:root {
+  --bg: #eceff3; --panel: #ffffff; --ink: #1a1e24; --muted: #5d6570; --line: #d3d9e0;
+  --road: #e2e6eb; --road-2: #dbe0e6; --house: #f6f3ee; --accent: #e2452b; --accent-ink: #ffffff; --mustard: #f2b705;
+  --ok: #21925a; --bad: #cf3628; --reach: #f2b70555; --ghost-ok: #21925a66; --ghost-bad: #cf362866;
+  --hot: #e2452b; --cold: #2f86c9; --pave: #b9b0a3;
+  --r-burger: #d9822b; --r-pizza: #c4473b; --r-sushi: #2c8b80; --r-tacos: #b5862a; --r-glacier: #6a8bd4;
+  --f-display: "Fredoka", "Avenir Next Rounded", system-ui, sans-serif;
+  --f-body: "Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12151a; --panel: #1b2027; --ink: #eceae6; --muted: #9aa3ae; --line: #2f3742;
+  --road: #232931; --road-2: #262d36; --house: #2e3540; --accent: #f05a3e; --accent-ink: #160a07; --mustard: #f5c22e;
+  --ok: #4cc485; --bad: #ef6b5e; --reach: #f5c22e40; --ghost-ok: #4cc48566; --ghost-bad: #ef6b5e66; --pave: #5d574f; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #12151a; --panel: #1b2027; --ink: #eceae6; --muted: #9aa3ae; --line: #2f3742;
+  --road: #232931; --road-2: #262d36; --house: #2e3540; --accent: #f05a3e; --accent-ink: #160a07; --mustard: #f5c22e;
+  --ok: #4cc485; --bad: #ef6b5e; --reach: #f5c22e40; --ghost-ok: #4cc48566; --ghost-bad: #ef6b5e66; --pave: #5d574f; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14.5px; line-height: 1.45; }
+.wrap { max-width: 1160px; margin: 0 auto; padding-block: 16px 32px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 14px; }
+button { font: inherit; color: inherit; }
+button:focus-visible, .cell:focus-visible, .bcell:focus-visible { outline: 3px solid var(--mustard); outline-offset: 2px; }
+
+header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 10px 20px; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: 34px; line-height: 1; margin: 0; letter-spacing: -.01em; }
+h1 span { color: var(--accent); }
+h1 small { display: block; font-family: var(--f-body); font-size: 13px; font-weight: 600; color: var(--muted); margin-top: 5px; letter-spacing: 0; }
+.hud { display: flex; flex-wrap: wrap; gap: 8px; }
+.hudi { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 5px 12px; min-width: 70px; }
+.hudi span { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.hudi b { font-family: var(--f-mono); font-size: 17px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hudi.warn b { color: var(--bad); }
+.hudi.good b { color: var(--ok); }
+.hudi b .stars { display: inline; color: var(--mustard); letter-spacing: -1px; font-family: var(--f-body); font-size: 15px; text-transform: none; }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; align-items: start; }
+@media (max-width: 920px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+.left { display: flex; flex-direction: column; gap: 12px; align-items: center; min-width: 0; }
+aside { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+/* Plan */
+.map-wrap { position: relative; width: min(100%, 580px); }
+.map { display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; aspect-ratio: 1; width: 100%; padding: 6px; box-sizing: border-box;
+  background: var(--line); border-radius: 14px; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+.cell { position: relative; border-radius: 6px; background: var(--road); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; min-width: 0; }
+.cell:nth-child(odd) { background: var(--road-2); }
+.cell .ico { width: 46%; height: 46%; max-width: 30px; max-height: 30px; }
+.cell .lb { font-size: clamp(7.5px, 1.5vw, 10px); font-weight: 700; line-height: 1.05; text-align: center; padding: 0 2px; }
+.cell.pave { background-image: radial-gradient(circle at 25% 25%, var(--pave) 0 3px, transparent 3.5px), radial-gradient(circle at 75% 25%, var(--pave) 0 3px, transparent 3.5px), radial-gradient(circle at 50% 75%, var(--pave) 0 3px, transparent 3.5px); background-size: 16px 16px; }
+.t-client { background: var(--house) !important; color: var(--muted); box-shadow: inset 0 0 0 1px var(--line); }
+.t-resto { background: var(--rc) !important; color: #fff; }
+.t-work { background: repeating-linear-gradient(45deg, #e8892b 0 6px, var(--road) 6px 12px) !important; }
+.t-work .ico { color: var(--ink); opacity: .55; }
+.t-base { background: var(--ink) !important; color: var(--bg); }
+.cell.reach { cursor: pointer; box-shadow: inset 0 0 0 3px var(--mustard); }
+.cell.reach::before { content: ""; position: absolute; inset: 0; background: var(--reach); pointer-events: none; }
+.cell.path::before { background: var(--mustard); opacity: .55; }
+.cell.hl { box-shadow: inset 0 0 0 3px var(--accent); }
+.pins { position: absolute; top: 2px; right: 2px; display: flex; flex-wrap: wrap; gap: 2px; justify-content: flex-end; max-width: 80%; }
+.pin { width: 15px; height: 15px; flex: none; border-radius: 50%; border: 2px solid #fff; font-family: var(--f-mono); font-size: 8.5px; font-weight: 600; color: #fff; display: grid; place-items: center; box-sizing: border-box; }
+.pin.dest { border-radius: 3px; }
+.courier { position: absolute; bottom: 3px; left: 3px; width: 46%; max-width: 30px; aspect-ratio: 1; border-radius: 50%; background: var(--accent); color: var(--accent-ink); border: 2px solid var(--panel); display: grid; place-items: center; box-shadow: 0 2px 4px #0004; z-index: 2; }
+.courier svg { width: 72%; height: 72%; }
+.map-wrap.shake { animation: shake .35s; }
+@keyframes shake { 20% { transform: translateX(-4px); } 40% { transform: translateX(4px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+
+/* Cartes */
+.handbar { width: min(100%, 580px); display: flex; flex-direction: column; gap: 8px; }
+.handtop { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mp { font-family: var(--f-display); font-weight: 600; font-size: 17px; }
+.mp b { font-family: var(--f-mono); color: var(--accent); }
+.hand { display: flex; gap: 8px; flex-wrap: wrap; min-height: 124px; }
+.card { width: 108px; min-height: 120px; background: var(--panel); border: 2px solid var(--ink); border-radius: 12px; padding: 8px; box-sizing: border-box; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 3px; transition: transform .12s; box-shadow: 0 3px 0 var(--ink); }
+.card:hover:not(:disabled) { transform: translateY(-4px); }
+.card:disabled { opacity: .45; cursor: default; }
+.card .cv { font-family: var(--f-display); font-weight: 700; font-size: 24px; line-height: 1; color: var(--accent); }
+.card .cn { font-weight: 700; font-size: 13px; line-height: 1.15; }
+.card .cd { font-size: 11.5px; color: var(--muted); line-height: 1.25; }
+.card .tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.card .tag.free { color: var(--ok); }
+.card .tag.risk { color: var(--bad); }
+.card.fatigue { border-style: dashed; background: var(--road); }
+.card.fatigue .cv { color: var(--muted); }
+.btn { border: 2px solid var(--ink); background: var(--panel); border-radius: 10px; padding: 7px 14px; cursor: pointer; font-weight: 700; box-shadow: 0 3px 0 var(--ink); }
+.btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn.go { background: var(--accent); color: var(--accent-ink); font-family: var(--f-display); font-weight: 600; font-size: 16px; }
+.btn.sm { padding: 4px 10px; font-size: 13px; box-shadow: 0 2px 0 var(--ink); }
+.btn.yes { background: var(--ok); color: #fff; border-color: var(--ok); box-shadow: 0 2px 0 var(--ink); }
+.hint { font-size: 13px; color: var(--muted); margin: 0; text-align: center; width: min(100%, 580px); }
+
+/* Panneaux */
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.box h2 { font-family: var(--f-display); font-weight: 600; font-size: 18px; margin: 0 0 8px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.box h2 small { font-family: var(--f-body); font-size: 12px; color: var(--muted); font-weight: 600; }
+.accbar { height: 6px; border-radius: 3px; background: var(--road); overflow: hidden; margin: -2px 0 8px; }
+.accbar i { display: block; height: 100%; background: var(--ok); }
+.accbar.low i { background: var(--bad); }
+.offers, .orders { display: flex; flex-direction: column; gap: 6px; }
+.offer { border: 1.5px dashed var(--mustard); border-radius: 10px; padding: 7px 9px; display: flex; flex-direction: column; gap: 4px; }
+.offer .top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.offer .on { font-weight: 700; font-size: 13.5px; }
+.offer .price { font-family: var(--f-mono); font-weight: 600; white-space: nowrap; }
+.offer .od { font-size: 12px; color: var(--muted); }
+.offer .acts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.chips { display: flex; gap: 4px; flex-wrap: wrap; }
+.chip { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 1px 7px; border-radius: 999px; background: var(--road); }
+.chip.urgent { background: var(--accent); color: var(--accent-ink); }
+.chip.vip { background: var(--mustard); color: #1a1e24; }
+.chip.etage { background: var(--ink); color: var(--bg); }
+.chip.groupe { background: var(--ok); color: #fff; }
+.order { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; }
+.order .on { font-weight: 700; font-size: 13.5px; }
+.order .od { font-size: 12px; color: var(--muted); }
+.order .acts { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; }
+.timer { font-family: var(--f-mono); font-weight: 600; font-size: 13px; padding: 2px 7px; border-radius: 999px; background: var(--road); white-space: nowrap; }
+.timer.low { background: var(--bad); color: #fff; }
+.timer.late { background: var(--ink); color: var(--bg); }
+.empty { color: var(--muted); font-size: 13px; margin: 0; }
+
+/* Sac vu de face */
+.bagwrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.bag { display: grid; gap: 3px; width: fit-content; max-width: 100%; padding: 6px 6px 0; background: var(--ink); border-radius: 10px 10px 0 0; }
+.bagfloor { width: 100%; max-width: 100%; height: 8px; background: var(--ink); border-radius: 0 0 6px 6px; position: relative; }
+.bagnote { font-size: 11px; color: var(--muted); }
+.bcell { width: 44px; height: 44px; border-radius: 5px; background: var(--road); position: relative; cursor: pointer; box-sizing: border-box; font-size: 9px; font-weight: 700; color: #fff; display: flex; align-items: flex-end; padding: 3px; line-height: 1.05; overflow: hidden; }
+@media (max-width: 420px) { .bcell { width: 38px; height: 38px; } }
+.bcell.full { background: var(--oc); }
+.bcell.hot::after, .bcell.cold::after { content: ""; position: absolute; top: 3px; right: 3px; width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid #fff; }
+.bcell.hot::after { background: var(--hot); }
+.bcell.cold::after { background: var(--cold); }
+.bcell.frag::before { content: ""; position: absolute; top: 3px; left: 3px; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 8px solid #fff; }
+.bcell.dmg { background-image: linear-gradient(135deg, transparent 46%, #fff 46% 54%, transparent 54%), linear-gradient(45deg, transparent 47%, #ffffffaa 47% 53%, transparent 53%); }
+.bcell.loose { box-shadow: inset 0 0 0 2px var(--mustard); }
+.bcell.g-ok { background: var(--ghost-ok); }
+.bcell.g-bad { background: var(--ghost-bad); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; color: var(--muted); margin-top: 6px; }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.held { margin-top: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border: 2px dashed var(--mustard); border-radius: 10px; padding: 8px; }
+.shape { display: grid; gap: 2px; }
+.shape i { width: 14px; height: 14px; border-radius: 3px; }
+.held .ht { flex: 1; min-width: 120px; font-size: 13px; }
+.held .ht b { display: block; }
+.feed { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.feed li { font-size: 13px; background: var(--road); border-radius: 10px; padding: 6px 9px; }
+.feed li .app { font-weight: 700; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); display: block; }
+.feed li.bad .app { color: var(--bad); }
+details summary { cursor: pointer; font-family: var(--f-display); font-weight: 600; font-size: 18px; }
+.rules { margin: 8px 0 0; padding-left: 18px; font-size: 13.5px; display: flex; flex-direction: column; gap: 4px; }
+
+/* Fenêtres */
+.overlay { position: absolute; inset: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 78%, transparent); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; padding: 10px; box-sizing: border-box; border-radius: 14px; }
+.modal { background: var(--panel); border: 2px solid var(--ink); border-radius: 16px; box-shadow: 0 5px 0 var(--ink); padding: 16px; width: 100%; max-width: 470px; max-height: 100%; overflow: auto; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; }
+.modal h3 { font-family: var(--f-display); font-weight: 700; font-size: 24px; margin: 0; line-height: 1.05; }
+.modal p { margin: 0; }
+.ledger { display: grid; grid-template-columns: 1fr auto; gap: 3px 12px; font-size: 14px; }
+.ledger .v { font-family: var(--f-mono); text-align: right; }
+.picks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 520px) { .picks { grid-template-columns: minmax(0, 1fr); } }
+.pick { text-align: left; border: 2px solid var(--line); background: var(--bg); border-radius: 12px; padding: 10px; cursor: pointer; display: flex; flex-direction: column; gap: 5px; }
+.pick:hover { border-color: var(--accent); }
+.pick .k { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+.pick .pn { font-family: var(--f-display); font-weight: 600; font-size: 16px; line-height: 1.1; }
+.pick .pd { font-size: 12.5px; color: var(--muted); }
+.row { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.modal.wide { max-width: 560px; }
+.side { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; background: var(--road); border-radius: 10px; padding: 8px; }
+.sidelab { font-size: 11.5px; font-weight: 700; color: var(--muted); }
+.sideitems { display: flex; flex-wrap: wrap; gap: 6px; }
+.sideitem { display: flex; align-items: center; gap: 6px; border: 1.5px solid var(--line); background: var(--panel); border-radius: 8px; padding: 5px 8px; cursor: pointer; font-size: 12px; font-weight: 700; }
+.sideitem:hover:not(:disabled) { border-color: var(--ink); }
+.sideitem:disabled { opacity: .5; cursor: default; }
+.picks.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 520px) { .picks.two { grid-template-columns: minmax(0, 1fr); } }
+.event { border: 1.5px dashed var(--accent); border-radius: 10px; padding: 8px 10px; font-size: 13px; display: flex; flex-direction: column; gap: 2px; }
+.event b { font-family: var(--f-display); font-weight: 600; font-size: 16px; }
+.event .k, .shopitem .k { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 700; display: block; }
+.shoplist { display: flex; flex-direction: column; gap: 6px; }
+.shopitem { display: flex; justify-content: space-between; align-items: center; gap: 10px; border: 1.5px solid var(--line); border-radius: 10px; padding: 7px 10px; }
+.shopitem > span { min-width: 0; }
+.shopitem b { display: block; font-size: 14px; }
+.shopitem .pd { font-size: 12px; color: var(--muted); display: block; }
+.shopitem .btn { flex: none; }
+.hudi b .txt { font-family: var(--f-body); font-size: 14px; font-weight: 700; text-transform: none; letter-spacing: 0; color: inherit; line-height: 1.6; }
+.hudi.evt { border-color: var(--accent); }
+.hudi.evt b { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .card { transition: none; } .map-wrap.shake { animation: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Dernier <span>Kilomètre</span><small>Livreur partenaire de l'appli Grailleo · 6 soirs pour garder ton compte</small></h1>
+    <div class="hud" id="hud"></div>
+  </header>
+  <div class="layout">
+    <section class="left">
+      <div class="map-wrap" id="mapwrap">
+        <div class="map" id="map" aria-label="Plan du quartier"></div>
+        <div id="overlay"></div>
+      </div>
+      <div class="handbar">
+        <div class="handtop">
+          <span class="mp" id="mp"></span>
+          <button class="btn go" id="end">Fin du tour</button>
+        </div>
+        <div class="hand" id="hand"></div>
+      </div>
+      <p class="hint" id="hint"></p>
+    </section>
+    <aside>
+      <div class="box">
+        <h2>Propositions <small id="acc"></small></h2>
+        <div class="accbar" id="accbar"><i></i></div>
+        <div class="offers" id="offers"></div>
+      </div>
+      <div class="box">
+        <h2>Le sac <small id="bagsize"></small></h2>
+        <div class="bagwrap"><div class="bag" id="bag"></div><div class="bagfloor" id="bagfloor"></div><span class="bagnote">Fond du sac</span></div>
+        <div class="legend"><span><i style="background:var(--hot)"></i>Chaud</span><span><i style="background:var(--cold)"></i>Froid</span><span>▲ Fragile : rien dessus</span><span><i style="background:transparent;box-shadow:inset 0 0 0 2px var(--mustard)"></i>Mal calé</span></div>
+        <div id="heldbox"></div>
+      </div>
+      <div class="box">
+        <h2>Courses acceptées <small>tours restants</small></h2>
+        <div class="orders" id="orders"></div>
+      </div>
+      <div class="box">
+        <h2>Notifications</h2>
+        <ul class="feed" id="feed"></ul>
+      </div>
+      <div class="box">
+        <details>
+          <summary>Règles</summary>
+          <ul class="rules">
+            <li><b>Propositions.</b> L'appli te propose des courses. Accepte ou refuse : chaque refus, et chaque proposition ignorée, fait baisser ton taux d'acceptation. Un taux bas, ce sont des courses moins payées et plus de VIP.</li>
+            <li><b>Déplacement.</b> Joue jusqu'à 2 cartes par tour pour gagner des pas, puis clique une case surlignée. Les cartes gratuites ne comptent pas.</li>
+            <li><b>Le sac.</b> Clique une colonne : le plat tombe au fond. On ne pose rien sur un plat fragile (▲). Le chaud et le froid ne se touchent pas. Quand tu livres un plat, ceux du dessus retombent, et ils écrasent un fragile s'ils atterrissent dessus.</li>
+            <li><b>Secousses.</b> Le sprint, le scooter et les pavés secouent le sac. Tout plat qui n'est pas calé à gauche et à droite (par la paroi ou un autre plat) est abîmé.</li>
+            <li><b>Livraison.</b> Passe sur la maison du client. Chaque tour d'avance rapporte 1 € de pourboire. Un plat abîmé ne rapporte pas de pourboire et coûte des étoiles.</li>
+            <li><b>Note.</b> Sous 4 étoiles, ton compte est désactivé.</li>
+            <li><b>Loyer.</b> Tes gains vont dans ton portefeuille. À la fin de chaque soir, tu paies le loyer : s'il te manque de l'argent, la partie est perdue. Entre deux soirs, la boutique vend cartes et équipements, avec ce même argent.</li>
+            <li><b>Profil et événements.</b> Tu choisis ton profil en début de partie. Chaque soir a son événement (pluie, match, grève…), annoncé la veille à la boutique. Tiens 6 soirs.</li>
+          </ul>
+        </details>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+const W = 8, H = 8, NIGHTS = 6, TURNS = 10, MAX_ACTIVE = 4;
+const RENT = [25, 35, 48, 62, 78, 95];
+const PROFILES = {
+  mule:     { n: "La mule", d: "Sac de 5 colonnes. Mais dès que 3 plats sont dans le sac, chaque carte de déplacement donne 1 pas de moins." },
+  sprinter: { n: "Le sprinteur", d: "Sac de 3 colonnes seulement. Tes cartes ne secouent jamais le sac, et tu commences avec un Sprint de plus." },
+  darling:  { n: "Le chouchou", d: "Pourboires doublés. Mais chaque problème (retard, plat abîmé, annulation) coûte 0,1 étoile de plus." },
+  combo:    { n: "Le roi du groupé", d: "Chaque livraison parfaite rapporte +3 € par livraison déjà faite dans le même tour." },
+};
+const EVENTS = {
+  calm:   { n: "Soir calme", d: "Rien de spécial ce soir." },
+  rain:   { n: "Soir de pluie", d: "Tout le monde commande : une proposition de plus par tour et +30 % de paie. Mais chaque carte de déplacement donne 1 pas de moins." },
+  match:  { n: "Soir de match", d: "Une proposition de plus par tour, et une sur deux est une commande groupée." },
+  strike: { n: "Grève des transports", d: "Les clients sont coincés chez eux : +2 tours de délai sur toutes les courses." },
+  works:  { n: "Nuit de travaux", d: "Les chantiers ont changé de place dans tout le quartier." },
+  heat:   { n: "Canicule", d: "Les plats froids paient +50 %, mais leur délai est réduit d'un tour." },
+};
+const PRICE = { c_scooter: 12, c_sprint: 8, c_wrong: 7, c_orange: 7, c_kebab: 6, c_strap: 6, c_call: 8, c_coffee: 7,
+  wide: 22, tall: 24, trim: 8, separator: 18, cupholder: 12, straps: 20, shocks: 16, battery: 30, ebike: 28, thermos: 16, gilet: 10, badge: 14, bonus: 18 };
+const OCOL = ["#e4572e", "#2f7fc4", "#23935a", "#9b55cf", "#d39a00", "#d0408a", "#3d8c8c"];
+const ICON = {
+  resto: '<path d="M3 11h18a9 9 0 0 1-18 0zM2 9h20v1.4H2zM8.5 2.5c1.1 1.4-.7 2.4.3 4.2H7.3c-1-1.7.9-2.8-.2-4.2zm4.5 0c1.1 1.4-.7 2.4.3 4.2h-1.5c-1-1.7.9-2.8-.2-4.2zm4.5 0c1.1 1.4-.7 2.4.3 4.2h-1.5c-1-1.7.9-2.8-.2-4.2z"/>',
+  house: '<path d="M3 11 12 4l9 7v10h-6v-6H9v6H3z"/>',
+  work: '<path d="M10 2h4l5.5 17h-15zM3 19h18v2.5H3z"/>',
+  base: '<path fill-rule="evenodd" d="M7 1.5h10A1.5 1.5 0 0 1 18.5 3v18a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 21V3A1.5 1.5 0 0 1 7 1.5zM7.5 4v14h9V4z"/>',
+  bike: '<path fill-rule="evenodd" d="M5.5 11a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zm13-2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM9 5h4v2h-1.2l1 2.5h4.5L16 6h2l3 8.5-1.8.6-1.7-4.6-4.6 5.5H9.8l2.9-2.8-1-2.7L7 15.6l-1.4-1.4 5-5L10.3 7H9z"/>',
+};
+const svg = k => `<svg class="ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${ICON[k]}</svg>`;
+
+const DISHES = {
+  burger: { n: "Menu burger", s: "Burger", cells: [[0,0],[1,0]], temp: "hot" },
+  soda:   { n: "Soda", s: "Soda", cells: [[0,0]], temp: "", frag: 1 },
+  pizza:  { n: "Pizza", s: "Pizza", cells: [[0,0],[1,0],[0,1],[1,1]], temp: "hot" },
+  sushi:  { n: "Plateau sushi", s: "Sushi", cells: [[0,0],[1,0],[2,0]], temp: "cold", frag: 1 },
+  poke:   { n: "Poke bowl", s: "Poke", cells: [[0,0],[1,0]], temp: "cold" },
+  tacos:  { n: "Tacos XL", s: "Tacos", cells: [[0,0],[1,0],[0,1]], temp: "hot" },
+  glace:  { n: "Pot de glace", s: "Glace", cells: [[0,0]], temp: "cold", frag: 1 },
+  family: { n: "Menu famille", s: "Famille", cells: [[0,0],[1,0],[2,0],[0,1],[1,1],[2,1]], temp: "hot" },
+};
+const RESTOS = {
+  burger:  { n: "Smash Corner", s: "Smash", c: "--r-burger", dishes: ["burger", "burger", "soda", "family"] },
+  pizza:   { n: "Pizzeria Nonna", s: "Nonna", c: "--r-pizza", dishes: ["pizza", "pizza", "soda"] },
+  sushi:   { n: "Maki Express", s: "Maki", c: "--r-sushi", dishes: ["sushi", "poke", "poke"] },
+  tacos:   { n: "Tacos Loco", s: "Loco", c: "--r-tacos", dishes: ["tacos", "tacos", "soda"] },
+  glacier: { n: "Glacier Polaire", s: "Polaire", c: "--r-glacier", dishes: ["glace", "glace", "poke"] },
+};
+const CARDS = {
+  ped2:     { n: "Pédaler", mv: 2, d: "2 pas." },
+  ped3:     { n: "Pédaler fort", mv: 3, d: "3 pas." },
+  orange:   { n: "Feu orange", mv: 2, d: "2 pas, +2 si tu as déjà joué une carte ce tour." },
+  sprint:   { n: "Sprint", mv: 5, shake: 1, fatigue: 1, d: "5 pas. Secoue le sac et ajoute une Fatigue à ta défausse.", risk: "Secousse" },
+  scooter:  { n: "Scooter de prêt", mv: 6, shake: 1, d: "6 pas. Secoue le sac.", risk: "Secousse" },
+  wrong:    { n: "Contresens", mv: 3, pass: 1, d: "3 pas, chantiers franchissables ce tour. Un client te signale : −0,1 étoile.", risk: "−0,1 ★" },
+  kebab:    { n: "Pause kebab", d: "0 pas. Pioche 3 cartes." },
+  call:     { n: "Coup de fil", d: "« J'arrive ! » Toutes tes courses gagnent 1 tour." },
+  coffee:   { n: "Café serré", free: 1, d: "Pioche 2 cartes." },
+  strap:    { n: "Caler le sac", free: 1, d: "La prochaine secousse de ce tour n'abîme rien." },
+  fatigue:  { n: "Fatigue", d: "Ne fait rien. La jouer pour t'en débarrasser compte comme une carte. Disparaît en fin de soirée." },
+};
+const START_DECK = ["ped2", "ped2", "ped2", "ped3", "ped3", "orange", "orange", "sprint", "call", "coffee"];
+const REWARDS = [
+  { id: "c_scooter", k: "Carte", n: "Scooter de prêt", d: "6 pas, mais secoue le sac.", card: "scooter" },
+  { id: "c_sprint", k: "Carte", n: "Sprint", d: "5 pas, secousse et fatigue.", card: "sprint" },
+  { id: "c_wrong", k: "Carte", n: "Contresens", d: "3 pas à travers les chantiers, −0,1 étoile.", card: "wrong" },
+  { id: "c_orange", k: "Carte", n: "Feu orange", d: "2 pas, +2 si ce n'est pas ta première carte du tour.", card: "orange" },
+  { id: "c_kebab", k: "Carte", n: "Pause kebab", d: "0 pas, pioche 3.", card: "kebab" },
+  { id: "c_strap", k: "Carte", n: "Caler le sac", d: "Gratuite : annule la prochaine secousse du tour.", card: "strap" },
+  { id: "c_call", k: "Carte", n: "Coup de fil", d: "Toutes tes courses gagnent 1 tour.", card: "call" },
+  { id: "c_coffee", k: "Carte", n: "Café serré", d: "Gratuite : pioche 2.", card: "coffee" },
+  { id: "wide", k: "Sac", n: "Sac plus large", d: "+1 colonne.", cond: () => S.bag.w < 6 },
+  { id: "tall", k: "Sac", n: "Sac plus haut", d: "+1 rangée.", cond: () => S.bag.h < 5 },
+  { id: "separator", k: "Équipement", n: "Séparateur isotherme", d: "Le chaud et le froid peuvent se toucher.", once: 1 },
+  { id: "cupholder", k: "Équipement", n: "Porte-gobelet", d: "Les sodas vont dans un support à part : pas de place, pas de secousse.", once: 1 },
+  { id: "straps", k: "Équipement", n: "Sangles", d: "Les secousses n'abîment plus que les plats fragiles.", once: 1 },
+  { id: "shocks", k: "Équipement", n: "Fourche suspendue", d: "Les pavés ne secouent plus le sac.", once: 1 },
+  { id: "battery", k: "Équipement", n: "Batterie longue durée", d: "Tu peux jouer 3 cartes par tour.", once: 1 },
+  { id: "ebike", k: "Équipement", n: "Vélo électrique", d: "+1 pas sur chaque carte qui donne des pas.", once: 1 },
+  { id: "thermos", k: "Équipement", n: "Sac isotherme pro", d: "Chaque course acceptée gagne 1 tour de délai.", once: 1 },
+  { id: "gilet", k: "Équipement", n: "Gilet fluo", d: "Le Contresens ne coûte plus d'étoile.", once: 1 },
+  { id: "badge", k: "Équipement", n: "Badge Superlivreur", d: "Plus de clients VIP, même avec un taux d'acceptation bas.", once: 1 },
+  { id: "bonus", k: "Équipement", n: "Compteur de primes", d: "+2 € par livraison à l'heure et intacte.", once: 1 },
+  { id: "trim", k: "Paquet", n: "Désencombrer", d: "Retire une carte Pédaler (2 pas) de ton paquet.", cond: () => S.deck.includes("ped2") },
+  { id: "resto", k: "Quartier", n: "Nouveau partenaire", d: "Un restaurant de plus ouvre dans le quartier.", cond: () => restoKindsLeft().length > 0 },
+];
+
+let S, busy = false, hover = null, bagHoverX = null, pathPreview = [], hlOffer = null;
+const rnd = n => Math.floor(Math.random() * n);
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const key = (x, y) => y * W + x;
+const xy = k => [k % W, Math.floor(k / W)];
+const has = u => S.up.includes(u);
+const pick1 = a => a[rnd(a.length)];
+
+/* ---------- Quartier ---------- */
+function bfs(from, ghost) {
+  const dist = Array(W * H).fill(Infinity), prev = Array(W * H).fill(-1);
+  dist[from] = 0; const q = [from];
+  while (q.length) {
+    const k = q.shift(), [x, y] = xy(k);
+    for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+      const nk = key(nx, ny);
+      if (dist[nk] !== Infinity || (S.map[nk].t === "work" && !ghost)) continue;
+      dist[nk] = dist[k] + 1; prev[nk] = k; q.push(nk);
+    }
+  }
+  return { dist, prev };
+}
+function genMap() {
+  for (let tries = 0; tries < 200; tries++) {
+    S.map = Array.from({ length: W * H }, () => ({ t: "road" }));
+    const base = key(3, 4);
+    S.map[base] = { t: "base" };
+    const free = shuffle([...Array(W * H).keys()].filter(k => k !== base));
+    for (const r of shuffle(Object.keys(RESTOS)).slice(0, 3)) S.map[free.pop()] = { t: "resto", r };
+    for (let i = 1; i <= 12; i++) S.map[free.pop()] = { t: "client", num: i };
+    for (let i = 0; i < 7; i++) S.map[free.pop()] = { t: "work" };
+    for (let i = 0; i < 6; i++) S.map[free.pop()] = { t: "road", pave: 1 };
+    const { dist } = bfs(base, false);
+    if (S.map.every((c, k) => c.t === "work" || dist[k] < Infinity)) { S.pos = base; return; }
+  }
+}
+function restoKindsLeft() { const used = S.map.filter(c => c.t === "resto").map(c => c.r); return Object.keys(RESTOS).filter(r => !used.includes(r)); }
+function addResto() {
+  const roads = S.map.map((c, k) => c.t === "road" && !c.pave && k !== S.pos ? k : -1).filter(k => k >= 0);
+  S.map[pick1(roads)] = { t: "resto", r: pick1(restoKindsLeft()) };
+}
+
+/* ---------- Cartes ---------- */
+function draw(n) {
+  for (let i = 0; i < n; i++) {
+    if (!S.drawPile.length) { S.drawPile = shuffle(S.discard); S.discard = []; }
+    if (!S.drawPile.length) return;
+    S.hand.push(S.drawPile.pop());
+  }
+}
+function fillHand() { let g = 0; while (S.hand.length < 4 && g++ < 10) draw(1); }
+const maxPlays = () => has("battery") ? 3 : 2;
+const bagCount = () => S.bag.items.length;
+const cardMv = (c, firstPlayed) => {
+  const d = CARDS[c]; if (!d.mv) return 0;
+  let mv = d.mv + (c === "orange" && firstPlayed ? 2 : 0) + (has("ebike") ? 1 : 0);
+  if (S.event === "rain") mv--;
+  if (S.profile === "mule" && bagCount() >= 3) mv--;
+  return Math.max(1, mv);
+};
+function playCard(i) {
+  if (busy || S.phase !== "play") return;
+  const c = S.hand[i], d = CARDS[c];
+  if (!d.free && S.plays >= maxPlays()) return;
+  const already = S.plays > 0;
+  S.hand.splice(i, 1);
+  if (c !== "fatigue") S.discard.push(c);
+  if (!d.free) S.plays++;
+  S.mp += cardMv(c, already);
+  if (d.pass) S.ghost = true;
+  if (c === "wrong" && !has("gilet")) { rate(-.1); note("« Un livreur à contresens a failli me renverser ! »", true, "Signalement"); }
+  if (c === "call") { S.orders.forEach(o => o.t++); note("Les clients patientent un tour de plus.", false, "Coup de fil"); }
+  if (c === "coffee") draw(2);
+  if (c === "kebab") draw(3);
+  if (c === "strap") S.braced = true;
+  if (d.fatigue) S.discard.push("fatigue");
+  if (d.shake && S.profile !== "sprinter") shake(d.n);
+  deliverHere(); render();
+}
+
+/* ---------- Propositions de l'appli ---------- */
+const accMult = () => .6 + .4 * S.acc / 100;
+const activeCount = () => S.orders.length;
+function freeClients(exclude = []) {
+  const busyC = S.orders.map(o => o.client).concat(S.offers.flatMap(of => of.parts.map(p => p.client))).concat(exclude);
+  return S.map.map((c, k) => c.t === "client" && !busyC.includes(k) ? k : -1).filter(k => k >= 0);
+}
+function makeOffer() {
+  const restos = S.map.map((c, k) => c.t === "resto" ? k : -1).filter(k => k >= 0);
+  const rk = pick1(restos), kind = S.map[rk].r, dist = bfs(rk, false).dist;
+  const group = Math.random() < (S.event === "match" ? .5 : .22), n = group ? 2 : 1;
+  const vipOk = S.acc >= 70 || has("badge");
+  const mods = { urgent: Math.random() < .22, etage: Math.random() < .2, vip: vipOk && Math.random() < (has("badge") ? .3 : .18), groupe: group };
+  const parts = []; let used = [];
+  for (let i = 0; i < n; i++) {
+    let cl = freeClients(used); if (!cl.length) break;
+    if (i === 1) cl = cl.sort((a, b) => manh(a, parts[0].client) - manh(b, parts[0].client)).slice(0, 3);
+    const ck = pick1(cl); used.push(ck);
+    const dish = pick1(RESTOS[kind].dishes), d = dist[ck];
+    const cold = DISHES[dish].temp === "cold";
+    let t = Math.ceil(d / 3) + 3; if (mods.urgent) t = Math.max(2, t - 2);
+    if (S.event === "strike") t += 2;
+    if (S.event === "heat" && cold) t = Math.max(2, t - 1);
+    let pay = DISHES[dish].cells.length * 3 + 2 + Math.ceil(d / 2);
+    pay = Math.round(pay * accMult() * (mods.urgent ? 2 : 1) * (group ? 1.3 : 1) * (S.event === "rain" ? 1.3 : 1) * (S.event === "heat" && cold ? 1.5 : 1));
+    parts.push({ dish, client: ck, t, pay });
+  }
+  if (!parts.length) return null;
+  if (parts.length < 2) mods.groupe = false;
+  return { id: S.nextOffer++, rest: rk, parts, mods };
+}
+function manh(a, b) { const [ax, ay] = xy(a), [bx, by] = xy(b); return Math.abs(ax - bx) + Math.abs(ay - by); }
+function refillOffers() {
+  const cap = (S.night >= 3 ? 3 : 2) + (S.event === "rain" || S.event === "match" ? 1 : 0);
+  let g = 0;
+  while (S.offers.length < cap && g++ < 6) { const o = makeOffer(); if (o) S.offers.push(o); }
+}
+function freeColor() { const used = S.orders.map(o => o.col); return OCOL.find(c => !used.includes(c)) || pick1(OCOL); }
+function accept(id) {
+  const of = S.offers.find(o => o.id === id); if (!of || S.phase !== "play") return;
+  if (activeCount() + of.parts.length > MAX_ACTIVE) return;
+  S.offers = S.offers.filter(o => o !== of);
+  S.acc = Math.min(100, S.acc + 5);
+  for (const p of of.parts) S.orders.push({ id: S.nextId++, dish: p.dish, rest: of.rest, client: p.client, t: p.t + (has("thermos") ? 1 : 0), pay: p.pay, col: freeColor(), state: "wait", mods: { ...of.mods }, dmg: false });
+  hlOffer = null; render();
+}
+function refuse(id) {
+  const of = S.offers.find(o => o.id === id); if (!of || S.phase !== "play") return;
+  S.offers = S.offers.filter(o => o !== of); S.acc = Math.max(0, S.acc - 10);
+  hlOffer = null; render();
+}
+
+/* ---------- Sac ---------- */
+function occupancy(skip) { const occ = {}; for (const it of S.bag.items) if (it.oid !== skip) for (const [x, y] of it.cells) occ[key(x, y)] = it.oid; return occ; }
+const orderById = id => S.orders.find(o => o.id === id);
+const norm = cells => { const mx = Math.min(...cells.map(c => c[0])), my = Math.min(...cells.map(c => c[1])); return cells.map(([x, y]) => [x - mx, y - my]); };
+const shapeW = s => Math.max(...s.map(c => c[0])) + 1;
+function dropCells(shape, ax) {
+  const occ = occupancy();
+  const fits = y => shape.every(([a, b]) => { const x = a + ax, yy = b + y; return x >= 0 && x < S.bag.w && yy >= 0 && yy < S.bag.h && occ[key(x, yy)] == null; });
+  if (!fits(0)) return null;
+  let y = 0; while (fits(y + 1)) y++;
+  return shape.map(([a, b]) => [a + ax, b + y]);
+}
+function placeProblem(cells, oid) {
+  if (!cells) return "Plus de place dans cette colonne.";
+  const occ = occupancy(), d = DISHES[orderById(oid).dish];
+  for (const [x, y] of cells) {
+    const below = occ[key(x, y + 1)];
+    if (y + 1 < S.bag.h && below != null && DISHES[orderById(below).dish].frag) return "On ne pose rien sur un plat fragile.";
+  }
+  if (d.temp && !has("separator")) {
+    const opp = d.temp === "hot" ? "cold" : "hot";
+    for (const [x, y] of cells) for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const nx = x + dx, ny = y + dy; if (nx < 0 || nx >= S.bag.w || ny < 0 || ny >= S.bag.h) continue;
+      const o = occ[key(nx, ny)];
+      if (o != null && DISHES[orderById(o).dish].temp === opp) return "Le chaud et le froid ne doivent pas se toucher.";
+    }
+  }
+  return null;
+}
+function isLoose(it, occ) {
+  if (!it.cells.length) return false;
+  const left = it.cells.some(([x, y]) => x === 0 || (occ[key(x - 1, y)] != null && occ[key(x - 1, y)] !== it.oid));
+  const right = it.cells.some(([x, y]) => x === S.bag.w - 1 || (occ[key(x + 1, y)] != null && occ[key(x + 1, y)] !== it.oid));
+  return !(left && right);
+}
+function hasOnTop(it, occ) { return it.cells.some(([x, y]) => { const o = occ[key(x, y - 1)]; return y > 0 && o != null && o !== it.oid; }); }
+function shake(src) {
+  const wrap = document.getElementById("mapwrap"); wrap.classList.remove("shake"); void wrap.offsetWidth; wrap.classList.add("shake");
+  if (S.braced) { S.braced = false; note(`${src} : le sac était calé, rien n'a bougé.`, false, "Secousse"); return; }
+  const occ = occupancy(), hurt = [];
+  for (const it of S.bag.items) {
+    const o = orderById(it.oid);
+    if (o.dmg || !isLoose(it, occ)) continue;
+    if (has("straps") && !DISHES[o.dish].frag) continue;
+    o.dmg = true; hurt.push(`${DISHES[o.dish].n} (${o.id})`);
+  }
+  if (hurt.length) note(`${src} : ${hurt.join(", ")} abîmé${hurt.length > 1 ? "s" : ""}.`, true, "Secousse");
+  else if (S.bag.items.length) note(`${src} : tout est bien calé.`, false, "Secousse");
+}
+function rotateHeld() { if (S.held) { S.held.shape = norm(S.held.shape.map(([x, y]) => [-y, x])); render(); } }
+function takeOrder(id) {
+  const o = orderById(id); if (!o || o.state !== "wait" || o.rest !== S.pos || S.held || busy) return;
+  if (o.dish === "soda" && has("cupholder")) { o.state = "bag"; S.bag.items.push({ oid: id, cells: [] }); note("Soda calé dans le porte-gobelet.", false, "Sac"); deliverHere(); render(); return; }
+  o.state = "held"; S.held = { oid: id, shape: norm(DISHES[o.dish].cells), from: "resto" };
+  render();
+}
+function placeHeld(x) {
+  if (!S.held) return;
+  const ax = Math.min(x, S.bag.w - shapeW(S.held.shape));
+  const cells = dropCells(S.held.shape, ax), prob = placeProblem(cells, S.held.oid);
+  if (prob) { note(prob, true, "Sac"); render(); return; }
+  S.bag.items.push({ oid: S.held.oid, cells });
+  orderById(S.held.oid).state = "bag"; S.held = null; bagHoverX = null;
+  deliverHere(); render();
+}
+function liftFromBag(oid) {
+  if (S.held || busy || S.phase !== "play") return;
+  const it = S.bag.items.find(i => i.oid === oid); if (!it || !it.cells.length) return;
+  if (hasOnTop(it, occupancy())) { note("Un autre plat est posé dessus : retire-le d'abord.", true, "Sac"); render(); return; }
+  S.bag.items = S.bag.items.filter(i => i !== it);
+  orderById(oid).state = "held"; S.held = { oid, shape: norm(it.cells), from: "bag", prev: it.cells };
+  render();
+}
+function cancelHeld() {
+  if (!S.held) return;
+  const o = orderById(S.held.oid);
+  if (S.held.from === "resto") o.state = "wait";
+  else if (S.held.from === "side") { S.side.push({ oid: o.id, shape: S.held.shape }); o.state = "side"; }
+  else { S.bag.items.push({ oid: o.id, cells: S.held.prev }); o.state = "bag"; }
+  S.held = null; render();
+}
+/* Poser un plat à côté du sac le temps de réorganiser. Impossible de repartir tant que quelque chose traîne à côté. */
+function setAside() {
+  if (!S.held) return;
+  const o = orderById(S.held.oid);
+  S.side.push({ oid: o.id, shape: S.held.shape }); o.state = "side"; S.held = null; bagHoverX = null;
+  render();
+}
+function takeFromSide(oid) {
+  if (S.held || busy || S.phase !== "play") return;
+  const it = S.side.find(s => s.oid === oid); if (!it) return;
+  S.side = S.side.filter(s => s !== it);
+  orderById(oid).state = "held"; S.held = { oid, shape: it.shape, from: "side" };
+  render();
+}
+const sorting = () => !!S.held || S.side.length > 0;
+
+/* ---------- Livraisons ---------- */
+function removeOrder(o) {
+  const inBag = S.bag.items.some(i => i.oid === o.id && i.cells.length);
+  S.orders = S.orders.filter(x => x !== o); S.bag.items = S.bag.items.filter(i => i.oid !== o.id);
+  if (S.held && S.held.oid === o.id) S.held = null;
+  S.side = S.side.filter(s => s.oid !== o.id);
+  if (inBag) settle();
+}
+/* Gravité : après une sortie du sac, les plats du dessus tombent. Un plat qui atterrit sur un fragile l'écrase. */
+function settle() {
+  const bottom = it => Math.max(...it.cells.map(c => c[1]));
+  let moved = true, fell = false;
+  while (moved) {
+    moved = false;
+    for (const it of S.bag.items.filter(i => i.cells.length).sort((a, b) => bottom(b) - bottom(a))) {
+      const occ = occupancy(it.oid);
+      if (it.cells.every(([x, y]) => y + 1 < S.bag.h && occ[key(x, y + 1)] == null)) { it.cells = it.cells.map(([x, y]) => [x, y + 1]); moved = fell = true; }
+    }
+  }
+  if (!fell) return;
+  const occ = occupancy(), crushed = [];
+  for (const it of S.bag.items) {
+    const o = orderById(it.oid);
+    if (o && DISHES[o.dish].frag && !o.dmg && hasOnTop(it, occ)) { o.dmg = true; crushed.push(`${DISHES[o.dish].n} (${o.id})`); }
+  }
+  note(crushed.length ? `Les plats du dessus sont retombés et ont écrasé : ${crushed.join(", ")}.` : "Les plats du dessus sont retombés au fond du sac.", crushed.length > 0, "Sac");
+}
+const penalty = () => S.profile === "darling" ? -.1 : 0;
+function rate(d) { S.rating = Math.max(0, Math.min(5, Math.round((S.rating + d) * 10) / 10)); }
+function deliverHere() {
+  for (const o of [...S.orders]) {
+    if (o.state !== "bag" || o.client !== S.pos) continue;
+    if (o.mods.etage) {
+      if (S.mp < 1) { if (!o.warned) { note(`N° ${S.map[o.client].num} : 5ᵉ étage sans ascenseur. Il te faut 1 pas pour monter.`, false, "Livraison"); o.warned = 1; } continue; }
+      S.mp--;
+    }
+    removeOrder(o); S.delivered++;
+    const num = S.map[o.client].num, vip = o.mods.vip, extra = penalty();
+    let pay, msg, bad = false;
+    if (o.t < 0) { pay = Math.ceil(o.pay / 2); rate((vip ? -.5 : -.3) + extra); msg = `Livré en retard au n° ${num} : ${pay} €. « Tout était froid. » ★★`; bad = true; }
+    else if (o.dmg) { pay = o.pay; rate((vip ? -.5 : -.2) + extra); msg = `Livré abîmé au n° ${num} : ${pay} €, pas de pourboire. « Le ${DISHES[o.dish].s.toLowerCase()} a voyagé. » ★★★`; bad = true; }
+    else {
+      const tip = o.t * (vip ? 2 : 1) * (S.profile === "darling" ? 2 : 1);
+      const bonus = (has("bonus") ? 2 : 0) + (S.profile === "combo" ? 3 * S.turnDel : 0);
+      S.turnDel++;
+      pay = o.pay + tip + bonus; rate(vip ? .2 : .1);
+      msg = `Livré au n° ${num} : ${o.pay} € + ${tip} € de pourboire${bonus ? ` + ${bonus} € de prime` : ""}. « Parfait ! » ★★★★★`;
+    }
+    S.money += pay; S.earn += pay; note(msg, bad, vip ? "Client VIP" : "Livraison");
+  }
+}
+
+/* ---------- Déplacement ---------- */
+function reachable() { if (S.mp <= 0 || busy || S.phase !== "play" || sorting()) return null; return bfs(S.pos, S.ghost); }
+function moveTo(target) {
+  const r = reachable(); if (!r || r.dist[target] > S.mp || target === S.pos) return;
+  const path = []; for (let k = target; k !== S.pos; k = r.prev[k]) path.unshift(k);
+  busy = true; pathPreview = [];
+  let shaken = false;
+  const step = () => {
+    S.pos = path.shift(); S.mp--;
+    if (S.map[S.pos].pave && !has("shocks") && !shaken) { shaken = true; shake("Pavés"); }
+    deliverHere(); render();
+    if (path.length && S.mp > 0) setTimeout(step, 120); else { busy = false; render(); }
+  };
+  step();
+}
+
+/* ---------- Tours et soirées ---------- */
+function endTurn() {
+  if (busy || S.phase !== "play") return;
+  if (S.held && S.held.from !== "side") cancelHeld();
+  if (sorting()) { note("Des plats sont posés à côté du sac. Range-les avant de finir le tour.", true, "Sac"); render(); return; }
+  if (S.offers.length) { S.acc = Math.max(0, S.acc - 5 * S.offers.length); note(`${S.offers.length} proposition${S.offers.length > 1 ? "s" : ""} ignorée${S.offers.length > 1 ? "s" : ""}. Ton taux d'acceptation baisse.`, true, "Grailleo"); }
+  S.offers = [];
+  for (const o of [...S.orders]) {
+    o.t--;
+    if (o.t < -2) { removeOrder(o); rate(-.5 + penalty()); note(`Le client du n° ${S.map[o.client].num} a annulé sa commande.`, true, "Annulation"); }
+  }
+  S.turn++; S.mp = 0; S.plays = 0; S.ghost = false; S.braced = false; S.turnDel = 0;
+  if (S.rating < 4) { S.phase = "over"; S.lose = "rating"; render(); return; }
+  if (S.turn > TURNS) return endNight();
+  refillOffers(); fillHand(); render();
+}
+function endNight() {
+  const left = S.orders.length, rent = RENT[S.night - 1];
+  S.summary = { earn: S.earn, rent, left, before: S.rating };
+  if (left) rate(-.2 * left);
+  const paid = S.money >= rent;
+  S.summary.short = paid ? 0 : rent - S.money;
+  S.money = paid ? S.money - rent : 0;
+  S.summary.after = S.rating; S.summary.paid = paid; S.total += S.earn;
+  S.orders = []; S.offers = []; S.bag.items = []; S.held = null; S.side = []; S.hand = [];
+  S.pos = S.map.findIndex(c => c.t === "base");
+  if (!paid) { S.phase = "over"; S.lose = "rent"; }
+  else if (S.rating < 4) { S.phase = "over"; S.lose = "rating"; }
+  else if (S.night >= NIGHTS) S.phase = "win";
+  else {
+    S.phase = "draft";
+    S.draft = shuffle(REWARDS.filter(r => r.k !== "Équipement" && (!r.cond || r.cond()))).slice(0, 3).map(r => r.id);
+    S.nextEvent = pick1(Object.keys(EVENTS).filter(e => e !== "calm"));
+  }
+  render();
+}
+function applyReward(id) {
+  const r = REWARDS.find(x => x.id === id);
+  if (r.card) S.deck.push(r.card);
+  else if (id === "wide") S.bag.w++;
+  else if (id === "tall") S.bag.h++;
+  else if (id === "trim") S.deck.splice(S.deck.indexOf("ped2"), 1);
+  else if (id === "resto") addResto();
+  else S.up.push(id);
+}
+function takeReward(id) { applyReward(id); openShop(); }
+function openShop() {
+  const cards = shuffle(REWARDS.filter(r => r.card)).slice(0, 3);
+  const eq = shuffle(REWARDS.filter(r => r.k === "Équipement" && !has(r.id))).slice(0, 2);
+  const bag = shuffle(REWARDS.filter(r => r.k === "Sac" && r.cond())).slice(0, 1);
+  const svc = REWARDS.filter(r => r.id === "trim" && r.cond());
+  S.shop = [...eq, ...bag, ...cards, ...svc].map(r => ({ id: r.id, p: PRICE[r.id], sold: false }));
+  S.phase = "shop"; render();
+}
+function buy(id) {
+  const it = S.shop.find(x => x.id === id && !x.sold); if (!it || S.money < it.p) return;
+  const r = REWARDS.find(x => x.id === id);
+  if (r.cond && !r.cond()) return;
+  S.money -= it.p; it.sold = true; applyReward(id); render();
+}
+function relocateWorks() {
+  const saved = S.map.map(c => ({ ...c })), n = saved.filter(c => c.t === "work").length;
+  for (let tries = 0; tries < 100; tries++) {
+    S.map = saved.map(c => c.t === "work" ? { t: "road" } : { ...c });
+    const roads = shuffle(S.map.map((c, k) => c.t === "road" && !c.pave && k !== S.pos ? k : -1).filter(k => k >= 0));
+    for (let i = 0; i < n; i++) S.map[roads[i]] = { t: "work" };
+    const { dist } = bfs(S.pos, false);
+    if (S.map.every((c, k) => c.t === "work" || dist[k] < Infinity)) return;
+  }
+  S.map = saved;
+}
+function startNight(n) {
+  Object.assign(S, { night: n, turn: 1, earn: 0, mp: 0, plays: 0, ghost: false, braced: false, turnDel: 0, phase: "play", draft: null, offers: [], shop: null });
+  S.event = n === 1 ? "calm" : (S.nextEvent || "calm");
+  if (S.event === "works") relocateWorks();
+  S.drawPile = shuffle([...S.deck]); S.discard = []; S.hand = [];
+  note(`Soir ${n} · ${EVENTS[S.event].n}. ${S.event !== "calm" ? EVENTS[S.event].d + " " : ""}Loyer à payer ce soir : ${RENT[n - 1]} €.`, false, "Grailleo");
+  refillOffers(); fillHand(); render();
+}
+function chooseProfile(id) {
+  S.profile = id;
+  if (id === "mule") S.bag.w = 5;
+  if (id === "sprinter") { S.bag.w = 3; S.deck.push("sprint"); }
+  startNight(1);
+}
+function newGame() {
+  S = { v: 3, night: 1, turn: 1, rating: 5, acc: 100, money: 0, earn: 0, total: 0, delivered: 0, map: [], pos: 0,
+        deck: [...START_DECK], drawPile: [], discard: [], hand: [], plays: 0, mp: 0, ghost: false, braced: false, turnDel: 0,
+        bag: { w: 4, h: 3, items: [] }, held: null, side: [], orders: [], offers: [], nextId: 1, nextOffer: 1, up: [], feed: [],
+        phase: "profile", draft: null, summary: null, shop: null, profile: null, event: "calm", nextEvent: null, lose: null };
+  genMap(); render();
+}
+function note(t, bad, app) { S.feed.unshift({ t, bad: !!bad, app: app || "Grailleo" }); S.feed = S.feed.slice(0, 6); }
+
+/* ---------- Rendu ---------- */
+const stars = r => { const f = Math.round(r); return "★".repeat(f) + "☆".repeat(5 - f); };
+function modChips(m) {
+  const c = [];
+  if (m.urgent) c.push('<span class="chip urgent">Urgent ×2</span>');
+  if (m.groupe) c.push('<span class="chip groupe">Groupée +30 %</span>');
+  if (m.vip) c.push('<span class="chip vip">VIP</span>');
+  if (m.etage) c.push('<span class="chip etage">5ᵉ étage</span>');
+  return c.length ? `<div class="chips">${c.join("")}</div>` : "";
+}
+function renderHud() {
+  const rent = RENT[Math.min(S.night, NIGHTS) - 1], live = S.phase === "play";
+  const items = [
+    ["Soir", `${S.night}/${NIGHTS}`, ""],
+    ["Tour", `${Math.min(S.turn, TURNS)}/${TURNS}`, S.turn >= TURNS - 1 && live ? "warn" : ""],
+    ["Note", `<span class="stars">${stars(S.rating)}</span> ${S.rating.toFixed(1)}`, S.rating < 4.4 ? "warn" : ""],
+    ["Portefeuille", `${S.money} €`, live && S.money >= rent ? "good" : ""],
+    ["Loyer ce soir", `${rent} €`, live && S.money < rent && S.turn >= TURNS - 2 ? "warn" : ""],
+  ];
+  if (S.profile) items.push(["Profil", `<span class="txt">${PROFILES[S.profile].n}</span>`, ""]);
+  if (S.phase !== "profile") items.push(["Ce soir", `<span class="txt" title="${EVENTS[S.event].d}">${EVENTS[S.event].n}</span>`, S.event !== "calm" ? "evt" : ""]);
+  document.getElementById("hud").innerHTML = items.map(([a, b, c]) => `<div class="hudi ${c}"><span>${a}</span><b>${b}</b></div>`).join("");
+}
+function renderMap() {
+  const r = reachable();
+  const of = hlOffer != null ? S.offers.find(o => o.id === hlOffer) : null;
+  const hl = of ? [of.rest, ...of.parts.map(p => p.client)] : [];
+  let h = "";
+  for (let k = 0; k < W * H; k++) {
+    const c = S.map[k];
+    let cls = "cell t-" + c.t + (c.pave ? " pave" : ""), style = "", inner = "", aria;
+    if (c.t === "resto") { style = `--rc:var(${RESTOS[c.r].c})`; inner = svg("resto") + `<span class="lb">${RESTOS[c.r].s}</span>`; aria = RESTOS[c.r].n; }
+    else if (c.t === "client") { inner = svg("house") + `<span class="lb">n° ${c.num}</span>`; aria = "Client n° " + c.num; }
+    else if (c.t === "work") { inner = svg("work"); aria = "Chantier"; }
+    else if (c.t === "base") { inner = svg("base") + `<span class="lb">Base</span>`; aria = "Point de départ"; }
+    else aria = c.pave ? "Rue pavée" : "Rue";
+    if (r && r.dist[k] <= S.mp && k !== S.pos) cls += " reach";
+    if (pathPreview.includes(k)) cls += " path";
+    if (hl.includes(k)) cls += " hl";
+    const pins = S.orders.filter(o => (o.state === "wait" && o.rest === k) || (o.state !== "wait" && o.client === k))
+      .map(o => `<span class="pin${o.state !== "wait" ? " dest" : ""}" style="background:${o.col}">${o.id}</span>`).join("");
+    h += `<div class="${cls}" style="${style}" data-k="${k}" role="button" tabindex="-1" aria-label="${aria}">${inner}${pins ? `<span class="pins">${pins}</span>` : ""}${S.pos === k ? `<span class="courier">${svg("bike")}</span>` : ""}</div>`;
+  }
+  document.getElementById("map").innerHTML = h;
+}
+function renderHand() {
+  const play = S.phase === "play" && !busy;
+  document.getElementById("hand").innerHTML = S.hand.map((c, i) => {
+    const d = CARDS[c], blocked = !play || (!d.free && S.plays >= maxPlays());
+    const mv = cardMv(c, S.plays > 0);
+    const tags = (d.free ? '<span class="tag free">Gratuite</span>' : "") + (d.risk ? `<span class="tag risk">${d.risk}</span>` : "");
+    return `<button class="card${c === "fatigue" ? " fatigue" : ""}" data-c="${i}" ${blocked ? "disabled" : ""}><span class="cv">${mv ? mv + " pas" : c === "fatigue" ? "…" : "★"}</span><span class="cn">${d.n}</span><span class="cd">${d.d}</span>${tags}</button>`;
+  }).join("") || `<p class="empty">Plus de cartes en main. Termine le tour pour repiocher.</p>`;
+  document.getElementById("mp").innerHTML = `Pas : <b>${S.mp}</b> · cartes ${S.plays}/${maxPlays()}${S.ghost ? " · chantiers franchissables" : ""}${S.braced ? " · sac calé" : ""} · pioche ${S.drawPile.length}`;
+  document.getElementById("end").disabled = !play;
+  document.getElementById("end").textContent = S.turn >= TURNS ? "Finir la soirée" : "Fin du tour";
+}
+function renderOffers() {
+  const low = S.acc < 70;
+  document.getElementById("acc").textContent = `Taux d'acceptation ${S.acc} %`;
+  const bar = document.getElementById("accbar"); bar.classList.toggle("low", low); bar.firstElementChild.style.width = S.acc + "%";
+  const el = document.getElementById("offers");
+  if (!S.offers.length) { el.innerHTML = `<p class="empty">Pas de nouvelle proposition. D'autres arrivent au prochain tour.</p>`; return; }
+  el.innerHTML = S.offers.map(of => {
+    const rs = RESTOS[S.map[of.rest].r], total = of.parts.reduce((a, p) => a + p.pay, 0), t = Math.min(...of.parts.map(p => p.t));
+    const full = activeCount() + of.parts.length > MAX_ACTIVE;
+    const what = of.parts.map(p => `${DISHES[p.dish].n} → n° ${S.map[p.client].num}`).join(" · ");
+    return `<div class="offer" data-offer="${of.id}"><div class="top"><span class="on">${rs.n}</span><span class="price">${total} € · ${t} t</span></div>
+      <div class="od">${what}</div>${modChips(of.mods)}
+      <div class="acts"><button class="btn sm yes" data-accept="${of.id}" ${full || S.phase !== "play" ? "disabled" : ""}>Accepter</button><button class="btn sm" data-refuse="${of.id}" ${S.phase !== "play" ? "disabled" : ""}>Refuser</button>${full ? `<span class="od">${MAX_ACTIVE} courses max en même temps</span>` : ""}</div></div>`;
+  }).join("");
+}
+function shapeHTML(shape, col) {
+  const w = shapeW(shape), h = Math.max(...shape.map(c => c[1])) + 1;
+  let s = ""; for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) s += `<i style="background:${shape.some(c => c[0] === x && c[1] === y) ? col : "transparent"}"></i>`;
+  return `<div class="shape" style="grid-template-columns:repeat(${w},14px)">${s}</div>`;
+}
+function renderBag() {
+  const occ = occupancy(), first = {};
+  for (const it of S.bag.items) if (it.cells.length) { const f = [...it.cells].sort((a, b) => a[1] - b[1] || a[0] - b[0])[0]; first[key(f[0], f[1])] = it.oid; }
+  const loose = new Set(S.bag.items.filter(it => isLoose(it, occ)).map(it => it.oid));
+  let ghost = [], gok = false;
+  if (S.held && bagHoverX != null) {
+    const ax = Math.min(bagHoverX, S.bag.w - shapeW(S.held.shape)), cells = dropCells(S.held.shape, ax);
+    if (cells) { ghost = cells.map(([x, y]) => key(x, y)); gok = !placeProblem(cells, S.held.oid); }
+  }
+  let h = "";
+  for (let y = 0; y < S.bag.h; y++) for (let x = 0; x < S.bag.w; x++) {
+    const k = key(x, y), oid = occ[k];
+    let cls = "bcell", style = "", txt = "";
+    if (oid != null) {
+      const o = orderById(oid), d = DISHES[o.dish];
+      cls += " full " + d.temp + (d.frag ? " frag" : "") + (o.dmg ? " dmg" : "") + (loose.has(oid) && !o.dmg ? " loose" : "");
+      style = `--oc:${o.col}`; if (first[k] === oid) txt = `${o.id}·${d.s}`;
+    }
+    if (ghost.includes(k)) cls += gok ? " g-ok" : " g-bad";
+    h += `<div class="${cls}" style="${style}" data-x="${x}" data-y="${y}" role="button" tabindex="0" aria-label="Sac, colonne ${x + 1}, rangée ${y + 1}${oid != null ? ", commande " + oid : ", libre"}">${txt}</div>`;
+  }
+  const bag = document.getElementById("bag");
+  bag.style.gridTemplateColumns = `repeat(${S.bag.w}, auto)`; bag.innerHTML = h;
+  document.getElementById("bagfloor").style.width = bag.offsetWidth + "px";
+  const cups = S.bag.items.filter(i => !i.cells.length).length;
+  document.getElementById("bagsize").textContent = `${S.bag.w}×${S.bag.h}${cups ? ` · ${cups} au porte-gobelet` : ""}`;
+  const hb = document.getElementById("heldbox");
+  if (S.held) {
+    const o = orderById(S.held.oid), d = DISHES[o.dish];
+    hb.innerHTML = `<div class="held">${shapeHTML(S.held.shape, o.col)}<div class="ht"><b>${d.n}</b>${d.temp === "hot" ? "Chaud" : d.temp === "cold" ? "Froid" : "Ni chaud ni froid"}${d.frag ? " · fragile" : ""} · clique une colonne</div>
+      <button class="btn sm" id="rot">Pivoter (R)</button><button class="btn sm" id="aside">Poser à côté</button><button class="btn sm" id="cancel">${S.held.from === "resto" ? "Laisser au resto" : S.held.from === "side" ? "Reposer à côté" : "Remettre en place"}</button></div>`;
+  } else hb.innerHTML = "";
+  if (S.side.length) {
+    hb.innerHTML += `<div class="side"><span class="sidelab">À côté du sac · clique un plat pour le reprendre</span><div class="sideitems">${S.side.map(s => {
+      const o = orderById(s.oid);
+      return `<button class="sideitem" data-side="${s.oid}" ${S.held ? "disabled" : ""}>${shapeHTML(s.shape, o.col)}<span>${o.id}·${DISHES[o.dish].s}</span></button>`;
+    }).join("")}</div></div>`;
+  }
+}
+function renderOrders() {
+  const el = document.getElementById("orders");
+  if (!S.orders.length) { el.innerHTML = `<p class="empty">Aucune course en cours. Accepte une proposition.</p>`; return; }
+  el.innerHTML = S.orders.map(o => {
+    const d = DISHES[o.dish], rs = RESTOS[S.map[o.rest].r];
+    const state = o.state === "wait" ? `À récupérer chez ${rs.n}` : o.state === "held" ? "En train de ranger" : o.state === "side" ? "Posé à côté du sac" : o.dmg ? "Dans le sac, abîmé" : "Dans le sac";
+    const tcls = o.t < 0 ? "late" : o.t <= 1 ? "low" : "";
+    const canTake = o.state === "wait" && o.rest === S.pos && !S.held && !busy && S.phase === "play";
+    return `<div class="order"><span class="pin" style="background:${o.col}">${o.id}</span>
+      <div><div class="on">${d.n} → n° ${S.map[o.client].num}</div><div class="od">${state} · ${o.pay} €</div>${modChips(o.mods)}</div>
+      <span class="timer ${tcls}">${o.t < 0 ? "Retard" : o.t + " t"}</span>
+      ${canTake ? `<div class="acts"><button class="btn sm yes" data-take="${o.id}">Prendre le plat</button></div>` : ""}</div>`;
+  }).join("");
+}
+function renderFeed() { document.getElementById("feed").innerHTML = S.feed.map(f => `<li class="${f.bad ? "bad" : ""}"><span class="app">${f.app}</span>${f.t}</li>`).join(""); }
+function renderHint() {
+  const h = document.getElementById("hint");
+  if (S.held) h.textContent = "Clique une colonne du sac : le plat tombe au fond. Ou pose-le à côté le temps de réorganiser.";
+  else if (S.side.length) h.textContent = "Des plats sont posés à côté du sac : range-les avant de repartir.";
+  else if (S.orders.some(o => o.state === "wait" && o.rest === S.pos)) h.textContent = "Tu es devant un restaurant : prends le plat dans tes courses acceptées.";
+  else if (S.mp > 0) h.textContent = "Clique une case surlignée. Les pavés secouent le sac. Tu livres en passant chez le client.";
+  else if (S.offers.length) h.textContent = "Accepte ou refuse les propositions, puis joue tes cartes pour avancer.";
+  else h.textContent = `Joue jusqu'à ${maxPlays()} cartes pour avancer, puis termine le tour.`;
+}
+function renderOverlay() {
+  const o = document.getElementById("overlay"), sum = S.summary;
+  const ledger = sum ? `<div class="ledger"><span>Gains du soir</span><span class="v">${sum.earn} €</span>
+    <span>Loyer</span><span class="v">${sum.paid ? "−" + sum.rent + " €" : "impayé"}</span><span>Portefeuille</span><span class="v">${S.money} €</span>
+    <span>Courses non livrées</span><span class="v">${sum.left}</span><span>Taux d'acceptation</span><span class="v">${S.acc} %</span><span>Note</span><span class="v">${sum.before.toFixed(1)} → ${sum.after.toFixed(1)}</span></div>` : "";
+  const pickHTML = id => { const r = REWARDS.find(x => x.id === id); return `<button class="pick" data-reward="${id}"><span class="k">${r.k}</span><span class="pn">${r.n}</span><span class="pd">${r.d}</span></button>`; };
+  if (S.phase === "profile") {
+    o.innerHTML = `<div class="overlay"><div class="modal wide" role="dialog" aria-label="Choix du profil"><h3>Quel livreur es-tu ?</h3>
+      <p>Ton profil change les règles pour toute la partie.</p>
+      <div class="picks two">${Object.entries(PROFILES).map(([k, p]) => `<button class="pick" data-profile="${k}"><span class="k">Profil</span><span class="pn">${p.n}</span><span class="pd">${p.d}</span></button>`).join("")}</div></div></div>`;
+  } else if (S.phase === "draft") {
+    o.innerHTML = `<div class="overlay"><div class="modal" role="dialog" aria-label="Fin de soirée"><h3>Fin du soir ${S.night}</h3>${ledger}
+      <p>Loyer payé. Choisis une récompense gratuite :</p>
+      <div class="picks">${S.draft.map(pickHTML).join("")}</div></div></div>`;
+  } else if (S.phase === "shop") {
+    const ev = EVENTS[S.nextEvent];
+    o.innerHTML = `<div class="overlay"><div class="modal" role="dialog" aria-label="Boutique"><h3>La boutique du coin</h3>
+      <p>Tu as <b>${S.money} €</b>. Chaque achat te rapproche du loyer de demain : <b>${RENT[S.night]} €</b>.</p>
+      <div class="event"><span class="k">Demain soir</span><b>${ev.n}</b><span>${ev.d}</span></div>
+      <div class="shoplist">${S.shop.map(it => { const r = REWARDS.find(x => x.id === it.id);
+        return `<div class="shopitem"><span><span class="k">${r.k}</span><b>${r.n}</b><span class="pd">${r.d}</span></span>
+          <button class="btn sm${it.sold ? "" : " yes"}" data-buy="${it.id}" ${it.sold || S.money < it.p ? "disabled" : ""}>${it.sold ? "Acheté" : it.p + " €"}</button></div>`; }).join("")}</div>
+      <div class="row"><button class="btn go" id="nextnight">Commencer le soir ${S.night + 1}</button></div></div></div>`;
+  } else if (S.phase === "over" || S.phase === "win") {
+    const w = S.phase === "win", rent = S.lose === "rent";
+    o.innerHTML = `<div class="overlay"><div class="modal" role="dialog" aria-label="Fin de partie">
+      <h3>${w ? "Six soirs tenus" : rent ? "Loyer impayé" : "Compte désactivé"}</h3>${ledger}
+      <p>${w ? "Ta note tient bon et ton loyer est payé. L'appli te garde." : rent ? `Il te manquait ${sum.short} € pour le loyer.` : "Ta note est passée sous 4 étoiles."} ${S.delivered} livraisons, ${S.total} € gagnés au total.</p>
+      <div class="row"><button class="btn go" id="again">Nouvelle partie</button></div></div></div>`;
+  } else o.innerHTML = "";
+}
+function render() { renderHud(); renderMap(); renderHand(); renderOffers(); renderBag(); renderOrders(); renderFeed(); renderHint(); renderOverlay(); }
+
+/* ---------- Événements ---------- */
+const map = document.getElementById("map");
+map.addEventListener("click", e => { const c = e.target.closest(".cell"); if (c) moveTo(+c.dataset.k); });
+map.addEventListener("mouseover", e => {
+  const c = e.target.closest(".cell"); if (!c || busy) return;
+  const k = +c.dataset.k; if (k === hover) return; hover = k;
+  const r = reachable(); pathPreview = [];
+  if (r && r.dist[k] <= S.mp) for (let p = k; p !== S.pos && p >= 0; p = r.prev[p]) pathPreview.push(p);
+  renderMap();
+});
+map.addEventListener("mouseleave", () => { hover = null; pathPreview = []; if (!busy) renderMap(); });
+document.getElementById("hand").addEventListener("click", e => { const c = e.target.closest(".card"); if (c && !c.disabled) playCard(+c.dataset.c); });
+document.getElementById("end").addEventListener("click", endTurn);
+const offersEl = document.getElementById("offers");
+offersEl.addEventListener("click", e => {
+  const a = e.target.closest("[data-accept]"); if (a) return accept(+a.dataset.accept);
+  const r = e.target.closest("[data-refuse]"); if (r) return refuse(+r.dataset.refuse);
+});
+offersEl.addEventListener("mouseover", e => { const o = e.target.closest("[data-offer]"); const id = o ? +o.dataset.offer : null; if (id !== hlOffer) { hlOffer = id; renderMap(); } });
+offersEl.addEventListener("mouseleave", () => { hlOffer = null; renderMap(); });
+document.getElementById("orders").addEventListener("click", e => { const b = e.target.closest("[data-take]"); if (b) takeOrder(+b.dataset.take); });
+const bagEl = document.getElementById("bag");
+bagEl.addEventListener("click", e => {
+  const c = e.target.closest(".bcell"); if (!c) return;
+  const x = +c.dataset.x, y = +c.dataset.y;
+  if (S.held) placeHeld(x);
+  else { const oid = occupancy()[key(x, y)]; if (oid != null) liftFromBag(oid); }
+});
+bagEl.addEventListener("mouseover", e => {
+  const c = e.target.closest(".bcell"); if (!c || !S.held) return;
+  const x = +c.dataset.x; if (x === bagHoverX) return; bagHoverX = x; renderBag();
+});
+bagEl.addEventListener("mouseleave", () => { bagHoverX = null; if (S.held) renderBag(); });
+document.getElementById("heldbox").addEventListener("click", e => {
+  if (e.target.closest("#rot")) rotateHeld();
+  if (e.target.closest("#aside")) setAside();
+  if (e.target.closest("#cancel")) cancelHeld();
+  const sd = e.target.closest("[data-side]"); if (sd && !sd.disabled) takeFromSide(+sd.dataset.side);
+});
+document.getElementById("overlay").addEventListener("click", e => {
+  const r = e.target.closest("[data-reward]"); if (r) return takeReward(r.dataset.reward);
+  const pf = e.target.closest("[data-profile]"); if (pf) return chooseProfile(pf.dataset.profile);
+  const b = e.target.closest("[data-buy]"); if (b) return buy(b.dataset.buy);
+  if (e.target.closest("#nextnight")) return startNight(S.night + 1);
+  if (e.target.closest("#again")) newGame();
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "r" || e.key === "R") rotateHeld();
+  if (e.key === "Escape") cancelHeld();
+});
+
+try { window.claude?.hot?.snapshot?.(() => ({ S })); } catch (e) {}
+function boot(data) { if (data && data.S && data.S.v === 3) { S = data.S; S.side = S.side || []; } else newGame(); busy = false; render(); }
+window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
+})();
+</script>

@@ -3,6 +3,9 @@
 **Objectif :** une partie complète de 6 soirs, jouable sur PC et Android, avec les règles du prototype,
 une interface propre et des animations de base.
 
+Les règles et les chiffres sont décrits dans [game-design.md](game-design.md) ; le prototype jouable est dans
+[prototype/dernier-kilometre.html](prototype/dernier-kilometre.html).
+
 ## Dans le MVP
 
 - Le quartier généré (chantiers, pavés) et les déplacements avec des cartes.

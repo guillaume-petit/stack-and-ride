@@ -1,0 +1,355 @@
+# Conception du jeu
+
+Ce document décrit **toutes les règles et tous les chiffres** du jeu, tels qu'ils fonctionnent dans le
+prototype jouable (`docs/prototype/dernier-kilometre.html`, à ouvrir dans un navigateur).
+C'est la référence pour porter les règles dans `core/` (itérations 1 à 3).
+
+- En cas de doute, **ce document fait foi**. Si le prototype dit autre chose, c'est un écart à signaler.
+- Les chiffres sont un **premier jet non équilibré**. Ils seront ajustés avec le bot de simulation (itération 3) :
+  il faut donc les mettre dans des données ou des constantes faciles à modifier, jamais en dur au milieu du code.
+- Les identifiants entre crochets (`[pizza]`) sont ceux à utiliser dans le code et les fichiers de données.
+- Dans le prototype, le jeu s'appelle encore « Dernier Kilomètre » ; le nom retenu est **Stack & Ride**.
+
+## 1. Le concept
+
+Tu es livreur à vélo pour **Grailleo**, une appli de livraison fictive. Une partie dure **6 soirs** de **10 tours**.
+Chaque soir, tu acceptes des courses proposées par l'appli, tu traces ton trajet dans le quartier avec des cartes
+de déplacement, tu ranges les plats dans un sac en grille sans les abîmer, et tu dois payer ton loyer à la fin de la soirée.
+
+Trois systèmes s'emboîtent :
+- **Quoi livrer** : les propositions de l'appli et le taux d'acceptation.
+- **Comment se déplacer** : un paquet de cartes à double tranchant.
+- **Comment transporter** : un sac avec gravité, plats fragiles, chaud et froid, et secousses.
+
+**Conditions de défaite** : la note passe sous **4,0 étoiles**, ou le loyer ne peut pas être payé.
+**Victoire** : terminer le 6ᵉ soir en ayant payé le loyer avec une note d'au moins 4,0.
+
+## 2. Valeurs de départ
+
+| Élément | Valeur |
+|---------|--------|
+| Note | 5,0 étoiles (bornée entre 0 et 5, arrondie au dixième) |
+| Taux d'acceptation | 100 % (borné entre 0 et 100) |
+| Portefeuille | 0 € |
+| Sac | 4 colonnes × 3 rangées |
+| Paquet de départ | 3 × Pédaler, 2 × Pédaler fort, 2 × Feu orange, 1 × Sprint, 1 × Coup de fil, 1 × Café serré |
+| Courses en cours au maximum | 4 |
+| Soirs / tours par soir | 6 / 10 |
+
+## 3. Le quartier
+
+- Grille de **8 × 8** cases.
+- Le **point de départ** `[base]` est en colonne 3, rangée 4 (en partant de 0). Le livreur y revient au début de chaque soir.
+- Contenu placé au hasard sur les autres cases :
+  - **3 restaurants**, de types différents, tirés parmi les 5 types (voir §8) ;
+  - **12 maisons de clients**, numérotées de 1 à 12 ;
+  - **7 chantiers** `[work]` : infranchissables ;
+  - **6 rues pavées** `[pave]` : franchissables, mais elles secouent le sac (voir §6.6) ;
+  - le reste : des rues normales.
+- **Contrainte** : toutes les cases sauf les chantiers doivent être accessibles depuis le point de départ.
+  Si le tirage ne le permet pas, on recommence (200 essais au maximum).
+- **Déplacements** : orthogonaux uniquement (haut, bas, gauche, droite), 1 pas par case.
+  Les restaurants, maisons, pavés et le point de départ sont franchissables.
+- **Distance** : le plus court chemin en pas (parcours en largeur), sans traverser les chantiers.
+
+## 4. Un tour de jeu
+
+1. **Début du tour** : la main est complétée à **4 cartes** ; les propositions de l'appli sont complétées (voir §5).
+2. Le joueur fait, dans l'ordre qu'il veut :
+   - accepter ou refuser des propositions ;
+   - jouer des cartes (au plus **2 cartes non gratuites** par tour, 3 avec la Batterie longue durée) ;
+   - se déplacer en dépensant ses pas ;
+   - prendre un plat au restaurant et le ranger dans le sac ;
+   - réorganiser le sac.
+3. **Fin du tour** (bouton) :
+   - impossible tant qu'un plat est posé « à côté du sac » (voir §6.7) ; un plat en main venant du sac ou du restaurant y est remis automatiquement ;
+   - chaque proposition ignorée fait perdre **5 points** de taux d'acceptation, puis les propositions disparaissent ;
+   - le délai de chaque course acceptée baisse de 1 ; une course dont le délai passe **sous −2** est annulée par le client
+     (voir §7.4) ;
+   - les pas non utilisés sont perdus, le compteur de cartes jouées revient à 0 ;
+   - si la note est sous 4,0 : défaite ;
+   - après le 10ᵉ tour : fin du soir (voir §9).
+
+Les cartes non jouées **restent en main** d'un tour à l'autre.
+
+## 5. Les propositions de l'appli
+
+### 5.1 Nombre de propositions
+
+À chaque début de tour, l'appli complète la liste jusqu'à :
+- **2 propositions** les soirs 1 et 2, **3** à partir du soir 3 ;
+- **+1** les soirs de pluie et de match.
+
+### 5.2 Contenu d'une proposition
+
+- Un **restaurant** tiré au hasard parmi ceux du quartier.
+- **Commande groupée** : probabilité **22 %** (**50 %** un soir de match). Elle contient **2 plats** du même restaurant
+  pour **2 clients** ; le second client est tiré parmi les 3 clients libres les plus proches du premier (distance de Manhattan).
+  Sinon, 1 plat pour 1 client.
+- Les clients sont tirés parmi ceux qui n'ont ni course en cours ni proposition en attente.
+- Chaque plat est tiré dans la liste du restaurant (voir §8 ; un plat présent deux fois dans la liste est deux fois plus probable).
+- **Modificateurs** (tirés indépendamment) :
+  - **Urgent** : 22 % ;
+  - **5ᵉ étage** : 20 % ;
+  - **VIP** : 18 %, seulement si le taux d'acceptation est d'au moins 70 % ; avec le Badge Superlivreur, 30 % et sans condition de taux.
+
+### 5.3 Délai et paie, pour chaque plat
+
+Avec `d` = distance du restaurant au client :
+
+- **Délai** (en tours) = `arrondi_sup(d / 3) + 3`
+  - Urgent : `max(2, délai − 2)` ;
+  - Grève des transports : `+2` ;
+  - Canicule, plat froid : `max(2, délai − 1)`.
+- **Paie** = `(nombre de cases du plat × 3 + 2 + arrondi_sup(d / 2))`, multipliée par :
+  - le multiplicateur d'acceptation `0,6 + 0,4 × taux / 100` ;
+  - × 2 si urgent ;
+  - × 1,3 si commande groupée ;
+  - × 1,3 un soir de pluie ;
+  - × 1,5 pour un plat froid un soir de canicule ;
+  - puis arrondie à l'entier le plus proche.
+
+### 5.4 Accepter, refuser, ignorer
+
+| Action | Taux d'acceptation | Effet |
+|--------|--------------------|-------|
+| Accepter | +5 (max 100) | Chaque plat devient une course « à récupérer » au restaurant. Impossible si on dépasse 4 courses en cours. Avec le Sac isotherme pro, chaque course reçoit +1 tour de délai. |
+| Refuser | −10 | La proposition disparaît. |
+| Ignorer (fin du tour) | −5 par proposition | Elles disparaissent. |
+
+## 6. Le sac
+
+### 6.1 Principe
+
+Le sac est vu **de face** : une grille de colonnes et de rangées, la rangée du bas étant le fond.
+Chaque plat a une **forme** (voir §8) que le joueur peut faire pivoter d'un quart de tour avant de la poser.
+
+### 6.2 Poser un plat
+
+Le joueur choisit une **colonne** : le plat est lâché depuis le haut et **tombe** jusqu'à toucher le fond ou un autre plat.
+
+- La colonne d'ancrage est `min(colonne choisie, largeur du sac − largeur de la forme)`.
+- Si la forme ne rentre pas en haut de cette colonne : impossible (« plus de place »).
+- **Fragile** : la pose est refusée si une case du plat se retrouve **juste au-dessus** d'une case d'un plat fragile.
+- **Chaud et froid** : la pose est refusée si une case d'un plat chaud touche (côté par côté, pas en diagonale)
+  une case d'un plat froid, et inversement. Les plats ni chauds ni froids n'ont pas de contrainte.
+  Le Séparateur isotherme supprime cette règle.
+
+### 6.3 Reprendre un plat
+
+On peut reprendre en main un plat déjà rangé **seulement si aucun autre plat n'est posé dessus**
+(aucune case d'un autre plat juste au-dessus d'une de ses cases). Annuler remet le plat exactement à sa place.
+
+### 6.4 Plat calé
+
+Un plat est **calé** s'il a au moins une case bloquée **à gauche** (paroi ou autre plat) **et** au moins une case bloquée
+**à droite** (paroi ou autre plat). Les plats non calés sont signalés au joueur.
+
+### 6.5 Secousse
+
+Lors d'une secousse, chaque plat **non calé** et pas encore abîmé devient **abîmé** (une seule fois).
+- Avec les Sangles, seuls les plats fragiles peuvent être abîmés.
+- La carte Caler le sac annule la **prochaine** secousse du tour (une seule).
+- Les plats au porte-gobelet et ceux posés à côté du sac ne sont jamais secoués.
+
+### 6.6 Sources de secousse
+
+- Jouer **Sprint** ou **Scooter de prêt** (sauf avec le profil Sprinteur).
+- Un déplacement qui passe sur au moins une **rue pavée** : **une seule** secousse par déplacement,
+  au premier pavé traversé. La Fourche suspendue supprime cette source.
+
+### 6.7 Retombée et écrasement
+
+Quand un plat quitte le sac (livraison ou annulation), les plats qui ne reposent plus sur rien **retombent** :
+- chaque plat tombe d'un bloc, en gardant sa forme ;
+- on traite les plats du plus bas au plus haut, et on recommence jusqu'à ce que plus rien ne bouge ;
+- après la chute, tout plat **fragile** sur lequel un autre plat est posé est **écrasé** (il devient abîmé).
+
+### 6.8 À côté du sac
+
+Pour réorganiser, le joueur peut **poser un plat à côté du sac** (venant du sac ou du restaurant), puis le reprendre plus tard.
+- Plusieurs plats peuvent être posés à côté.
+- Tant qu'un plat est à côté ou en main, **impossible de se déplacer ou de finir le tour**.
+- Un plat posé à côté n'est pas livré en passant chez le client.
+
+### 6.9 Porte-gobelet
+
+Avec cet équipement, un **soda** pris au restaurant va directement dans un support à part : il ne prend aucune case
+et n'est jamais secoué.
+
+## 7. Les courses et les livraisons
+
+### 7.1 États d'une course
+
+`à récupérer` → (le joueur est sur la case du restaurant et la prend) → `en main` → `dans le sac` ou `à côté du sac` → livrée.
+
+### 7.2 Livrer
+
+La livraison est **automatique** quand le livreur est sur la case du client avec la course **dans le sac** :
+en entrant sur la case, en rangeant le plat sur place ou en jouant une carte sur place.
+
+**5ᵉ étage** : la livraison coûte **1 pas**. Sans pas disponible, elle attend (un message le signale une fois).
+
+### 7.3 Résultat d'une livraison
+
+Les cas sont évalués dans cet ordre :
+
+| Cas | Paie | Note |
+|-----|------|------|
+| En retard (délai < 0) | `arrondi_sup(paie / 2)`, pas de pourboire | −0,3 (VIP : −0,5) |
+| Plat abîmé | paie, pas de pourboire | −0,2 (VIP : −0,5) |
+| Parfaite | paie + pourboire + primes | +0,1 (VIP : +0,2) |
+
+- **Pourboire** = délai restant × 2 si VIP × 2 si profil Chouchou.
+- **Primes** : +2 € avec le Compteur de primes ; profil Roi du groupé : +3 € × nombre de livraisons parfaites déjà
+  faites **dans le même tour**.
+- Profil Chouchou : chaque perte de note ci-dessus est aggravée de 0,1.
+- Le montant va dans le portefeuille.
+
+### 7.4 Annulation
+
+Quand le délai d'une course passe sous −2 en fin de tour, le client annule : la course disparaît (le plat quitte le sac,
+avec retombée), note **−0,5** (Chouchou : −0,6).
+
+## 8. Le contenu
+
+### 8.1 Plats
+
+Formes en coordonnées `(colonne, rangée)`, rangée 0 en haut de la forme.
+
+| Id | Nom | Forme | Cases | Température | Fragile |
+|----|-----|-------|-------|-------------|---------|
+| `burger` | Menu burger | barre horizontale de 2 | 2 | chaud | non |
+| `soda` | Soda | 1 case | 1 | — | oui |
+| `pizza` | Pizza | carré 2 × 2 | 4 | chaud | non |
+| `sushi` | Plateau sushi | barre horizontale de 3 | 3 | froid | oui |
+| `poke` | Poke bowl | barre horizontale de 2 | 2 | froid | non |
+| `tacos` | Tacos XL | L : (0,0) (1,0) (0,1) | 3 | chaud | non |
+| `glace` | Pot de glace | 1 case | 1 | froid | oui |
+| `family` | Menu famille | rectangle 3 × 2 | 6 | chaud | non |
+
+### 8.2 Restaurants
+
+| Id | Nom | Plats proposés (tirage) |
+|----|-----|--------------------------|
+| `burger` | Smash Corner | burger, burger, soda, family |
+| `pizza` | Pizzeria Nonna | pizza, pizza, soda |
+| `sushi` | Maki Express | sushi, poke, poke |
+| `tacos` | Tacos Loco | tacos, tacos, soda |
+| `glacier` | Glacier Polaire | glace, glace, poke |
+
+### 8.3 Cartes
+
+Les cartes **gratuites** ne comptent pas dans la limite de cartes par tour.
+
+| Id | Nom | Pas | Effet |
+|----|-----|-----|-------|
+| `ped2` | Pédaler | 2 | — |
+| `ped3` | Pédaler fort | 3 | — |
+| `orange` | Feu orange | 2 | +2 pas si une carte non gratuite a déjà été jouée ce tour |
+| `sprint` | Sprint | 5 | Secousse ; ajoute une Fatigue à la défausse |
+| `scooter` | Scooter de prêt | 6 | Secousse |
+| `wrong` | Contresens | 3 | Les chantiers sont franchissables jusqu'à la fin du tour ; note −0,1 (sauf Gilet fluo) |
+| `kebab` | Pause kebab | 0 | Pioche 3 cartes |
+| `call` | Coup de fil | 0 | Toutes les courses en cours gagnent +1 tour de délai |
+| `coffee` | Café serré | 0 | **Gratuite.** Pioche 2 cartes |
+| `strap` | Caler le sac | 0 | **Gratuite.** La prochaine secousse du tour n'abîme rien |
+| `fatigue` | Fatigue | 0 | Ne fait rien. La jouer compte comme une carte du tour et la retire du jeu. Disparaît en fin de soir. |
+
+**Calcul des pas d'une carte** (cartes qui donnent des pas) :
+`pas de base` (+2 Feu orange si applicable) (+1 Vélo électrique) (−1 soir de pluie) (−1 profil Mule si au moins 3 plats
+dans le sac), avec un **minimum de 1**.
+
+**Paquet** : pioche, défausse et main. Quand la pioche est vide, la défausse est mélangée pour former une nouvelle pioche.
+Au début de chaque soir, la pioche est reconstituée à partir du paquet permanent (les Fatigues disparaissent), la main est vidée puis complétée.
+
+### 8.4 Équipements
+
+Achetables en boutique, une seule fois chacun. Ils sont permanents.
+
+| Id | Nom | Effet | Prix |
+|----|-----|-------|------|
+| `separator` | Séparateur isotherme | Le chaud et le froid peuvent se toucher | 18 € |
+| `cupholder` | Porte-gobelet | Les sodas ne prennent pas de place et ne sont jamais secoués | 12 € |
+| `straps` | Sangles | Les secousses n'abîment que les plats fragiles | 20 € |
+| `shocks` | Fourche suspendue | Les pavés ne secouent plus | 16 € |
+| `battery` | Batterie longue durée | 3 cartes par tour au lieu de 2 | 30 € |
+| `ebike` | Vélo électrique | +1 pas sur chaque carte qui donne des pas | 28 € |
+| `thermos` | Sac isotherme pro | +1 tour de délai sur chaque course acceptée | 16 € |
+| `gilet` | Gilet fluo | Le Contresens ne coûte plus d'étoile | 10 € |
+| `badge` | Badge Superlivreur | VIP à 30 %, même avec un taux d'acceptation bas | 14 € |
+| `bonus` | Compteur de primes | +2 € par livraison parfaite | 18 € |
+
+### 8.5 Autres récompenses
+
+| Id | Nom | Effet | Prix en boutique | Condition |
+|----|-----|-------|------------------|-----------|
+| `wide` | Sac plus large | +1 colonne | 22 € | largeur < 6 |
+| `tall` | Sac plus haut | +1 rangée | 24 € | hauteur < 5 |
+| `trim` | Désencombrer | Retire une carte Pédaler du paquet | 8 € | le paquet contient un Pédaler |
+| `resto` | Nouveau partenaire | Un restaurant d'un type absent ouvre sur une rue normale (ni pavée, ni sous le livreur) | — (récompense gratuite uniquement) | il reste un type absent |
+
+Prix des cartes en boutique : Scooter 12 €, Sprint 8 €, Coup de fil 8 €, Contresens 7 €, Feu orange 7 €, Café serré 7 €,
+Pause kebab 6 €, Caler le sac 6 €.
+
+## 9. Fin de soirée
+
+Dans l'ordre :
+1. Chaque course acceptée non livrée : note **−0,2**.
+2. **Loyer** prélevé dans le portefeuille : **25, 35, 48, 62, 78, 95 €** pour les soirs 1 à 6.
+   S'il manque de l'argent : le portefeuille tombe à 0 et c'est la **défaite** (loyer impayé).
+3. Si la note est sous 4,0 : **défaite**.
+4. Après le 6ᵉ soir : **victoire**.
+5. Sinon :
+   - **Récompense gratuite** : choix de 1 parmi 3, tirées parmi les cartes, `wide`, `tall`, `trim` et `resto`
+     (en respectant les conditions, sans les équipements) ;
+   - l'**événement du lendemain** est tiré (jamais « Soir calme ») ;
+   - **Boutique** (voir §10) ;
+   - début du soir suivant.
+
+Au début de chaque soir : le livreur revient au point de départ, le sac et les courses sont vidés, la pioche est reconstituée,
+l'événement s'applique.
+
+## 10. La boutique
+
+Elle propose, avec l'argent du portefeuille :
+- **2 équipements** non possédés ;
+- **1 amélioration de sac** (`wide` ou `tall`), si possible ;
+- **3 cartes** ;
+- **Désencombrer**, si possible.
+
+Chaque article ne s'achète qu'une fois par visite. La boutique affiche le loyer du lendemain et l'événement du lendemain,
+pour que le joueur arbitre entre acheter et garder de quoi payer.
+
+## 11. Les profils
+
+Choisis en début de partie, pour toute la partie.
+
+| Id | Nom | Avantage | Contrepartie |
+|----|-----|----------|--------------|
+| `mule` | La mule | Sac de 5 colonnes | −1 pas par carte dès que 3 plats sont dans le sac |
+| `sprinter` | Le sprinteur | Ses cartes ne secouent jamais le sac ; un Sprint de plus dans le paquet | Sac de 3 colonnes |
+| `darling` | Le chouchou | Pourboires doublés | Chaque problème (retard, plat abîmé, annulation) coûte 0,1 étoile de plus |
+| `combo` | Le roi du groupé | +3 € par livraison parfaite déjà faite dans le même tour | — |
+
+## 12. Les événements
+
+Le soir 1 est toujours calme. L'événement des soirs suivants est tiré à la fin du soir précédent et annoncé en boutique.
+
+| Id | Nom | Effet |
+|----|-----|-------|
+| `calm` | Soir calme | Aucun |
+| `rain` | Soir de pluie | +1 proposition par tour, paie × 1,3, −1 pas par carte |
+| `match` | Soir de match | +1 proposition par tour, commandes groupées à 50 % |
+| `strike` | Grève des transports | +2 tours de délai sur toutes les courses proposées |
+| `works` | Nuit de travaux | Les chantiers sont redistribués sur les rues normales, en gardant le quartier entièrement accessible |
+| `heat` | Canicule | Plats froids : paie × 1,5, délai −1 (minimum 2) |
+
+## 13. Points ouverts
+
+- L'équilibrage : loyers, paies, probabilités, prix. Le bot de l'itération 3 doit produire un rapport (taux de victoire
+  par profil, gains moyens par soir comparés aux loyers).
+- Les secousses peuvent être très punitives avec un sac de 4 colonnes : à surveiller.
+- L'écrasement des fragiles lors de la retombée est peut-être trop sévère.
+- Sur téléphone, la taille des cases du sac (itération 5).
+- Le prototype ne contient ni sauvegarde, ni progression entre les parties.

@@ -4,6 +4,15 @@ Roguelite delivery game (board-game style) built with Godot 4.7, typed GDScript.
 The owner writes Java at work and is new to game development: explain Godot-specific choices briefly.
 Talk to the owner in French.
 
+## Game rules
+
+- `docs/game-design.md` is the source of truth for every rule and number (bag, cards, offers,
+  deliveries, rating, rent, shop, profiles, events). Read the relevant sections before porting a rule.
+- `docs/prototype/dernier-kilometre.html` is the playable HTML prototype the rules come from
+  (open it in a browser; its JavaScript shows the exact behaviour). If it disagrees with the
+  design doc, the design doc wins: point out the discrepancy to the owner.
+- Numbers are a first, unbalanced draft: keep them in data or named constants, never inline.
+
 ## Conventions
 
 - Code, identifiers and code comments in English. Player-facing text in French, never hard-coded:
