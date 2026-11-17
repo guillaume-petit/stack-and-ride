@@ -328,3 +328,124 @@ msgstr "Départ"
 
 msgid "DEBUG_CITY_LEGEND"
 msgstr "Chaque bâtiment donne sur le carrefour qu'il touche. Noir : départ. Bleu : restaurant. Vert : client (numéro). Rue orange barrée : chantier. Rue grise à pois : pavés. Rue blanche : rue normale."
+
+# Messages du sac (core/bag, Bag.Problem)
+
+msgid "BAG_PROBLEM_NO_ROOM"
+msgstr "Plus de place dans cette colonne."
+
+msgid "BAG_PROBLEM_ON_FRAGILE"
+msgstr "On ne pose rien sur un plat fragile."
+
+msgid "BAG_PROBLEM_HOT_COLD_TOUCH"
+msgstr "Le chaud et le froid ne doivent pas se toucher."
+
+msgid "BAG_PROBLEM_SOMETHING_ON_TOP"
+msgstr "Un autre plat est posé dessus : retire-le d'abord."
+
+# Écran de debug du sac (ui/debug/bag_debug.tscn, itération 2)
+
+msgid "DEBUG_BAG_TITLE"
+msgstr "Debug : le sac"
+
+msgid "DEBUG_BAG_HINT"
+msgstr "Prends un plat, survole une colonne pour voir où il tombe, clic gauche pour le poser. Clic gauche sur un plat rangé : le reprendre. Clic droit : le livrer. R : pivoter."
+
+msgid "DEBUG_BAG_TAKE"
+msgstr "Prendre un plat au restaurant"
+
+msgid "DEBUG_BAG_HAND"
+msgstr "En main"
+
+msgid "DEBUG_BAG_ROTATE"
+msgstr "Pivoter (R)"
+
+msgid "DEBUG_BAG_SET_ASIDE"
+msgstr "Poser à côté"
+
+msgid "DEBUG_BAG_CANCEL"
+msgstr "Annuler"
+
+msgid "DEBUG_BAG_ASIDE"
+msgstr "À côté du sac (clique pour reprendre)"
+
+msgid "DEBUG_BAG_NOTHING"
+msgstr "Rien"
+
+msgid "DEBUG_BAG_CUP_HOLDER"
+msgstr "Porte-gobelet : %s"
+
+msgid "DEBUG_BAG_ACTIONS"
+msgstr "Secousses"
+
+msgid "DEBUG_BAG_SHAKE"
+msgstr "Secouer le sac"
+
+msgid "DEBUG_BAG_BRACED"
+msgstr "Caler le sac (prochaine secousse annulée)"
+
+msgid "DEBUG_BAG_EQUIPMENT"
+msgstr "Équipements"
+
+msgid "DEBUG_BAG_SIZE"
+msgstr "Taille du sac (colonnes × rangées)"
+
+msgid "DEBUG_BAG_NEW_BAG"
+msgstr "Nouveau sac"
+
+msgid "DEBUG_BAG_CLEAR"
+msgstr "Vider (nouveau soir)"
+
+msgid "DEBUG_BAG_SUMMARY"
+msgstr "Sac %d × %d · %d plat(s) · %d mal calé(s) · %s"
+
+msgid "DEBUG_BAG_SORTING"
+msgstr "rangement en cours : impossible de partir"
+
+msgid "DEBUG_BAG_READY"
+msgstr "prêt à partir"
+
+msgid "DEBUG_BAG_HAND_BUSY"
+msgstr "Tu as déjà un plat en main."
+
+msgid "DEBUG_BAG_TAKEN"
+msgstr "%s en main."
+
+msgid "DEBUG_BAG_IN_CUP_HOLDER"
+msgstr "%s calé dans le porte-gobelet."
+
+msgid "DEBUG_BAG_BACK_TO_RESTAURANT"
+msgstr "%s rendu au restaurant."
+
+msgid "DEBUG_BAG_DROPPED"
+msgstr "%s rangé."
+
+msgid "DEBUG_BAG_LIFTED"
+msgstr "%s repris en main."
+
+msgid "DEBUG_BAG_DELIVERED"
+msgstr "%s livré (%s)."
+
+msgid "DEBUG_BAG_CRUSHED"
+msgstr "Les plats du dessus sont retombés et ont écrasé : %s."
+
+msgid "DEBUG_BAG_INTACT"
+msgstr "intact"
+
+msgid "DEBUG_BAG_DAMAGED"
+msgstr "abîmé"
+
+msgid "DEBUG_BAG_SHAKE_BRACED"
+msgstr "Le sac était calé : rien n'a bougé."
+
+msgid "DEBUG_BAG_SHAKE_NOTHING"
+msgstr "Secousse : rien n'a été abîmé."
+
+msgid "DEBUG_BAG_SHAKE_DAMAGED"
+msgstr "Secousse : %s abîmé(s)."
+
+msgid "DEBUG_BAG_BOTTOM"
+msgstr "Fond du sac"
+
+msgid "DEBUG_BAG_LEGEND"
+msgstr "Orange : chaud. Bleu : froid. Gris : ni chaud ni froid. Triangle blanc : fragile. Contour jaune : mal calé (abîmé à la prochaine secousse). Croix et couleur sombre : abîmé. Aperçu vert : pose possible ; rouge : refusée."
