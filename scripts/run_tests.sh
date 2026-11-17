@@ -4,17 +4,49 @@
 #   GODOT=/path/to/godot scripts/run_tests.sh   to use a specific Godot binary.
 set -euo pipefail
 
-GODOT="${GODOT:-godot}"
 cd "$(dirname "$0")/.."
+
+find_godot() {
+	if [ -n "${GODOT:-}" ]; then
+		echo "$GODOT"
+		return
+	fi
+	for name in godot godot4 Godot; do
+		if command -v "$name" >/dev/null 2>&1; then
+			command -v "$name"
+			return
+		fi
+	done
+	# Usual install locations (macOS app bundle, Linux and Windows downloads).
+	for candidate in \
+		"/Applications/Godot.app/Contents/MacOS/Godot" \
+		"$HOME/Applications/Godot.app/Contents/MacOS/Godot" \
+		"$HOME"/Downloads/Godot_v4*_linux.x86_64 \
+		"$HOME"/Downloads/Godot_v4*_win64.exe \
+		"$HOME"/Godot/Godot_v4*; do
+		if [ -x "$candidate" ]; then
+			echo "$candidate"
+			return
+		fi
+	done
+}
+
+GODOT_BIN="$(find_godot)"
+if [ -z "$GODOT_BIN" ]; then
+	echo "Godot introuvable." >&2
+	echo "Indique le chemin de l'exécutable, par exemple :" >&2
+	echo "  GODOT=/Applications/Godot.app/Contents/MacOS/Godot scripts/run_tests.sh" >&2
+	exit 2
+fi
 
 # On a fresh clone the class cache (.godot/) does not exist yet:
 # importing once lets the tests resolve class_name declarations.
 if [ ! -d .godot ]; then
-	"$GODOT" --headless --path . --import >/dev/null 2>&1 || true
+	"$GODOT_BIN" --headless --path . --import >/dev/null 2>&1 || true
 fi
 
 if [ $# -gt 0 ]; then
-	"$GODOT" --headless --path . --script res://tests/run_tests.gd -- "$1"
+	"$GODOT_BIN" --headless --path . --script res://tests/run_tests.gd -- "$1"
 else
-	"$GODOT" --headless --path . --script res://tests/run_tests.gd
+	"$GODOT_BIN" --headless --path . --script res://tests/run_tests.gd
 fi
