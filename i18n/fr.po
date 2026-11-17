@@ -287,3 +287,44 @@ msgstr "Canicule"
 
 msgid "EVENT_HEAT_DESC"
 msgstr "Les plats froids paient +50 %, mais leur délai est réduit d'un tour."
+
+# Écran de debug du quartier (ui/debug/city_debug.tscn, itération 1)
+
+msgid "DEBUG_CITY_TITLE"
+msgstr "Debug : le quartier"
+
+msgid "DEBUG_CITY_SEED"
+msgstr "Graine :"
+
+msgid "DEBUG_CITY_NEXT_SEED"
+msgstr "Graine suivante"
+
+msgid "DEBUG_CITY_RANDOM_SEED"
+msgstr "Graine au hasard"
+
+msgid "DEBUG_CITY_RELOCATE_WORKS"
+msgstr "Nuit de travaux (déplacer les chantiers)"
+
+msgid "DEBUG_CITY_CROSS_WORKS"
+msgstr "Contresens (traverser les chantiers)"
+
+msgid "DEBUG_CITY_CONNECTED"
+msgstr "Tout le quartier est accessible."
+
+msgid "DEBUG_CITY_NOT_CONNECTED"
+msgstr "Attention : des cases sont inaccessibles."
+
+msgid "DEBUG_CITY_CLICK_HINT"
+msgstr "Clique sur une case pour voir le plus court chemin depuis le départ."
+
+msgid "DEBUG_CITY_DISTANCE"
+msgstr "Case %s : %d pas depuis le départ."
+
+msgid "DEBUG_CITY_UNREACHABLE"
+msgstr "Case %s : inaccessible."
+
+msgid "DEBUG_CITY_BASE"
+msgstr "Départ"
+
+msgid "DEBUG_CITY_LEGEND"
+msgstr "Noir : départ. Bleu : restaurant. Vert : client (numéro). Orange (#) : chantier. Gris : rue pavée. Blanc : rue."
