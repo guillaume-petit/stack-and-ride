@@ -66,13 +66,14 @@ func test_a_card_gives_at_least_one_step() -> void:
 	assert_eq(f.game.card_steps(&"ped2"), 1)
 
 
-func test_mule_loses_a_step_with_3_dishes_in_the_bag() -> void:
+func test_mule_loses_a_step_with_a_heavy_bag() -> void:
 	f = GameFixture.start(&"mule")
-	f.carry(f.add_order(&"soda", GameFixture.CLIENT_1), 0)
-	f.carry(f.add_order(&"soda", GameFixture.CLIENT_2), 1)
-	assert_eq(f.game.card_steps(&"ped3"), 3, "2 dishes")
-	f.carry(f.add_order(&"soda", GameFixture.CLIENT_3), 2)
-	assert_eq(f.game.card_steps(&"ped3"), 2, "3 dishes")
+	var heavy := f.state.effects.heavy_bag_dishes
+	for i in heavy - 1:
+		f.carry(f.add_order(&"soda", GameFixture.CLIENT_1), i)
+	assert_eq(f.game.card_steps(&"ped3"), 3, "%d dishes" % (heavy - 1))
+	f.carry(f.add_order(&"soda", GameFixture.CLIENT_2), heavy - 1)
+	assert_eq(f.game.card_steps(&"ped3"), 2, "%d dishes" % heavy)
 
 
 func test_drawing_cards() -> void:

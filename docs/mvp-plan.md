@@ -46,5 +46,5 @@ Les règles et les chiffres sont décrits dans [game-design.md](game-design.md) 
 ## Risques
 
 - Le sac sur téléphone (cases petites) : traité à l'itération 5.
-- L'équilibrage : le bot et son rapport sont là (itération 3, voir [balance-report.md](balance-report.md)) ; les chiffres restent à régler.
+- L'équilibrage : le bot et son rapport sont là (itération 3, voir [balance-report.md](balance-report.md)). Une passe grossière a été faite le 18/11/2026 ; le réglage fin, avec des parties humaines, reste pour l'itération 6.
 - L'envie d'ajouter des choses : toute nouvelle idée va dans « Après le MVP », sauf si elle corrige un vrai problème de jeu.

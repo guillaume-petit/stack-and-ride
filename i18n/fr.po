@@ -229,7 +229,7 @@ msgid "PROFILE_MULE"
 msgstr "La mule"
 
 msgid "PROFILE_MULE_DESC"
-msgstr "Sac de 5 colonnes. Mais dès que 3 plats sont dans le sac, chaque carte de déplacement donne 1 pas de moins."
+msgstr "Sac de 5 colonnes. Mais dès que 4 plats sont dans le sac, chaque carte de déplacement donne 1 pas de moins."
 
 msgid "PROFILE_SPRINTER"
 msgstr "Le sprinteur"

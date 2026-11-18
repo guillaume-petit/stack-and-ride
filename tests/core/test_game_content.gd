@@ -54,7 +54,7 @@ func test_starting_values() -> void:
 	assert_eq([config.bag_columns, config.bag_rows], [4, 3])
 	assert_eq([config.nights, config.turns_per_night], [6, 10])
 	assert_eq(config.max_active_orders, 4)
-	assert_eq(config.rent_per_night, [25, 35, 48, 62, 78, 95])
+	assert_eq(config.rent_per_night, [45, 60, 80, 100, 120, 140])
 
 
 func test_starting_deck() -> void:

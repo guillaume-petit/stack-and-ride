@@ -66,7 +66,7 @@ func test_equipment_effects_match_the_design() -> void:
 
 func test_profile_effects_match_the_design() -> void:
 	var p := content.profiles
-	assert_eq([p[&"mule"].effects.heavy_bag_dishes, p[&"mule"].effects.heavy_bag_steps], [3, -1])
+	assert_eq([p[&"mule"].effects.heavy_bag_dishes, p[&"mule"].effects.heavy_bag_steps], [4, -1])
 	assert_true(p[&"sprinter"].effects.cards_never_shake)
 	assert_eq(p[&"darling"].effects.tip_multiplier, 2)
 	assert_eq(p[&"darling"].effects.problem_extra_cost_tenths, 1)
@@ -92,6 +92,6 @@ func test_state_combines_profile_equipment_and_event() -> void:
 	state.event = &"rain"
 	state.refresh_effects()
 	assert_eq(state.effects.card_steps, 0)
-	assert_eq(state.effects.heavy_bag_dishes, 3)
+	assert_eq(state.effects.heavy_bag_dishes, 4)
 	assert_true(state.bag.hot_and_cold_may_touch, "the bag gets its equipment")
 	assert_false(state.bag.has_cup_holder)

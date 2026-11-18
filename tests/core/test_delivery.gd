@@ -61,7 +61,7 @@ func test_late_comes_before_damaged() -> void:
 func test_damaged_delivery_pays_without_tip() -> void:
 	var result := Delivery.evaluate(_order(3, 12), true, 0, config, neutral)
 	assert_eq(result.outcome, Delivery.Outcome.DAMAGED)
-	assert_eq([result.pay, result.tip, result.rating_tenths], [12, 0, -2])
+	assert_eq([result.pay, result.tip, result.rating_tenths], [12, 0, config.damaged_rating_tenths])
 	assert_eq(Delivery.evaluate(_order(3, 12, true), true, 0, config, neutral).rating_tenths, -5)
 
 

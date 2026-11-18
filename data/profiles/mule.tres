@@ -5,7 +5,7 @@
 
 [sub_resource type="Resource" id="Resource_effects"]
 script = ExtResource("2_effects")
-heavy_bag_dishes = 3
+heavy_bag_dishes = 4
 heavy_bag_steps = -1
 
 [resource]

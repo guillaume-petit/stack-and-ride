@@ -5,7 +5,7 @@ extends TestCase
 func test_mule_has_a_wide_bag_but_slows_down_when_loaded() -> void:
 	var f := GameFixture.start(&"mule")
 	assert_eq(f.state.bag.columns, 5)
-	for i in 3:
+	for i in f.state.effects.heavy_bag_dishes:
 		f.carry(f.add_order(&"soda", GameFixture.CLIENT_1), i)
 	f.give_cards([&"ped3"])
 	f.game.play_card(0)

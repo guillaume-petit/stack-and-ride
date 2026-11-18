@@ -52,7 +52,7 @@ func test_stock_skips_what_is_not_available() -> void:
 
 
 func test_buying_pays_and_applies() -> void:
-	f.open_shop(100)
+	f.open_shop()
 	var shop := f.state.shop
 	shop.items[0].reward = Reward.new(Reward.Kind.EQUIPMENT, &"separator")
 	shop.items[0].price = 18
@@ -66,7 +66,7 @@ func test_buying_pays_and_applies() -> void:
 
 
 func test_not_enough_money() -> void:
-	f.open_shop(30)
+	f.open_shop()
 	f.state.wallet = 3
 	assert_eq(f.game.buy(0), Game.Problem.NOT_ENOUGH_MONEY)
 	assert_false(f.state.shop.items[0].sold)
@@ -74,17 +74,18 @@ func test_not_enough_money() -> void:
 
 
 func test_the_condition_is_checked_again_when_buying() -> void:
-	f.open_shop(100)
+	f.open_shop()
+	var wallet := f.state.wallet
 	var item := f.state.shop.items[0]
 	item.reward = Reward.new(Reward.Kind.UPGRADE, &"wide")
 	item.price = 22
 	f.state.bag.grow(6 - f.state.bag.columns, 0)
 	assert_eq(f.game.buy(0), Game.Problem.NOT_AVAILABLE)
-	assert_eq(f.state.wallet, 75)
+	assert_eq(f.state.wallet, wallet)
 
 
 func test_the_bag_keeps_its_upgrades_at_the_next_night() -> void:
-	f.open_shop(100)
+	f.open_shop()
 	f.state.shop.items[0].reward = Reward.new(Reward.Kind.UPGRADE, &"tall")
 	f.state.shop.items[0].price = 24
 	f.game.buy(0)

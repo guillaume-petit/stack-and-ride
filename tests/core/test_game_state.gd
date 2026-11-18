@@ -19,7 +19,7 @@ func test_new_run_starts_with_the_design_values() -> void:
 	assert_eq(state.event, &"calm")
 	assert_eq(state.profile, &"")
 	assert_eq(state.equipment, [])
-	assert_eq(state.rent_tonight(), 25)
+	assert_eq(state.rent_tonight(), 45)
 
 
 func test_courier_starts_at_the_base() -> void:
@@ -44,14 +44,14 @@ func test_same_seed_gives_the_same_run() -> void:
 func test_rent_follows_the_night() -> void:
 	var state := GameState.new_run(content, 4)
 	state.night = 6
-	assert_eq(state.rent_tonight(), 95)
+	assert_eq(state.rent_tonight(), 140)
 
 
 func test_rent_of_a_night_that_does_not_exist_is_an_error() -> void:
 	expect_engine_error("no night 7")
-	assert_eq(content.config.rent_for_night(7), 95)
+	assert_eq(content.config.rent_for_night(7), content.config.rent_for_night(6))
 	expect_engine_error("no night 0")
-	assert_eq(content.config.rent_for_night(0), 25)
+	assert_eq(content.config.rent_for_night(0), content.config.rent_for_night(1))
 
 
 func test_no_run_without_a_valid_city() -> void:

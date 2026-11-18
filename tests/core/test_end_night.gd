@@ -13,20 +13,21 @@ func test_undelivered_orders_cost_rating_then_the_rent_is_paid() -> void:
 	f.state.night_earnings = 40
 	f.add_order(&"pizza", GameFixture.CLIENT_1)
 	f.carry(f.add_order(&"soda", GameFixture.CLIENT_2))
-	f.finish_night(30)
+	var rent := f.state.rent_tonight()
+	f.finish_night(rent + 5)
 	assert_eq(f.state.rating_tenths, 44)
 	assert_eq(f.state.wallet, 5)
 	var summary: NightSummary = f.state.night_summaries.back()
 	assert_eq([summary.night, summary.event, summary.earnings], [1, &"calm", 40])
 	assert_eq([summary.undelivered, summary.rating_before, summary.rating_after], [2, 48, 44])
-	assert_eq([summary.rent, summary.rent_paid, summary.shortfall, summary.wallet], [25, true, 0, 5])
+	assert_eq([summary.rent, summary.rent_paid, summary.shortfall, summary.wallet], [rent, true, 0, 5])
 	assert_eq(f.state.orders, [])
 	assert_true(f.state.bag.is_empty())
 	assert_eq(f.state.courier_position, GameFixture.BASE)
 
 
 func test_unpaid_rent_loses_the_run() -> void:
-	f.finish_night(20)
+	f.finish_night(f.state.rent_tonight() - 5)
 	assert_eq(f.state.phase, GameState.Phase.LOST)
 	assert_eq(f.state.loss_reason, GameState.LossReason.RENT)
 	assert_eq(f.state.wallet, 0)
@@ -44,7 +45,7 @@ func test_rent_is_checked_before_the_rating() -> void:
 func test_rating_below_4_after_the_penalties_loses() -> void:
 	f.state.rating_tenths = 41
 	f.add_order(&"pizza", GameFixture.CLIENT_1)
-	f.finish_night(100)
+	f.finish_night(f.state.rent_tonight() + 75)
 	assert_eq(f.state.phase, GameState.Phase.LOST)
 	assert_eq(f.state.loss_reason, GameState.LossReason.RATING)
 	assert_eq(f.state.wallet, 75, "the rent was paid")
@@ -52,7 +53,7 @@ func test_rating_below_4_after_the_penalties_loses() -> void:
 
 func test_the_6th_night_wins() -> void:
 	f.state.night = 6
-	f.finish_night(95)
+	f.finish_night(f.state.rent_tonight())
 	assert_eq(f.state.phase, GameState.Phase.WON)
 	assert_eq(f.state.wallet, 0)
 
@@ -94,7 +95,7 @@ func test_the_next_night_starts_with_the_announced_event() -> void:
 
 
 func test_rent_of_tomorrow() -> void:
-	assert_eq(f.state.rent_tomorrow(), 35)
+	assert_eq(f.state.rent_tomorrow(), f.state.config.rent_for_night(2))
 	f.state.night = 6
 	assert_eq(f.state.rent_tomorrow(), 0)
 

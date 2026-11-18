@@ -133,7 +133,7 @@ func test_accepting_turns_each_dish_into_an_order() -> void:
 	offer.modifiers.vip = true
 	assert_eq(f.game.accept_offer(offer.id), Game.Problem.NONE)
 	assert_eq(f.state.offers, [])
-	assert_eq(f.state.acceptance, 95)
+	assert_eq(f.state.acceptance, 90 + f.state.config.accept_acceptance)
 	assert_eq(f.state.orders.size(), 1)
 	var order := f.state.orders[0]
 	assert_eq([order.dish.id, order.client, order.restaurant], [&"pizza", GameFixture.CLIENT_1, GameFixture.RESTAURANT])

@@ -74,7 +74,7 @@ Trois systèmes s'emboîtent :
    - réorganiser le sac.
 3. **Fin du tour** (bouton) :
    - impossible tant qu'un plat est posé « à côté du sac » (voir §6.7) ; un plat en main venant du sac ou du restaurant y est remis automatiquement ;
-   - chaque proposition ignorée fait perdre **5 points** de taux d'acceptation, puis les propositions disparaissent ;
+   - chaque proposition ignorée fait perdre **1 point** (avant le 18/11/2026 : 5) de taux d'acceptation, puis les propositions disparaissent ;
    - le délai de chaque course acceptée baisse de 1 ; une course dont le délai passe **sous −2** est annulée par le client
      (voir §7.4) ;
    - les pas non utilisés sont perdus, le compteur de cartes jouées revient à 0 ;
@@ -114,7 +114,7 @@ Avec `d` = distance du restaurant au client :
   - Urgent : `max(2, délai − 2)` ;
   - Grève des transports : `+2` ;
   - Canicule, plat froid : `max(2, délai − 1)`.
-- **Paie** = `(nombre de cases du plat × 3 + 2 + arrondi_sup(d / 2))`, multipliée par :
+- **Paie** = `(nombre de cases du plat × 2 + 1 + arrondi_sup(d / 2))` (avant le 18/11/2026 : × 3 + 2), multipliée par :
   - le multiplicateur d'acceptation `0,6 + 0,4 × taux / 100` ;
   - × 2 si urgent ;
   - × 1,3 si commande groupée ;
@@ -126,9 +126,9 @@ Avec `d` = distance du restaurant au client :
 
 | Action | Taux d'acceptation | Effet |
 |--------|--------------------|-------|
-| Accepter | +5 (max 100) | Chaque plat devient une course « à récupérer » au restaurant. Impossible si on dépasse 4 courses en cours. Avec le Sac isotherme pro, chaque course reçoit +1 tour de délai. |
+| Accepter | +3 (max 100 ; avant : +5) | Chaque plat devient une course « à récupérer » au restaurant. Impossible si on dépasse 4 courses en cours. Avec le Sac isotherme pro, chaque course reçoit +1 tour de délai. |
 | Refuser | −10 | La proposition disparaît. |
-| Ignorer (fin du tour) | −5 par proposition | Elles disparaissent. |
+| Ignorer (fin du tour) | −1 par proposition (avant : −5) | Elles disparaissent. |
 
 ## 6. Le sac
 
@@ -217,7 +217,7 @@ Les cas sont évalués dans cet ordre :
 | Cas | Paie | Note |
 |-----|------|------|
 | En retard (délai < 0) | `arrondi_sup(paie / 2)`, pas de pourboire | −0,3 (VIP : −0,5) |
-| Plat abîmé | paie, pas de pourboire | −0,2 (VIP : −0,5) |
+| Plat abîmé | paie, pas de pourboire | −0,1 (VIP : −0,5) ; avant : −0,2 |
 | Parfaite | paie + pourboire + primes | +0,1 (VIP : +0,2) |
 
 - **Pourboire** = délai restant × 2 si VIP × 2 si profil Chouchou.
@@ -277,7 +277,7 @@ Les cartes **gratuites** ne comptent pas dans la limite de cartes par tour.
 | `fatigue` | Fatigue | 0 | Ne fait rien. La jouer compte comme une carte du tour et la retire du jeu. Disparaît en fin de soir. |
 
 **Calcul des pas d'une carte** (cartes qui donnent des pas) :
-`pas de base` (+2 Feu orange si applicable) (+1 Vélo électrique) (−1 soir de pluie) (−1 profil Mule si au moins 3 plats
+`pas de base` (+2 Feu orange si applicable) (+1 Vélo électrique) (−1 soir de pluie) (−1 profil Mule si au moins 4 plats
 dans le sac), avec un **minimum de 1**.
 
 **Paquet** : pioche, défausse et main. Quand la pioche est vide, la défausse est mélangée pour former une nouvelle pioche.
@@ -316,7 +316,7 @@ Pause kebab 6 €, Caler le sac 6 €.
 
 Dans l'ordre :
 1. Chaque course acceptée non livrée : note **−0,2**.
-2. **Loyer** prélevé dans le portefeuille : **25, 35, 48, 62, 78, 95 €** pour les soirs 1 à 6.
+2. **Loyer** prélevé dans le portefeuille : **45, 60, 80, 100, 120, 140 €** pour les soirs 1 à 6 (avant le 18/11/2026 : 25, 35, 48, 62, 78, 95 €).
    S'il manque de l'argent : le portefeuille tombe à 0 et c'est la **défaite** (loyer impayé).
 3. Si la note est sous 4,0 : **défaite**.
 4. Après le 6ᵉ soir : **victoire**.
@@ -347,7 +347,7 @@ Choisis en début de partie, pour toute la partie.
 
 | Id | Nom | Avantage | Contrepartie |
 |----|-----|----------|--------------|
-| `mule` | La mule | Sac de 5 colonnes | −1 pas par carte dès que 3 plats sont dans le sac |
+| `mule` | La mule | Sac de 5 colonnes | −1 pas par carte dès que 4 plats sont dans le sac (avant : 3) |
 | `sprinter` | Le sprinteur | Ses cartes ne secouent jamais le sac ; un Sprint de plus dans le paquet | Sac de 3 colonnes |
 | `darling` | Le chouchou | Pourboires doublés | Chaque problème (retard, plat abîmé, annulation) coûte 0,1 étoile de plus |
 | `combo` | Le roi du groupé | +3 € par livraison parfaite déjà faite dans le même tour | — |
@@ -368,18 +368,21 @@ Le soir 1 est toujours calme. L'événement des soirs suivants est tiré à la f
 ## 13. Points ouverts
 
 - L'équilibrage : loyers, paies, probabilités, prix. Le rapport du bot est dans [balance-report.md](balance-report.md)
-  (`scripts/run_sim.sh`). Premiers constats (18/11/2026, 200 parties par profil, bot simple) :
-  - **Le loyer ne pèse presque pas** : le bot gagne 107 à 219 € par soir pour des loyers de 25 à 95 €, et finit avec
-    240 à 540 €. Moins de 2 % des défaites viennent du loyer. Les paies sont trop hautes ou les loyers trop bas, et la
-    boutique devient vite sans arbitrage.
-  - **La note décide de tout** : 13 à 51 % de défaites sur la note, souvent dans les premiers soirs.
-  - **Le taux d'acceptation s'effondre** (2 à 14 % en fin de partie) : 2 à 4 propositions par tour, −5 pour chacune
-    ignorée, +5 seulement pour une acceptée. Impossible de le maintenir sans tout accepter, donc les VIP disparaissent
-    et la paie tombe à × 0,6.
-  - **Profils déséquilibrés** : le sprinteur gagne 86 % des parties (ses cartes ne secouent jamais), le chouchou 49 %
-    (ses pénalités le font perdre tôt, mais il gagne le plus d'argent).
-  - **Les pavés sont la première source de plats abîmés** (environ 3 par partie). Depuis, à longueur égale, le trajet
-    évite les pavés (§3).
+  (`scripts/run_sim.sh`). Premiers constats (18/11/2026, 200 parties par profil, bot simple), avant toute retouche :
+  - le loyer ne pesait presque pas (107 à 219 € gagnés par soir pour des loyers de 25 à 95 €) ;
+  - le taux d'acceptation s'effondrait (2 à 14 %) : −5 par proposition ignorée contre +5 par acceptée ;
+  - profils déséquilibrés (sprinteur 86 % de victoires, chouchou 49 %) ;
+  - les pavés étaient la première source de plats abîmés ; depuis, à longueur égale, le trajet les évite (§3).
+
+  **Passe d'équilibrage grossière du 18/11/2026** (chiffres seulement ; le réglage fin viendra à l'itération 6, avec
+  des parties humaines) : loyers de 45 à 140 €, paie `cases × 2 + 1`, acceptation +3 / −1, plat abîmé −0,1, malus de
+  la mule à partir de 4 plats. Résultat du bot : 51 à 64 % de victoires selon le profil, taux d'acceptation de fin de
+  partie de 66 à 75 %, et le loyer cause 16 à 33 % des défaites (sauf pour le chouchou, que ses pourboires protègent : 3 %).
+  Points restant ouverts :
+  - **Refuser n'a aucun intérêt** : refuser coûte 10 points, ignorer 1, et une proposition ignorée disparaît de toute
+    façon en fin de tour. Faut-il donner un avantage au refus (une nouvelle proposition tout de suite ?) ou supprimer
+    le bouton ?
+  - Le chouchou ne perd presque jamais sur le loyer : son seul risque est la note. Est-ce voulu ?
 - Les secousses peuvent être très punitives avec un sac de 4 colonnes : à surveiller.
 - L'écrasement des fragiles lors de la retombée est peut-être trop sévère (le bot n'en subit presque pas : 0,1 par partie).
 - Sur téléphone, la taille des cases du sac (itération 5).

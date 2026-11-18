@@ -60,17 +60,19 @@ func test_a_dish_in_hand_goes_back_by_itself() -> void:
 	assert_eq(f.state.turn, 3)
 
 
-func test_ignored_offers_cost_5_points_each() -> void:
+func test_each_ignored_offer_costs_acceptance() -> void:
 	f.add_offer(&"pizza", GameFixture.CLIENT_1)
 	f.add_offer(&"pizza", GameFixture.CLIENT_2)
+	f.state.acceptance = 50
 	f.game.end_turn()
-	assert_eq(f.state.acceptance, 90)
+	var after := 50 + 2 * f.state.config.ignore_acceptance
+	assert_eq(f.state.acceptance, after)
 	var ignored := f.events(GameEvent.Kind.OFFERS_IGNORED)
 	assert_eq(ignored.size(), 1)
 	assert_eq(ignored[0].value, 2)
 	f.state.offers.clear()
 	f.game.end_turn()
-	assert_eq(f.state.acceptance, 90, "nothing to ignore")
+	assert_eq(f.state.acceptance, after, "nothing to ignore")
 
 
 func test_every_order_loses_a_turn() -> void:
@@ -121,12 +123,12 @@ func test_exactly_4_stars_is_enough() -> void:
 
 
 func test_the_night_ends_after_the_10th_turn() -> void:
-	f.state.wallet = 30
+	f.state.wallet = f.state.rent_tonight() + 5
 	f.state.turn = 10
 	f.game.end_turn()
 	assert_eq(f.state.phase, GameState.Phase.CHOOSING_REWARD)
 	assert_eq([f.state.night, f.state.turn], [1, 10])
-	assert_eq(f.state.wallet, 5, "rent of night 1: 25 €")
+	assert_eq(f.state.wallet, 5, "the rent of night 1 was paid")
 	assert_eq(f.events(GameEvent.Kind.NIGHT_ENDED).size(), 1)
 
 

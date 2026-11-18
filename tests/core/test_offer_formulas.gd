@@ -6,9 +6,12 @@ var config: GameConfig
 var calm: EffectData
 
 
+## The worked examples below use these pay numbers, whatever the tuning of the data.
 func before_each() -> void:
 	content = GameContent.load_from()
-	config = content.config
+	config = content.config.duplicate()
+	config.pay_per_cell = 3
+	config.pay_base = 2
 	calm = EffectData.new()
 
 

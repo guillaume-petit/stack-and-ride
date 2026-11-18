@@ -113,7 +113,7 @@ func test_damaged_dish_is_delivered_without_tip() -> void:
 	f.state.steps = 3
 	f.game.move_to(GameFixture.CLIENT_1)
 	assert_eq(f.state.wallet, 12)
-	assert_eq(f.state.rating_tenths, 48)
+	assert_eq(f.state.rating_tenths, 50 + f.state.config.damaged_rating_tenths)
 
 
 func test_cup_holder_dish_is_delivered() -> void:
