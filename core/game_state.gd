@@ -70,6 +70,15 @@ var crossing_works: bool = false
 ## Perfect deliveries made this turn (Roi du groupé).
 var perfect_deliveries_this_turn: int = 0
 
+## Event of the next night, drawn at the end of the night and shown in the shop (§12).
+var next_event: StringName = &""
+## Free rewards to choose from at the end of the night (§9).
+var reward_choices: Array[Reward] = []
+## Shop between two nights, null outside of it (§10).
+var shop: Shop = null
+## One summary per night played, the last one for the night that just ended.
+var night_summaries: Array[NightSummary] = []
+
 ## Money earned during the current night, and since the start of the run.
 var night_earnings: int = 0
 var total_earnings: int = 0
@@ -106,6 +115,11 @@ func rating() -> float:
 
 func rent_tonight() -> int:
 	return config.rent_for_night(night)
+
+
+## Rent of the next night, shown in the shop (§10); 0 after the last night.
+func rent_tomorrow() -> int:
+	return config.rent_for_night(night + 1) if night < config.nights else 0
 
 
 ## Number of non-free cards that can be played each turn (§4, Batterie longue durée).

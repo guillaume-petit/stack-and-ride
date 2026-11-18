@@ -122,3 +122,18 @@ func events(kind: GameEvent.Kind) -> Array[GameEvent]:
 		if event.kind == kind:
 			out.append(event)
 	return out
+
+
+## Plays the end of the last turn of the night with this much money in the wallet.
+func finish_night(wallet: int = 100) -> void:
+	state.wallet = wallet
+	state.turn = state.config.turns_per_night
+	var problem := game.end_turn()
+	assert(problem == Game.Problem.NONE, "the fixture could not end the night")
+
+
+## Ends the night, takes the first free reward and opens the shop.
+func open_shop(wallet: int = 100) -> void:
+	finish_night(wallet)
+	var problem := game.choose_reward(0)
+	assert(problem == Game.Problem.NONE, "the fixture could not open the shop")

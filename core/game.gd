@@ -35,6 +35,12 @@ enum Problem {
 	NOTHING_HELD,
 	NOT_IN_BAG,
 	NOT_ASIDE,
+	## No reward or shop item at this index.
+	NO_SUCH_REWARD,
+	ALREADY_BOUGHT,
+	NOT_ENOUGH_MONEY,
+	## The reward no longer makes sense (bag at its maximum size, card already removed...).
+	NOT_AVAILABLE,
 }
 
 ## The bag's reasons, in the game's terms.
@@ -344,10 +350,54 @@ func end_turn() -> Problem:
 
 # --- Nights (§9) ----------------------------------------------------------------------------
 
+## Picks one of the free rewards at the end of the night (§9), then the shop opens.
+func choose_reward(index: int) -> Problem:
+	if state.phase != GameState.Phase.CHOOSING_REWARD:
+		return Problem.WRONG_PHASE
+	if index < 0 or index >= state.reward_choices.size():
+		return Problem.NO_SUCH_REWARD
+	state.reward_choices[index].apply(state)
+	state.reward_choices.clear()
+	state.shop = Shop.stock(state)
+	state.phase = GameState.Phase.SHOPPING
+	return Problem.NONE
+
+
+## Buys an item of the shop (§10).
+func buy(index: int) -> Problem:
+	if state.phase != GameState.Phase.SHOPPING:
+		return Problem.WRONG_PHASE
+	if index < 0 or index >= state.shop.items.size():
+		return Problem.NO_SUCH_REWARD
+	var item := state.shop.items[index]
+	if item.sold:
+		return Problem.ALREADY_BOUGHT
+	if state.wallet < item.price:
+		return Problem.NOT_ENOUGH_MONEY
+	if not item.reward.is_available(state):
+		return Problem.NOT_AVAILABLE
+	state.wallet -= item.price
+	item.sold = true
+	item.reward.apply(state)
+	return Problem.NONE
+
+
+## Leaves the shop and starts the next night with the event announced in the shop.
+func start_next_night() -> Problem:
+	if state.phase != GameState.Phase.SHOPPING:
+		return Problem.WRONG_PHASE
+	state.shop = null
+	_start_night(state.night + 1)
+	return Problem.NONE
+
+
+## Night 1 is always calm; the others get the event drawn at the end of the previous night.
 func _start_night(night: int) -> void:
 	state.phase = GameState.Phase.PLAYING
 	state.night = night
 	state.turn = 1
+	state.event = &"calm" if night == 1 else state.next_event
+	state.next_event = &""
 	state.courier_position = state.city.base
 	state.bag.clear()
 	state.orders.clear()
@@ -381,26 +431,63 @@ func _start_turn() -> void:
 	state.piles.fill_hand(state.config.hand_size, state.rng)
 
 
-## Undelivered orders cost rating, then the rent is paid (§9). The rewards and the shop come
-## with the next step of iteration 3: until then the next night starts right away.
+## End of the night, in this order (§9): undelivered orders cost rating, the rent is paid,
+## then the run is lost, won, or goes on with a free reward, the next event and the shop.
 func _end_night() -> void:
-	var undelivered := state.orders.size()
-	_change_rating(state.config.undelivered_rating_tenths * undelivered)
+	var summary := NightSummary.new()
+	summary.night = state.night
+	summary.event = state.event
+	summary.earnings = state.night_earnings
+	summary.rating_before = state.rating_tenths
+	summary.undelivered = state.orders.size()
+	_change_rating(state.config.undelivered_rating_tenths * summary.undelivered)
+	summary.rating_after = state.rating_tenths
+	summary.rent = state.rent_tonight()
+	summary.rent_paid = state.wallet >= summary.rent
+	summary.shortfall = maxi(0, summary.rent - state.wallet)
+	state.wallet = maxi(0, state.wallet - summary.rent)
+	summary.wallet = state.wallet
+	state.night_summaries.append(summary)
+	state.turn = state.config.turns_per_night
+
+	state.orders.clear()
+	state.offers.clear()
+	state.bag.clear()
+	state.piles.hand.clear()
+	state.courier_position = state.city.base
 	var ended := GameEvent.new(GameEvent.Kind.NIGHT_ENDED)
 	ended.value = state.night
 	_record(ended)
-	var rent := state.rent_tonight()
-	if state.wallet < rent:
-		state.wallet = 0
+
+	if not summary.rent_paid:
 		_lose(GameState.LossReason.RENT)
-		return
-	state.wallet -= rent
-	if state.rating_tenths < state.config.min_rating_tenths:
+	elif state.rating_tenths < state.config.min_rating_tenths:
 		_lose(GameState.LossReason.RATING)
 	elif state.night >= state.config.nights:
 		state.phase = GameState.Phase.WON
 	else:
-		_start_night(state.night + 1)
+		state.reward_choices = _draw_reward_choices()
+		state.next_event = _draw_next_event()
+		state.phase = GameState.Phase.CHOOSING_REWARD
+
+
+func _draw_reward_choices() -> Array[Reward]:
+	var available: Array[Reward] = []
+	for reward in Reward.free_pool(state.content):
+		if reward.is_available(state):
+			available.append(reward)
+	state.rng.shuffle(available)
+	available.resize(mini(state.config.reward_choices, available.size()))
+	return available
+
+
+## Never the calm evening (§9, §12).
+func _draw_next_event() -> StringName:
+	var drawable: Array[StringName] = []
+	for id in state.content.event_ids():
+		if state.content.events[id].drawable:
+			drawable.append(id)
+	return state.rng.pick(drawable)
 
 
 func _lose(reason: GameState.LossReason) -> void:

@@ -124,12 +124,10 @@ func test_the_night_ends_after_the_10th_turn() -> void:
 	f.state.wallet = 30
 	f.state.turn = 10
 	f.game.end_turn()
-	assert_eq([f.state.night, f.state.turn], [2, 1])
+	assert_eq(f.state.phase, GameState.Phase.CHOOSING_REWARD)
+	assert_eq([f.state.night, f.state.turn], [1, 10])
 	assert_eq(f.state.wallet, 5, "rent of night 1: 25 €")
-	var kinds: Array[GameEvent.Kind] = []
-	for event in f.state.history:
-		kinds.append(event.kind)
-	assert_eq(kinds, [GameEvent.Kind.NIGHT_ENDED, GameEvent.Kind.NIGHT_STARTED])
+	assert_eq(f.events(GameEvent.Kind.NIGHT_ENDED).size(), 1)
 
 
 func test_a_refused_end_of_turn_changes_nothing() -> void:

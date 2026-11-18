@@ -47,6 +47,24 @@ func dish_ids() -> Array[StringName]:
 	return _sorted_keys(dishes)
 
 
+## Card, equipment, upgrade and event ids, sorted alphabetically (random draws must not
+## depend on the order of the files).
+func card_ids() -> Array[StringName]:
+	return _sorted_keys(cards)
+
+
+func equipment_ids() -> Array[StringName]:
+	return _sorted_keys(equipment)
+
+
+func upgrade_ids() -> Array[StringName]:
+	return _sorted_keys(upgrades)
+
+
+func event_ids() -> Array[StringName]:
+	return _sorted_keys(events)
+
+
 ## Checks the references between content files. Returns one line per problem.
 func validate() -> PackedStringArray:
 	var problems := load_errors.duplicate()
