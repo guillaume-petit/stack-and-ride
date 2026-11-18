@@ -130,10 +130,14 @@ func _build() -> void:
 	_orders_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	middle.add_child(_orders_panel)
 
-	# Right: bag and notifications.
+	# Right: bag and notifications. It scrolls when a big bag, a dish in hand and dishes set
+	# aside do not fit in the window.
 	var right := UiStyle.vbox(10)
 	right.custom_minimum_size.x = SIDE_WIDTH
-	columns.add_child(right)
+	right.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var right_scroll := UiStyle.scroll(right)
+	right_scroll.custom_minimum_size.x = SIDE_WIDTH
+	columns.add_child(right_scroll)
 	_bag = BagView.new()
 	_bag.column_clicked.connect(func(column: int) -> void: _after(game.drop_held(column)))
 	_bag.dish_clicked.connect(func(id: int) -> void: _after(game.lift(id)))
@@ -146,6 +150,7 @@ func _build() -> void:
 	_feed = FeedView.new()
 	var feed_panel := UiStyle.titled_panel(UiText.t("FEED_TITLE"), _feed)
 	feed_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	feed_panel.custom_minimum_size.y = 150
 	right.add_child(feed_panel)
 
 	# Windows over the board.

@@ -12,6 +12,8 @@ signal dish_clicked(order_id: int)
 signal hover_changed(column: int)
 
 const MAX_CELL := 46.0
+## The cells get smaller when the bag has many rows, so that the panel keeps its height.
+const MAX_GRID_HEIGHT := 190.0
 const GAP := 3.0
 const FLOOR := 8.0
 const PREVIEW_OK := Color(0.13, 0.57, 0.35, 0.55)
@@ -29,7 +31,8 @@ func _init() -> void:
 func refresh() -> void:
 	var bag := game.state.bag
 	# One row above the bag shows a dish that does not fit.
-	custom_minimum_size = Vector2(bag.columns * MAX_CELL, (bag.rows + 1) * MAX_CELL + FLOOR) + Vector2.ONE * GAP * 2
+	var cell := _max_cell()
+	custom_minimum_size = Vector2(bag.columns * cell, (bag.rows + 1) * cell + FLOOR) + Vector2.ONE * GAP * 2
 	if _hover_column >= bag.columns:
 		_hover_column = -1
 	queue_redraw()
@@ -187,7 +190,11 @@ static func _draw_side(canvas: CanvasItem, rect: Rect2, side: Vector2i, color: C
 
 func _cell_size() -> float:
 	var bag := game.state.bag
-	return minf(MAX_CELL, (size.x - GAP * 2) / bag.columns)
+	return minf(_max_cell(), (size.x - GAP * 2) / bag.columns)
+
+
+func _max_cell() -> float:
+	return minf(MAX_CELL, floorf(MAX_GRID_HEIGHT / game.state.bag.rows))
 
 
 ## Top left of the bag grid, centered horizontally, below the row for dishes that do not fit.

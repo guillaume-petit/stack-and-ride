@@ -360,22 +360,22 @@ msgid "CARD_TAG_SHAKE"
 msgstr "Secousse"
 
 msgid "HINT_HELD"
-msgstr "Clique une colonne du sac : le plat tombe au fond. R pour pivoter, Échap pour annuler, ou pose-le à côté le temps de réorganiser."
+msgstr "Clique une colonne du sac pour y lâcher le plat. R : pivoter. Échap : annuler."
 
 msgid "HINT_ASIDE"
-msgstr "Des plats sont posés à côté du sac : range-les avant de repartir ou de finir le tour."
+msgstr "Range les plats posés à côté du sac avant de repartir."
 
 msgid "HINT_AT_RESTAURANT"
-msgstr "Tu es devant un restaurant : prends le plat dans tes courses acceptées."
+msgstr "Tu es au restaurant : prends le plat dans tes courses acceptées."
 
 msgid "HINT_MOVE"
-msgstr "Clique un carrefour surligné pour y aller. Tu livres le client chez qui ton trajet s'arrête. Les pavés secouent le sac."
+msgstr "Clique un carrefour surligné. Tu livres le client où ton trajet s'arrête."
 
 msgid "HINT_ACCEPT"
-msgstr "Accepte des propositions de l'appli, puis joue tes cartes pour avancer. Survole une proposition pour la voir sur le plan."
+msgstr "Accepte une proposition (survole-la pour la voir sur le plan), puis joue tes cartes."
 
 msgid "HINT_PLAY_CARDS"
-msgstr "Joue jusqu'à %d cartes pour gagner des pas (les gratuites ne comptent pas), puis termine le tour."
+msgstr "Joue jusqu'à %d cartes pour gagner des pas, puis termine le tour."
 
 msgid "OFFERS_TITLE"
 msgstr "Propositions"
