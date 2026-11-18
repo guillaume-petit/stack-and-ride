@@ -38,7 +38,7 @@ Les règles et les chiffres sont décrits dans [game-design.md](game-design.md) 
 | 0 | Socle : projet Godot, dossiers, tests, traduction, écran d'accueil provisoire | Le projet s'ouvre, les tests passent | Fait |
 | 1 | Noyau : état de jeu, fichiers de données, génération du quartier, chemins | Tests : quartier connecté, chemins corrects, même graine = même quartier | Fait |
 | 2 | Noyau : le sac (toutes ses règles) | Tests sur chaque règle et ses cas limites | Fait |
-| 3 | Noyau : déroulé de partie (cartes, propositions, livraisons, note, loyer, boutique, profils, événements) + bot | Tests + premier rapport d'équilibrage | En cours : 3a (tour de jeu) et 3b (soirées) en revue, 3c (bot) à faire |
+| 3 | Noyau : déroulé de partie (cartes, propositions, livraisons, note, loyer, boutique, profils, événements) + bot | Tests + premier rapport d'équilibrage | En revue |
 | 4 | Interface jouable | Une partie complète sur PC | À faire |
 | 5 | Animations, sons provisoires, tactile, export Android | La partie sur téléphone | À faire |
 | 6 | Sauvegarde, menus, options, aide au premier lancement, équilibrage | Une version à faire tester | À faire |
@@ -46,5 +46,5 @@ Les règles et les chiffres sont décrits dans [game-design.md](game-design.md) 
 ## Risques
 
 - Le sac sur téléphone (cases petites) : traité à l'itération 5.
-- L'équilibrage : le bot arrive à l'itération 3.
+- L'équilibrage : le bot et son rapport sont là (itération 3, voir [balance-report.md](balance-report.md)) ; les chiffres restent à régler.
 - L'envie d'ajouter des choses : toute nouvelle idée va dans « Après le MVP », sauf si elle corrige un vrai problème de jeu.

@@ -364,10 +364,22 @@ Le soir 1 est toujours calme. L'événement des soirs suivants est tiré à la f
 
 ## 13. Points ouverts
 
-- L'équilibrage : loyers, paies, probabilités, prix. Le bot de l'itération 3 doit produire un rapport (taux de victoire
-  par profil, gains moyens par soir comparés aux loyers).
+- L'équilibrage : loyers, paies, probabilités, prix. Le rapport du bot est dans [balance-report.md](balance-report.md)
+  (`scripts/run_sim.sh`). Premiers constats (18/11/2026, 200 parties par profil, bot simple) :
+  - **Le loyer ne pèse presque pas** : le bot gagne 107 à 219 € par soir pour des loyers de 25 à 95 €, et finit avec
+    240 à 540 €. Moins de 2 % des défaites viennent du loyer. Les paies sont trop hautes ou les loyers trop bas, et la
+    boutique devient vite sans arbitrage.
+  - **La note décide de tout** : 13 à 51 % de défaites sur la note, souvent dans les premiers soirs.
+  - **Le taux d'acceptation s'effondre** (2 à 14 % en fin de partie) : 2 à 4 propositions par tour, −5 pour chacune
+    ignorée, +5 seulement pour une acceptée. Impossible de le maintenir sans tout accepter, donc les VIP disparaissent
+    et la paie tombe à × 0,6.
+  - **Profils déséquilibrés** : le sprinteur gagne 86 % des parties (ses cartes ne secouent jamais), le chouchou 49 %
+    (ses pénalités le font perdre tôt, mais il gagne le plus d'argent).
+  - **Les pavés sont la première source de plats abîmés** (environ 3 par partie). Le trajet suit toujours le plus court
+    chemin, même quand un chemin de même longueur évite les pavés : le joueur ne peut les contourner qu'en s'arrêtant
+    en route. À trancher : préférer automatiquement, à longueur égale, le chemin sans pavés ?
 - Les secousses peuvent être très punitives avec un sac de 4 colonnes : à surveiller.
-- L'écrasement des fragiles lors de la retombée est peut-être trop sévère.
+- L'écrasement des fragiles lors de la retombée est peut-être trop sévère (le bot n'en subit presque pas : 0,1 par partie).
 - Sur téléphone, la taille des cases du sac (itération 5).
 - Le plan de rues (§3) change les distances par rapport au prototype : délais et paies (§5.3) à revérifier avec le bot.
 - Idée pour après le MVP : des rues à sens unique, que la carte Contresens permettrait de prendre à l'envers.
