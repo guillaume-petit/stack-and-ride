@@ -325,7 +325,8 @@ Dans l'ordre :
 4. Après le 6ᵉ soir : **victoire**.
 5. Sinon :
    - **Récompense gratuite** : choix de 1 parmi 3, tirées parmi les cartes, `wide`, `tall`, `trim` et `resto`
-     (en respectant les conditions, sans les équipements) ;
+     (en respectant les conditions, sans les équipements) ; s'il n'y en a aucune de possible, on passe directement
+     à la boutique ;
    - l'**événement du lendemain** est tiré (jamais « Soir calme ») ;
    - **Boutique** (voir §10) ;
    - début du soir suivant.
@@ -380,7 +381,7 @@ Le soir 1 est toujours calme. L'événement des soirs suivants est tiré à la f
   **Passe d'équilibrage grossière du 18/11/2026** (chiffres seulement ; le réglage fin viendra à l'itération 6, avec
   des parties humaines) : loyers de 45 à 140 €, paie `cases × 2 + 1`, acceptation +3 / −1, plat abîmé −0,1, malus de
   la mule à partir de 4 plats, et le chouchou payé 10 % de moins par l'appli (il vit de ses pourboires).
-  Résultat du bot : 50 à 58 % de victoires selon le profil, taux d'acceptation de fin de partie de 66 à 76 %, et le
+  Résultat du bot : 51 à 59 % de victoires selon le profil, taux d'acceptation de fin de partie de 67 à 76 %, et le
   loyer cause 16 à 33 % des défaites, sauf pour le chouchou (3 %) : son risque principal reste la note, c'est son identité.
 - Les secousses peuvent être très punitives avec un sac de 4 colonnes : à surveiller.
 - L'écrasement des fragiles lors de la retombée est peut-être trop sévère (le bot n'en subit presque pas : 0,1 par partie).

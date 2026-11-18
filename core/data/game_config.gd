@@ -3,12 +3,13 @@ extends Resource
 ## Every tunable number of the game, in one place (design doc §2 to §10).
 ##
 ## The values live in data/config/game_config.tres: change them there, not in the code.
+## The defaults below mirror that file (test_game_content.gd checks it).
 
 @export_group("Run")
 @export var nights: int = 6
 @export var turns_per_night: int = 10
 ## Rent paid at the end of each night, one entry per night.
-@export var rent_per_night: Array[int] = [25, 35, 48, 62, 78, 95]
+@export var rent_per_night: Array[int] = [45, 60, 80, 100, 120, 140]
 
 @export_group("Starting values")
 ## Ratings are stored in tenths of a star (50 = 5.0) to avoid float rounding issues.
@@ -21,7 +22,7 @@ extends Resource
 @export var starting_wallet: int = 0
 @export var bag_columns: int = 4
 @export var bag_rows: int = 3
-@export var starting_deck: Array[StringName] = []
+@export var starting_deck: Array[StringName] = [&"ped2", &"ped2", &"ped2", &"ped3", &"ped3", &"orange", &"orange", &"sprint", &"call", &"coffee"]
 @export var hand_size: int = 4
 @export var max_active_orders: int = 4
 @export var max_paid_cards_per_turn: int = 2
@@ -55,16 +56,16 @@ extends Resource
 ## Urgent orders and the heatwave never bring a deadline below this.
 @export var min_deadline: int = 2
 ## Pay = cells × pay_per_cell + pay_base + ceil(distance / pay_steps_per_euro), then multiplied.
-@export var pay_per_cell: int = 3
-@export var pay_base: int = 2
+@export var pay_per_cell: int = 2
+@export var pay_base: int = 1
 @export var pay_steps_per_euro: int = 2
 ## Acceptance multiplier = acceptance_pay_floor + (1 − floor) × acceptance / 100.
 @export var acceptance_pay_floor: float = 0.6
 @export var urgent_pay_multiplier: float = 2.0
 @export var group_pay_multiplier: float = 1.3
-@export var accept_acceptance: int = 5
+@export var accept_acceptance: int = 3
 ## Per offer still in the app at the end of the turn.
-@export var ignore_acceptance: int = -5
+@export var ignore_acceptance: int = -1
 
 @export_group("Deliveries")
 ## Steps to climb to a 5th floor client.
@@ -74,7 +75,7 @@ extends Resource
 ## Rating changes in tenths of a star.
 @export var late_rating_tenths: int = -3
 @export var late_vip_rating_tenths: int = -5
-@export var damaged_rating_tenths: int = -2
+@export var damaged_rating_tenths: int = -1
 @export var damaged_vip_rating_tenths: int = -5
 @export var perfect_rating_tenths: int = 1
 @export var perfect_vip_rating_tenths: int = 2

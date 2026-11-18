@@ -161,9 +161,9 @@ func _worth_accepting(offer: Offer) -> bool:
 		return false
 	var cells := 0
 	for order in state.orders:
-		cells += order.dish.cell_count()
+		cells += _cells_in_bag(order.dish)
 	for part in offer.parts:
-		cells += part.dish.cell_count()
+		cells += _cells_in_bag(part.dish)
 	if cells > state.bag.columns * state.bag.rows * BAG_FILL_RATIO:
 		return false
 	# Orders not delivered by the end of the night cost rating: count the turns left too.
@@ -176,6 +176,11 @@ func _worth_accepting(offer: Offer) -> bool:
 		if turns > part.deadline or turns > turns_left:
 			return false
 	return true
+
+
+## Cells the dish will take in the grid (none in the cup holder).
+func _cells_in_bag(dish: DishData) -> int:
+	return 0 if state.effects.cup_holder and dish.fits_cup_holder else dish.cell_count()
 
 
 static func _offer_pay(offer: Offer) -> int:
@@ -269,11 +274,12 @@ func _shake_would_hurt() -> bool:
 ## Plays the best card to get steps. Returns false when no card helps.
 func _play_step_card() -> bool:
 	var hand := state.piles.hand
+	if state.paid_cards_played >= state.max_paid_cards():
+		return false
+	# Free cards that draw first: they may bring a better card to play.
 	var draw_free := hand.find(&"coffee")
 	if draw_free >= 0:
 		return game.play_card(draw_free) == Game.Problem.NONE
-	if state.paid_cards_played >= state.max_paid_cards():
-		return false
 	var best := -1
 	var best_steps := 0
 	var safe := state.effects.cards_never_shake or not _shake_would_hurt()

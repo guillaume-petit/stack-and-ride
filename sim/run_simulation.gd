@@ -13,6 +13,11 @@ func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
 	var runs := int(args[0]) if args.size() > 0 else DEFAULT_RUNS
 	var first_seed := int(args[1]) if args.size() > 1 else DEFAULT_FIRST_SEED
+	if runs < 1 or (args.size() > 0 and not args[0].is_valid_int()) \
+			or (args.size() > 1 and not args[1].is_valid_int()):
+		printerr("Usage: run_sim [runs per profile, at least 1] [first seed]")
+		quit(2)
+		return
 	var content := GameContent.load_from()
 	var problems := content.validate()
 	if not problems.is_empty():

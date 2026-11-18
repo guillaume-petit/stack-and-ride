@@ -75,6 +75,15 @@ func test_each_ignored_offer_costs_acceptance() -> void:
 	assert_eq(f.state.acceptance, after, "nothing to ignore")
 
 
+func test_acceptance_never_goes_below_0() -> void:
+	f.state.acceptance = 1
+	for client in [GameFixture.CLIENT_1, GameFixture.CLIENT_2, GameFixture.CLIENT_3]:
+		f.add_offer(&"pizza", client)
+	f.state.config.ignore_acceptance = -5
+	f.game.end_turn()
+	assert_eq(f.state.acceptance, 0)
+
+
 func test_every_order_loses_a_turn() -> void:
 	var waiting := f.add_order(&"pizza", GameFixture.CLIENT_1, 3)
 	var carried := f.add_order(&"soda", GameFixture.CLIENT_2, 0)

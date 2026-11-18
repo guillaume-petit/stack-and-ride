@@ -136,6 +136,14 @@ func _problems_contain(problems: PackedStringArray, text: String) -> bool:
 	return false
 
 
+func test_config_script_defaults_match_the_data_file() -> void:
+	var defaults := GameConfig.new()
+	for property in defaults.get_property_list():
+		if property["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
+			var name: String = property["name"]
+			assert_eq(content.config.get(name), defaults.get(name), name)
+
+
 func test_upgrades() -> void:
 	assert_eq(content.upgrades[&"wide"].extra_columns, 1)
 	assert_eq(content.upgrades[&"tall"].extra_rows, 1)
