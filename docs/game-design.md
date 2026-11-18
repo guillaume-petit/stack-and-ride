@@ -119,6 +119,7 @@ Avec `d` = distance du restaurant au client :
   - × 2 si urgent ;
   - × 1,3 si commande groupée ;
   - × 1,3 un soir de pluie ;
+  - × 0,9 avec le profil Chouchou ;
   - × 1,5 pour un plat froid un soir de canicule ;
   - puis arrondie à l'entier le plus proche.
 
@@ -351,7 +352,7 @@ Choisis en début de partie, pour toute la partie.
 |----|-----|----------|--------------|
 | `mule` | La mule | Sac de 5 colonnes | −1 pas par carte dès que 4 plats sont dans le sac (avant : 3) |
 | `sprinter` | Le sprinteur | Ses cartes ne secouent jamais le sac ; un Sprint de plus dans le paquet | Sac de 3 colonnes |
-| `darling` | Le chouchou | Pourboires doublés | Chaque problème (retard, plat abîmé, annulation) coûte 0,1 étoile de plus |
+| `darling` | Le chouchou | Pourboires doublés | L'appli le paie 10 % de moins (ajout du 18/11/2026) ; chaque problème (retard, plat abîmé, annulation) coûte 0,1 étoile de plus |
 | `combo` | Le roi du groupé | +3 € par livraison parfaite déjà faite dans le même tour | — |
 
 ## 12. Les événements
@@ -378,10 +379,9 @@ Le soir 1 est toujours calme. L'événement des soirs suivants est tiré à la f
 
   **Passe d'équilibrage grossière du 18/11/2026** (chiffres seulement ; le réglage fin viendra à l'itération 6, avec
   des parties humaines) : loyers de 45 à 140 €, paie `cases × 2 + 1`, acceptation +3 / −1, plat abîmé −0,1, malus de
-  la mule à partir de 4 plats. Résultat du bot : 51 à 64 % de victoires selon le profil, taux d'acceptation de fin de
-  partie de 66 à 75 %, et le loyer cause 16 à 33 % des défaites (sauf pour le chouchou, que ses pourboires protègent : 3 %).
-  Points restant ouverts :
-  - Le chouchou ne perd presque jamais sur le loyer : son seul risque est la note. Est-ce voulu ?
+  la mule à partir de 4 plats, et le chouchou payé 10 % de moins par l'appli (il vit de ses pourboires).
+  Résultat du bot : 50 à 58 % de victoires selon le profil, taux d'acceptation de fin de partie de 66 à 76 %, et le
+  loyer cause 16 à 33 % des défaites, sauf pour le chouchou (3 %) : son risque principal reste la note, c'est son identité.
 - Les secousses peuvent être très punitives avec un sac de 4 colonnes : à surveiller.
 - L'écrasement des fragiles lors de la retombée est peut-être trop sévère (le bot n'en subit presque pas : 0,1 par partie).
 - Sur téléphone, la taille des cases du sac (itération 5).

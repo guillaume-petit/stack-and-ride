@@ -7,6 +7,7 @@
 script = ExtResource("2_effects")
 tip_multiplier = 2
 problem_extra_cost_tenths = 1
+pay_multiplier = 0.9
 
 [resource]
 script = ExtResource("1_script")

@@ -241,7 +241,7 @@ msgid "PROFILE_DARLING"
 msgstr "Le chouchou"
 
 msgid "PROFILE_DARLING_DESC"
-msgstr "Pourboires doublés. Mais chaque problème (retard, plat abîmé, annulation) coûte 0,1 étoile de plus."
+msgstr "Pourboires doublés. Mais l'appli te paie 10 % de moins, et chaque problème (retard, plat abîmé, annulation) coûte 0,1 étoile de plus."
 
 msgid "PROFILE_COMBO"
 msgstr "Le roi du groupé"

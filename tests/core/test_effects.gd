@@ -70,6 +70,7 @@ func test_profile_effects_match_the_design() -> void:
 	assert_true(p[&"sprinter"].effects.cards_never_shake)
 	assert_eq(p[&"darling"].effects.tip_multiplier, 2)
 	assert_eq(p[&"darling"].effects.problem_extra_cost_tenths, 1)
+	assert_eq(p[&"darling"].effects.pay_multiplier, 0.9)
 	assert_eq(p[&"combo"].effects.streak_bonus, 3)
 
 
