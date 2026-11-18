@@ -43,7 +43,6 @@ acceptance_pay_floor = 0.6
 urgent_pay_multiplier = 2.0
 group_pay_multiplier = 1.3
 accept_acceptance = 3
-refuse_acceptance = -10
 ignore_acceptance = -1
 fifth_floor_steps = 1
 late_pay_divisor = 2

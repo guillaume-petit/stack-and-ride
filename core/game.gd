@@ -111,17 +111,6 @@ func accept_offer(id: int) -> Problem:
 	return Problem.NONE
 
 
-func refuse_offer(id: int) -> Problem:
-	if not _is_playing():
-		return Problem.WRONG_PHASE
-	var offer := state.find_offer(id)
-	if offer == null:
-		return Problem.NO_SUCH_OFFER
-	state.offers.erase(offer)
-	_change_acceptance(state.config.refuse_acceptance)
-	return Problem.NONE
-
-
 # --- Cards (§4, §8.3) -----------------------------------------------------------------------
 
 ## Steps the card would give if played now (0 for cards that give no steps).

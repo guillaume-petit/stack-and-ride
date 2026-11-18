@@ -67,7 +67,7 @@ Trois systèmes s'emboîtent :
 
 1. **Début du tour** : la main est complétée à **4 cartes** ; les propositions de l'appli sont complétées (voir §5).
 2. Le joueur fait, dans l'ordre qu'il veut :
-   - accepter ou refuser des propositions ;
+   - accepter des propositions ;
    - jouer des cartes (au plus **2 cartes non gratuites** par tour, 3 avec la Batterie longue durée) ;
    - se déplacer en dépensant ses pas ;
    - prendre un plat au restaurant et le ranger dans le sac ;
@@ -122,13 +122,15 @@ Avec `d` = distance du restaurant au client :
   - × 1,5 pour un plat froid un soir de canicule ;
   - puis arrondie à l'entier le plus proche.
 
-### 5.4 Accepter, refuser, ignorer
+### 5.4 Accepter, ignorer
 
 | Action | Taux d'acceptation | Effet |
 |--------|--------------------|-------|
 | Accepter | +3 (max 100 ; avant : +5) | Chaque plat devient une course « à récupérer » au restaurant. Impossible si on dépasse 4 courses en cours. Avec le Sac isotherme pro, chaque course reçoit +1 tour de délai. |
-| Refuser | −10 | La proposition disparaît. |
 | Ignorer (fin du tour) | −1 par proposition (avant : −5) | Elles disparaissent. |
+
+Il n'y a pas de bouton « Refuser » (retiré le 18/11/2026) : le prototype en avait un, à −10, mais refuser coûtait
+plus cher qu'ignorer pour le même résultat.
 
 ## 6. Le sac
 
@@ -379,9 +381,6 @@ Le soir 1 est toujours calme. L'événement des soirs suivants est tiré à la f
   la mule à partir de 4 plats. Résultat du bot : 51 à 64 % de victoires selon le profil, taux d'acceptation de fin de
   partie de 66 à 75 %, et le loyer cause 16 à 33 % des défaites (sauf pour le chouchou, que ses pourboires protègent : 3 %).
   Points restant ouverts :
-  - **Refuser n'a aucun intérêt** : refuser coûte 10 points, ignorer 1, et une proposition ignorée disparaît de toute
-    façon en fin de tour. Faut-il donner un avantage au refus (une nouvelle proposition tout de suite ?) ou supprimer
-    le bouton ?
   - Le chouchou ne perd presque jamais sur le loyer : son seul risque est la note. Est-ce voulu ?
 - Les secousses peuvent être très punitives avec un sac de 4 colonnes : à surveiller.
 - L'écrasement des fragiles lors de la retombée est peut-être trop sévère (le bot n'en subit presque pas : 0,1 par partie).

@@ -1,5 +1,5 @@
 extends TestCase
-## The offers of the app: drawing them, accepting and refusing (design doc §5).
+## The offers of the app: drawing and accepting them (design doc §5).
 
 var f: GameFixture
 
@@ -171,17 +171,5 @@ func test_no_more_than_4_orders() -> void:
 	assert_eq(f.game.accept_offer(offer.id), Game.Problem.NONE, "the 4th order fits")
 
 
-func test_refusing_costs_10_points() -> void:
-	var offer := f.add_offer(&"pizza", GameFixture.CLIENT_1)
-	assert_eq(f.game.refuse_offer(offer.id), Game.Problem.NONE)
-	assert_eq(f.state.acceptance, 90)
-	assert_eq(f.state.offers, [])
-	assert_eq(f.state.orders, [])
-	f.state.acceptance = 5
-	f.game.refuse_offer(f.add_offer(&"pizza", GameFixture.CLIENT_1).id)
-	assert_eq(f.state.acceptance, 0, "never below 0")
-
-
 func test_unknown_offer() -> void:
 	assert_eq(f.game.accept_offer(42), Game.Problem.NO_SUCH_OFFER)
-	assert_eq(f.game.refuse_offer(42), Game.Problem.NO_SUCH_OFFER)

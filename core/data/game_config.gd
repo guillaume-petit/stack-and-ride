@@ -63,7 +63,6 @@ extends Resource
 @export var urgent_pay_multiplier: float = 2.0
 @export var group_pay_multiplier: float = 1.3
 @export var accept_acceptance: int = 5
-@export var refuse_acceptance: int = -10
 ## Per offer still in the app at the end of the turn.
 @export var ignore_acceptance: int = -5
 
