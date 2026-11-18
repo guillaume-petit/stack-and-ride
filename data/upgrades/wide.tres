@@ -6,3 +6,4 @@
 script = ExtResource("1_script")
 id = &"wide"
 shop_price = 22
+extra_columns = 1

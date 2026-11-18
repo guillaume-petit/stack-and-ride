@@ -248,8 +248,8 @@ func building_block(crossroads: Vector2i) -> Vector2i:
 
 
 ## Shortest paths from a crossroads (breadth-first search), one step per street segment;
-## road works are avoided unless cross_works is true. Computed once per start until a
-## street changes.
+## road works are avoided unless cross_works is true. Among paths of the same length, the one
+## with the fewest paved streets is kept (§3). Computed once per start until a street changes.
 func paths_from(start: Vector2i, cross_works: bool = false) -> CityPaths:
 	var key := Vector3i(start.x, start.y, 1 if cross_works else 0)
 	if not _paths_cache.has(key):
@@ -264,6 +264,12 @@ func _search_paths(start: Vector2i, cross_works: bool) -> CityPaths:
 	var previous := PackedInt32Array()
 	previous.resize(columns * rows)
 	previous.fill(-1)
+	# Paved streets on the best path found so far: among the shortest paths, the one with the
+	# fewest paved streets wins (decision of 18/11/2026). Breadth-first search handles the
+	# crossroads layer by layer, so a crossroads only gets better paths from the layer before
+	# it, all handled before it leaves the queue.
+	var paved := PackedInt32Array()
+	paved.resize(columns * rows)
 	if is_inside(start):
 		distance[_index(start)] = 0
 		var queue: Array[Vector2i] = [start]
@@ -273,11 +279,17 @@ func _search_paths(start: Vector2i, cross_works: bool) -> CityPaths:
 			head += 1
 			for direction in DIRECTIONS:
 				var next := current + direction
-				if not can_walk(current, next, cross_works) or distance[_index(next)] != -1:
+				if not can_walk(current, next, cross_works):
 					continue
-				distance[_index(next)] = distance[_index(current)] + 1
+				var next_paved := paved[_index(current)] + (1 if street_between(current, next) == Street.PAVED else 0)
+				var known := distance[_index(next)]
+				if known == -1:
+					distance[_index(next)] = distance[_index(current)] + 1
+					queue.append(next)
+				elif known != distance[_index(current)] + 1 or next_paved >= paved[_index(next)]:
+					continue
+				paved[_index(next)] = next_paved
 				previous[_index(next)] = _index(current)
-				queue.append(next)
 	return CityPaths.new(start, columns, rows, distance, previous)
 
 

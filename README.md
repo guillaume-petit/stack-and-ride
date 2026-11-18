@@ -46,6 +46,23 @@ $env:GODOT = "C:\chemin\vers\Godot_v4.7.2-stable_win64_console.exe"; scripts\run
 
 Pour ne lancer qu'une partie des tests, ajoute un filtre sur le nom du fichier : `scripts/run_tests.sh rng`.
 
+## Lancer la simulation d'équilibrage
+
+Un bot joue des parties complètes avec chaque profil et écrit le rapport `docs/balance-report.md`
+(200 parties par profil par défaut, environ une minute) :
+
+```bash
+scripts/run_sim.sh
+```
+
+```powershell
+scripts\run_sim.ps1
+```
+
+On peut choisir le nombre de parties par profil et la première graine : `scripts/run_sim.sh 50 1000`.
+Avec les mêmes paramètres, le rapport est toujours identique : relance-le après avoir changé un chiffre
+dans `data/` pour comparer.
+
 ## Organisation
 
 | Dossier | Contenu |

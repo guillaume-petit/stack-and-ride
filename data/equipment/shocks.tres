@@ -1,8 +1,14 @@
 [gd_resource type="Resource" script_class="EquipmentData" format=3]
 
 [ext_resource type="Script" path="res://core/data/equipment_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://core/data/effect_data.gd" id="2_effects"]
+
+[sub_resource type="Resource" id="Resource_effects"]
+script = ExtResource("2_effects")
+paved_streets_dont_shake = true
 
 [resource]
 script = ExtResource("1_script")
 id = &"shocks"
 shop_price = 16
+effects = SubResource("Resource_effects")

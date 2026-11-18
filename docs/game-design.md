@@ -59,19 +59,22 @@ Trois systèmes s'emboîtent :
   Si le tirage ne le permet pas, on recommence (200 essais au maximum).
 - **Déplacements** : de carrefour en carrefour, le long des rues, **1 pas par tronçon**.
 - **Distance** : le plus court chemin en pas (parcours en largeur), sans emprunter les chantiers.
+- **Trajet** : le livreur suit un plus court chemin. Entre plusieurs chemins de même longueur, il prend celui qui
+  emprunte le moins de rues pavées (décision du 18/11/2026). Pour éviter des pavés au prix de pas en plus, le joueur
+  s'arrête en route.
 
 ## 4. Un tour de jeu
 
 1. **Début du tour** : la main est complétée à **4 cartes** ; les propositions de l'appli sont complétées (voir §5).
 2. Le joueur fait, dans l'ordre qu'il veut :
-   - accepter ou refuser des propositions ;
+   - accepter des propositions ;
    - jouer des cartes (au plus **2 cartes non gratuites** par tour, 3 avec la Batterie longue durée) ;
    - se déplacer en dépensant ses pas ;
    - prendre un plat au restaurant et le ranger dans le sac ;
    - réorganiser le sac.
 3. **Fin du tour** (bouton) :
    - impossible tant qu'un plat est posé « à côté du sac » (voir §6.7) ; un plat en main venant du sac ou du restaurant y est remis automatiquement ;
-   - chaque proposition ignorée fait perdre **5 points** de taux d'acceptation, puis les propositions disparaissent ;
+   - chaque proposition ignorée fait perdre **1 point** (avant le 18/11/2026 : 5) de taux d'acceptation, puis les propositions disparaissent ;
    - le délai de chaque course acceptée baisse de 1 ; une course dont le délai passe **sous −2** est annulée par le client
      (voir §7.4) ;
    - les pas non utilisés sont perdus, le compteur de cartes jouées revient à 0 ;
@@ -92,8 +95,10 @@ Les cartes non jouées **restent en main** d'un tour à l'autre.
 
 - Un **restaurant** tiré au hasard parmi ceux du quartier.
 - **Commande groupée** : probabilité **22 %** (**50 %** un soir de match). Elle contient **2 plats** du même restaurant
-  pour **2 clients** ; le second client est tiré parmi les 3 clients libres les plus proches du premier (distance de Manhattan).
-  Sinon, 1 plat pour 1 client.
+  pour **2 clients** ; le second client est tiré parmi les 3 clients libres les plus proches du premier (distance de Manhattan,
+  égalités départagées dans l'ordre de lecture). Sinon, 1 plat pour 1 client.
+  S'il n'y a pas de second client libre, la proposition devient une commande simple, **sans** le × 1,3 de la paie
+  (précision du 18/11/2026 ; le prototype garde le × 1,3).
 - Les clients sont tirés parmi ceux qui n'ont ni course en cours ni proposition en attente.
 - Chaque plat est tiré dans la liste du restaurant (voir §8 ; un plat présent deux fois dans la liste est deux fois plus probable).
 - **Modificateurs** (tirés indépendamment) :
@@ -109,21 +114,24 @@ Avec `d` = distance du restaurant au client :
   - Urgent : `max(2, délai − 2)` ;
   - Grève des transports : `+2` ;
   - Canicule, plat froid : `max(2, délai − 1)`.
-- **Paie** = `(nombre de cases du plat × 3 + 2 + arrondi_sup(d / 2))`, multipliée par :
+- **Paie** = `(nombre de cases du plat × 2 + 1 + arrondi_sup(d / 2))` (avant le 18/11/2026 : × 3 + 2), multipliée par :
   - le multiplicateur d'acceptation `0,6 + 0,4 × taux / 100` ;
   - × 2 si urgent ;
   - × 1,3 si commande groupée ;
   - × 1,3 un soir de pluie ;
+  - × 0,9 avec le profil Chouchou ;
   - × 1,5 pour un plat froid un soir de canicule ;
   - puis arrondie à l'entier le plus proche.
 
-### 5.4 Accepter, refuser, ignorer
+### 5.4 Accepter, ignorer
 
 | Action | Taux d'acceptation | Effet |
 |--------|--------------------|-------|
-| Accepter | +5 (max 100) | Chaque plat devient une course « à récupérer » au restaurant. Impossible si on dépasse 4 courses en cours. Avec le Sac isotherme pro, chaque course reçoit +1 tour de délai. |
-| Refuser | −10 | La proposition disparaît. |
-| Ignorer (fin du tour) | −5 par proposition | Elles disparaissent. |
+| Accepter | +3 (max 100 ; avant : +5) | Chaque plat devient une course « à récupérer » au restaurant. Impossible si on dépasse 4 courses en cours. Avec le Sac isotherme pro, chaque course reçoit +1 tour de délai. |
+| Ignorer (fin du tour) | −1 par proposition (avant : −5) | Elles disparaissent. |
+
+Il n'y a pas de bouton « Refuser » (retiré le 18/11/2026) : le prototype en avait un, à −10, mais refuser coûtait
+plus cher qu'ignorer pour le même résultat.
 
 ## 6. Le sac
 
@@ -159,7 +167,7 @@ Un plat est **calé** s'il a au moins une case bloquée **à gauche** (paroi ou 
 
 Lors d'une secousse, chaque plat **non calé** et pas encore abîmé devient **abîmé** (une seule fois).
 - Avec les Sangles, seuls les plats fragiles peuvent être abîmés.
-- La carte Caler le sac annule la **prochaine** secousse du tour (une seule).
+- La carte Caler le sac annule la **prochaine** secousse du tour (une seule). Si aucune secousse n'a lieu, l'effet se perd en fin de tour.
 - Les plats au porte-gobelet et ceux posés à côté du sac ne sont jamais secoués.
 
 ### 6.6 Sources de secousse
@@ -198,7 +206,12 @@ et n'est jamais secoué.
 La livraison est **automatique** quand le livreur est au carrefour du client avec la course **dans le sac** :
 en arrivant au carrefour, en rangeant le plat sur place ou en jouant une carte sur place.
 
-**5ᵉ étage** : la livraison coûte **1 pas**. Sans pas disponible, elle attend (un message le signale une fois).
+> **Écart volontaire avec le prototype** (décision du 17/11/2026). On ne livre qu'au carrefour où le trajet **se termine** :
+> passer chez un client sans s'y arrêter ne livre pas. Le joueur peut arrêter son trajet chez un client avant d'avoir
+> dépensé tous ses pas, mais **toute livraison remet les pas restants à 0** (une carte jouée ensuite redonne des pas).
+> Le prototype livrait à chaque carrefour traversé.
+
+**5ᵉ étage** : la livraison demande au moins **1 pas** disponible. Sans pas disponible, elle attend (un message le signale une fois).
 
 ### 7.3 Résultat d'une livraison
 
@@ -207,7 +220,7 @@ Les cas sont évalués dans cet ordre :
 | Cas | Paie | Note |
 |-----|------|------|
 | En retard (délai < 0) | `arrondi_sup(paie / 2)`, pas de pourboire | −0,3 (VIP : −0,5) |
-| Plat abîmé | paie, pas de pourboire | −0,2 (VIP : −0,5) |
+| Plat abîmé | paie, pas de pourboire | −0,1 (VIP : −0,5) ; avant : −0,2 |
 | Parfaite | paie + pourboire + primes | +0,1 (VIP : +0,2) |
 
 - **Pourboire** = délai restant × 2 si VIP × 2 si profil Chouchou.
@@ -267,7 +280,7 @@ Les cartes **gratuites** ne comptent pas dans la limite de cartes par tour.
 | `fatigue` | Fatigue | 0 | Ne fait rien. La jouer compte comme une carte du tour et la retire du jeu. Disparaît en fin de soir. |
 
 **Calcul des pas d'une carte** (cartes qui donnent des pas) :
-`pas de base` (+2 Feu orange si applicable) (+1 Vélo électrique) (−1 soir de pluie) (−1 profil Mule si au moins 3 plats
+`pas de base` (+2 Feu orange si applicable) (+1 Vélo électrique) (−1 soir de pluie) (−1 profil Mule si au moins 4 plats
 dans le sac), avec un **minimum de 1**.
 
 **Paquet** : pioche, défausse et main. Quand la pioche est vide, la défausse est mélangée pour former une nouvelle pioche.
@@ -306,13 +319,14 @@ Pause kebab 6 €, Caler le sac 6 €.
 
 Dans l'ordre :
 1. Chaque course acceptée non livrée : note **−0,2**.
-2. **Loyer** prélevé dans le portefeuille : **25, 35, 48, 62, 78, 95 €** pour les soirs 1 à 6.
+2. **Loyer** prélevé dans le portefeuille : **45, 60, 80, 100, 120, 140 €** pour les soirs 1 à 6 (avant le 18/11/2026 : 25, 35, 48, 62, 78, 95 €).
    S'il manque de l'argent : le portefeuille tombe à 0 et c'est la **défaite** (loyer impayé).
 3. Si la note est sous 4,0 : **défaite**.
 4. Après le 6ᵉ soir : **victoire**.
 5. Sinon :
    - **Récompense gratuite** : choix de 1 parmi 3, tirées parmi les cartes, `wide`, `tall`, `trim` et `resto`
-     (en respectant les conditions, sans les équipements) ;
+     (en respectant les conditions, sans les équipements) ; s'il n'y en a aucune de possible, on passe directement
+     à la boutique ;
    - l'**événement du lendemain** est tiré (jamais « Soir calme ») ;
    - **Boutique** (voir §10) ;
    - début du soir suivant.
@@ -337,9 +351,9 @@ Choisis en début de partie, pour toute la partie.
 
 | Id | Nom | Avantage | Contrepartie |
 |----|-----|----------|--------------|
-| `mule` | La mule | Sac de 5 colonnes | −1 pas par carte dès que 3 plats sont dans le sac |
+| `mule` | La mule | Sac de 5 colonnes | −1 pas par carte dès que 4 plats sont dans le sac (avant : 3) |
 | `sprinter` | Le sprinteur | Ses cartes ne secouent jamais le sac ; un Sprint de plus dans le paquet | Sac de 3 colonnes |
-| `darling` | Le chouchou | Pourboires doublés | Chaque problème (retard, plat abîmé, annulation) coûte 0,1 étoile de plus |
+| `darling` | Le chouchou | Pourboires doublés | L'appli le paie 10 % de moins (ajout du 18/11/2026) ; chaque problème (retard, plat abîmé, annulation) coûte 0,1 étoile de plus |
 | `combo` | Le roi du groupé | +3 € par livraison parfaite déjà faite dans le même tour | — |
 
 ## 12. Les événements
@@ -357,10 +371,20 @@ Le soir 1 est toujours calme. L'événement des soirs suivants est tiré à la f
 
 ## 13. Points ouverts
 
-- L'équilibrage : loyers, paies, probabilités, prix. Le bot de l'itération 3 doit produire un rapport (taux de victoire
-  par profil, gains moyens par soir comparés aux loyers).
+- L'équilibrage : loyers, paies, probabilités, prix. Le rapport du bot est dans [balance-report.md](balance-report.md)
+  (`scripts/run_sim.sh`). Premiers constats (18/11/2026, 200 parties par profil, bot simple), avant toute retouche :
+  - le loyer ne pesait presque pas (107 à 219 € gagnés par soir pour des loyers de 25 à 95 €) ;
+  - le taux d'acceptation s'effondrait (2 à 14 %) : −5 par proposition ignorée contre +5 par acceptée ;
+  - profils déséquilibrés (sprinteur 86 % de victoires, chouchou 49 %) ;
+  - les pavés étaient la première source de plats abîmés ; depuis, à longueur égale, le trajet les évite (§3).
+
+  **Passe d'équilibrage grossière du 18/11/2026** (chiffres seulement ; le réglage fin viendra à l'itération 6, avec
+  des parties humaines) : loyers de 45 à 140 €, paie `cases × 2 + 1`, acceptation +3 / −1, plat abîmé −0,1, malus de
+  la mule à partir de 4 plats, et le chouchou payé 10 % de moins par l'appli (il vit de ses pourboires).
+  Résultat du bot : 51 à 59 % de victoires selon le profil, taux d'acceptation de fin de partie de 67 à 76 %, et le
+  loyer cause 16 à 33 % des défaites, sauf pour le chouchou (3 %) : son risque principal reste la note, c'est son identité.
 - Les secousses peuvent être très punitives avec un sac de 4 colonnes : à surveiller.
-- L'écrasement des fragiles lors de la retombée est peut-être trop sévère.
+- L'écrasement des fragiles lors de la retombée est peut-être trop sévère (le bot n'en subit presque pas : 0,1 par partie).
 - Sur téléphone, la taille des cases du sac (itération 5).
 - Le plan de rues (§3) change les distances par rapport au prototype : délais et paies (§5.3) à revérifier avec le bot.
 - Idée pour après le MVP : des rues à sens unique, que la carte Contresens permettrait de prendre à l'envers.

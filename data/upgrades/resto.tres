@@ -6,3 +6,4 @@
 script = ExtResource("1_script")
 id = &"resto"
 shop_price = 0
+opens_restaurant = true

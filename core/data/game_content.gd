@@ -47,6 +47,28 @@ func dish_ids() -> Array[StringName]:
 	return _sorted_keys(dishes)
 
 
+## Card, equipment, upgrade and event ids, sorted alphabetically (random draws must not
+## depend on the order of the files).
+func card_ids() -> Array[StringName]:
+	return _sorted_keys(cards)
+
+
+func equipment_ids() -> Array[StringName]:
+	return _sorted_keys(equipment)
+
+
+func upgrade_ids() -> Array[StringName]:
+	return _sorted_keys(upgrades)
+
+
+func event_ids() -> Array[StringName]:
+	return _sorted_keys(events)
+
+
+func profile_ids() -> Array[StringName]:
+	return _sorted_keys(profiles)
+
+
 ## Checks the references between content files. Returns one line per problem.
 func validate() -> PackedStringArray:
 	var problems := load_errors.duplicate()
@@ -65,6 +87,13 @@ func validate() -> PackedStringArray:
 		for card_id in profile.extra_cards:
 			if not cards.has(card_id):
 				problems.append("profile %s: unknown card %s" % [profile.id, card_id])
+	if not events.values().any(func(event: EventData) -> bool: return event.drawable):
+		problems.append("no event can be drawn for the next nights")
+	if not cards.has(config.fatigue_card):
+		problems.append("fatigue card: unknown card %s" % config.fatigue_card)
+	for upgrade: UpgradeData in upgrades.values():
+		if upgrade.removes_card != &"" and not cards.has(upgrade.removes_card):
+			problems.append("upgrade %s: unknown card %s" % [upgrade.id, upgrade.removes_card])
 	for dish: DishData in dishes.values():
 		if dish.cells.is_empty():
 			problems.append("dish %s has no cell" % dish.id)

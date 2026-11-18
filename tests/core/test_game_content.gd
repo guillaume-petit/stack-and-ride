@@ -54,7 +54,7 @@ func test_starting_values() -> void:
 	assert_eq([config.bag_columns, config.bag_rows], [4, 3])
 	assert_eq([config.nights, config.turns_per_night], [6, 10])
 	assert_eq(config.max_active_orders, 4)
-	assert_eq(config.rent_per_night, [25, 35, 48, 62, 78, 95])
+	assert_eq(config.rent_per_night, [45, 60, 80, 100, 120, 140])
 
 
 func test_starting_deck() -> void:
@@ -134,3 +134,38 @@ func _problems_contain(problems: PackedStringArray, text: String) -> bool:
 		if problem.contains(text):
 			return true
 	return false
+
+
+func test_config_script_defaults_match_the_data_file() -> void:
+	var defaults := GameConfig.new()
+	for property in defaults.get_property_list():
+		if property["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
+			var name: String = property["name"]
+			assert_eq(content.config.get(name), defaults.get(name), name)
+
+
+func test_upgrades() -> void:
+	assert_eq(content.upgrades[&"wide"].extra_columns, 1)
+	assert_eq(content.upgrades[&"tall"].extra_rows, 1)
+	assert_eq(content.upgrades[&"trim"].removes_card, &"ped2")
+	assert_true(content.upgrades[&"resto"].opens_restaurant)
+	assert_eq([content.config.max_bag_columns, content.config.max_bag_rows], [6, 5])
+
+
+func test_validate_reports_unknown_cards_of_upgrades_and_fatigue() -> void:
+	var upgrade := UpgradeData.new()
+	upgrade.id = &"broken"
+	upgrade.removes_card = &"teleport"
+	content.upgrades[upgrade.id] = upgrade
+	content.config = content.config.duplicate()
+	content.config.fatigue_card = &"nap"
+	var problems := content.validate()
+	assert_true(problems.has("upgrade broken: unknown card teleport"), str(problems))
+	assert_true(problems.has("fatigue card: unknown card nap"), str(problems))
+
+
+func test_validate_needs_an_event_for_the_next_nights() -> void:
+	for id in content.event_ids():
+		if id != &"calm":
+			content.events.erase(id)
+	assert_true(content.validate().has("no event can be drawn for the next nights"))
