@@ -32,6 +32,9 @@ enum Kind {
 
 var kind: Kind
 var order_id: int = -1
+## The order of DELIVERED, CANCELLED and FIFTH_FLOOR_WAIT: it may have left the run since,
+## and the feed still needs its dish and client.
+var order: Order = null
 var order_ids: Array[int] = []
 var value: int = 0
 ## Rating change caused by the event, in tenths of a star, for every kind that changes it

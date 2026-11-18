@@ -87,7 +87,8 @@ func choose_profile(id: StringName) -> Problem:
 
 # --- Offers (§5) ----------------------------------------------------------------------------
 
-func accept_offer(id: int) -> Problem:
+## Why this offer cannot be accepted now, or Problem.NONE.
+func offer_problem(id: int) -> Problem:
 	if not _is_playing():
 		return Problem.WRONG_PHASE
 	var offer := state.find_offer(id)
@@ -95,6 +96,14 @@ func accept_offer(id: int) -> Problem:
 		return Problem.NO_SUCH_OFFER
 	if state.orders.size() + offer.parts.size() > state.config.max_active_orders:
 		return Problem.TOO_MANY_ORDERS
+	return Problem.NONE
+
+
+func accept_offer(id: int) -> Problem:
+	var problem := offer_problem(id)
+	if problem != Problem.NONE:
+		return problem
+	var offer := state.find_offer(id)
 	state.offers.erase(offer)
 	_change_acceptance(state.config.accept_acceptance)
 	for part in offer.parts:
@@ -184,19 +193,28 @@ func paths() -> CityPaths:
 	return state.city.paths_from(state.courier_position, state.crossing_works)
 
 
-## Rides to a crossroads, spending one step per street. Deliveries only happen where the
-## ride ends (§7.2): to deliver on the way, stop there.
-func move_to(target: Vector2i) -> Problem:
+## Why the courier cannot ride to this crossroads now, or Problem.NONE.
+func move_problem(target: Vector2i) -> Problem:
 	if not _is_playing():
 		return Problem.WRONG_PHASE
 	if state.bag.is_sorting():
 		return Problem.SORTING
 	if target == state.courier_position:
 		return Problem.SAME_PLACE
-	var from_here := paths()
-	var distance := from_here.distance_to(target)
+	var distance := paths().distance_to(target)
 	if distance < 0 or distance > state.steps:
 		return Problem.TOO_FAR
+	return Problem.NONE
+
+
+## Rides to a crossroads, spending one step per street. Deliveries only happen where the
+## ride ends (§7.2): to deliver on the way, stop there.
+func move_to(target: Vector2i) -> Problem:
+	var problem := move_problem(target)
+	if problem != Problem.NONE:
+		return problem
+	var from_here := paths()
+	var distance := from_here.distance_to(target)
 	var previous := state.courier_position
 	var shaken := false
 	for crossroads in from_here.path_to(target):
@@ -213,8 +231,8 @@ func move_to(target: Vector2i) -> Problem:
 
 # --- Dishes and bag (§6, §7.1) --------------------------------------------------------------
 
-## Takes the dish of an order at its restaurant: it goes in hand, or in the cup holder.
-func take_dish(order_id: int) -> Problem:
+## Why the dish of this order cannot be taken now, or Problem.NONE.
+func take_dish_problem(order_id: int) -> Problem:
 	if not _is_playing():
 		return Problem.WRONG_PHASE
 	var order := state.find_order(order_id)
@@ -224,8 +242,18 @@ func take_dish(order_id: int) -> Problem:
 		return Problem.ALREADY_PICKED_UP
 	if state.courier_position != order.restaurant:
 		return Problem.NOT_AT_RESTAURANT
-	if not state.bag.take_from_restaurant(BagItem.new(order.id, order.dish)):
+	if state.bag.held != null:
 		return Problem.HAND_BUSY
+	return Problem.NONE
+
+
+## Takes the dish of an order at its restaurant: it goes in hand, or in the cup holder.
+func take_dish(order_id: int) -> Problem:
+	var problem := take_dish_problem(order_id)
+	if problem != Problem.NONE:
+		return problem
+	var order := state.find_order(order_id)
+	state.bag.take_from_restaurant(BagItem.new(order.id, order.dish))
 	order.picked_up = true
 	_deliver_here()
 	return Problem.NONE
@@ -290,15 +318,24 @@ func cancel_held() -> Problem:
 
 # --- End of the turn (§4, §7.4) -------------------------------------------------------------
 
-## A dish set aside blocks the end of the turn (§6.8). A dish in hand from the restaurant or
-## the bag goes back by itself first; if a dish from the bag can no longer go back to its
-## place, it is set aside instead (§6.3) and the end of the turn is then refused.
-func end_turn() -> Problem:
+## Why the turn cannot end now, or Problem.NONE. A dish in hand from the restaurant or the
+## bag does not block it: end_turn() puts it back first (it may still refuse, see there).
+func end_turn_problem() -> Problem:
 	if not _is_playing():
 		return Problem.WRONG_PHASE
 	var held_from_aside := state.bag.held != null and state.bag.held_origin == Bag.Origin.ASIDE
 	if held_from_aside or not state.bag.aside_items().is_empty():
 		return Problem.SORTING
+	return Problem.NONE
+
+
+## A dish set aside blocks the end of the turn (§6.8). A dish in hand from the restaurant or
+## the bag goes back by itself first; if a dish from the bag can no longer go back to its
+## place, it is set aside instead (§6.3) and the end of the turn is then refused.
+func end_turn() -> Problem:
+	var problem := end_turn_problem()
+	if problem != Problem.NONE:
+		return problem
 	cancel_held()
 	if state.bag.is_sorting():
 		return Problem.SORTING
@@ -318,6 +355,7 @@ func end_turn() -> Problem:
 			_change_rating(rating)
 			var cancelled := GameEvent.new(GameEvent.Kind.CANCELLED)
 			cancelled.order_id = order.id
+			cancelled.order = order
 			cancelled.rating_tenths = rating
 			_record(cancelled)
 
@@ -357,8 +395,8 @@ func _open_shop() -> void:
 	state.phase = GameState.Phase.SHOPPING
 
 
-## Buys an item of the shop (§10).
-func buy(index: int) -> Problem:
+## Why this shop item cannot be bought now, or Problem.NONE.
+func buy_problem(index: int) -> Problem:
 	if state.phase != GameState.Phase.SHOPPING:
 		return Problem.WRONG_PHASE
 	if index < 0 or index >= state.shop.items.size():
@@ -370,6 +408,15 @@ func buy(index: int) -> Problem:
 		return Problem.NOT_ENOUGH_MONEY
 	if not item.reward.is_available(state):
 		return Problem.NOT_AVAILABLE
+	return Problem.NONE
+
+
+## Buys an item of the shop (§10).
+func buy(index: int) -> Problem:
+	var problem := buy_problem(index)
+	if problem != Problem.NONE:
+		return problem
+	var item := state.shop.items[index]
 	state.wallet -= item.price
 	item.sold = true
 	item.reward.apply(state)
@@ -504,6 +551,7 @@ func _deliver_here() -> void:
 				order.fifth_floor_warned = true
 				var waiting := GameEvent.new(GameEvent.Kind.FIFTH_FLOOR_WAIT)
 				waiting.order_id = order.id
+				waiting.order = order
 				_record(waiting)
 			continue
 		var damaged := state.bag.find(order.id).damaged
@@ -519,6 +567,7 @@ func _deliver_here() -> void:
 			state.perfect_deliveries_this_turn += 1
 		var delivered := GameEvent.new(GameEvent.Kind.DELIVERED)
 		delivered.order_id = order.id
+		delivered.order = order
 		delivered.delivery = delivery
 		delivered.rating_tenths = delivery.rating_tenths
 		_record(delivered)
