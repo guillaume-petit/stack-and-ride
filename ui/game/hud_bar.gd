@@ -5,6 +5,13 @@ extends HBoxContainer
 
 signal menu_pressed
 
+## The rating turns red this close (in tenths of a star) to the minimum that ends the run.
+const LOW_RATING_MARGIN_TENTHS := 4
+## The turn turns red this many turns before the last one.
+const LAST_TURNS_WARNING := 1
+## Rent not earned yet: the wallet turns red this many turns before the last one.
+const RENT_WARNING_TURNS := 2
+
 var game: Game
 
 ## What to do next, for a new player (set by GameScreen).
@@ -36,14 +43,14 @@ func refresh() -> void:
 	var rent := state.rent_tonight()
 	_add(UiText.t("HUD_NIGHT"), "%d/%d" % [state.night, config.nights])
 	_add(UiText.t("HUD_TURN"), "%d/%d" % [state.turn, config.turns_per_night],
-			UiStyle.BAD if live and state.turn >= config.turns_per_night - 1 else UiStyle.INK)
-	var low_rating := state.rating_tenths < config.min_rating_tenths + 4
+			UiStyle.BAD if live and state.turn >= config.turns_per_night - LAST_TURNS_WARNING else UiStyle.INK)
+	var low_rating := state.rating_tenths < config.min_rating_tenths + LOW_RATING_MARGIN_TENTHS
 	_add(UiText.t("HUD_RATING"), "%s %s" % [UiText.star_bar(state.rating_tenths), UiText.stars(state.rating_tenths)],
 			UiStyle.BAD if low_rating else UiStyle.INK)
 	var wallet_color := UiStyle.INK
 	if live and state.wallet >= rent:
 		wallet_color = UiStyle.OK
-	elif live and state.turn >= config.turns_per_night - 2:
+	elif live and state.turn >= config.turns_per_night - RENT_WARNING_TURNS:
 		wallet_color = UiStyle.BAD
 	_add(UiText.t("HUD_WALLET"), UiText.euros(state.wallet), wallet_color)
 	_add(UiText.t("HUD_RENT"), UiText.euros(rent))

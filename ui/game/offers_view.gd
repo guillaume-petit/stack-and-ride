@@ -36,13 +36,15 @@ func refresh() -> void:
 	var low := state.acceptance < state.config.vip_min_acceptance
 	_rate.add_theme_stylebox_override("fill", UiStyle.box(UiStyle.BAD if low else UiStyle.OK, UiStyle.OK, 0, 3, 0))
 	UiStyle.clear(_list)
+	var from_here := game.paths()
 	if state.offers.is_empty():
 		_list.add_child(UiStyle.paragraph(UiText.t("OFFERS_EMPTY"), UiStyle.SMALL_FONT_SIZE + 1, UiStyle.MUTED))
 	for offer in state.offers:
-		_list.add_child(_offer(offer))
+		_list.add_child(_offer(offer, from_here.distance_to(offer.restaurant)))
 
 
-func _offer(offer: Offer) -> PanelContainer:
+## distance: steps from the courier to the restaurant, -1 when it cannot be reached.
+func _offer(offer: Offer, distance: int) -> PanelContainer:
 	var state := game.state
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", UiStyle.box(UiStyle.PANEL, UiStyle.MUSTARD, 2, UiStyle.RADIUS, 8))
@@ -64,7 +66,6 @@ func _offer(offer: Offer) -> PanelContainer:
 			UiStyle.FONT_SIZE - 1, UiStyle.INK, true))
 	column.add_child(top)
 
-	var distance := game.paths().distance_to(offer.restaurant)
 	for part in offer.parts:
 		column.add_child(UiStyle.paragraph(UiText.dish_to_client(state, part.dish, part.client),
 				UiStyle.SMALL_FONT_SIZE + 1, UiStyle.MUTED))

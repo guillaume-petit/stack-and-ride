@@ -137,7 +137,7 @@ static func modifier_chips(modifiers: OrderModifiers) -> Array[Array]:
 static func event_line(event: GameEvent, state: GameState) -> Line:
 	match event.kind:
 		GameEvent.Kind.NIGHT_STARTED:
-			var night_event: EventData = state.content.events[state.event]
+			var night_event: EventData = state.content.events[event.source]
 			var text: String = t("FEED_NIGHT_STARTED") % [event.value, name_of(night_event),
 					euros(state.config.rent_for_night(event.value))]
 			if night_event.drawable:

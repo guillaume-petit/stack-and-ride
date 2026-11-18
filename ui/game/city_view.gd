@@ -18,6 +18,9 @@ var game: Game
 var highlighted: Array[Vector2i] = []
 
 var _hovered := City.NOWHERE
+## Paths from the courier and crossroads within reach, computed once per refresh().
+var _paths: CityPaths
+var _reachable: Array[Vector2i] = []
 
 
 func _init() -> void:
@@ -26,6 +29,8 @@ func _init() -> void:
 
 
 func refresh() -> void:
+	_paths = game.paths()
+	_reachable = game.reachable()
 	queue_redraw()
 
 
@@ -37,7 +42,7 @@ func _gui_input(event: InputEvent) -> void:
 		var crossroads := _crossroads_at(motion.position)
 		if crossroads != _hovered:
 			_hovered = crossroads
-			mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if crossroads in _reachable() \
+			mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if crossroads in _reachable \
 					else Control.CURSOR_ARROW
 			queue_redraw()
 		return
@@ -58,7 +63,7 @@ func _notification(what: int) -> void:
 # --- Drawing --------------------------------------------------------------------------------
 
 func _draw() -> void:
-	if game == null:
+	if game == null or _paths == null:
 		return
 	var city := game.state.city
 	var spacing := _spacing()
@@ -73,11 +78,10 @@ func _draw() -> void:
 	for place in [City.Place.BASE, City.Place.RESTAURANT, City.Place.CLIENT]:
 		for crossroads in city.crossroads_with(place):
 			_draw_building(crossroads, place, spacing, street_width)
-	var reachable := _reachable()
-	for crossroads in reachable:
+	for crossroads in _reachable:
 		draw_circle(_point(crossroads), street_width * 0.75, Color(UiStyle.MUSTARD, 0.35))
 		draw_arc(_point(crossroads), street_width * 0.75, 0, TAU, 24, UiStyle.MUSTARD, 2.5, true)
-	if _hovered in reachable:
+	if _hovered in _reachable:
 		_draw_path(street_width)
 	for crossroads in highlighted:
 		draw_arc(_point(crossroads), street_width * 1.1, 0, TAU, 32, UiStyle.ACCENT, 3.5, true)
@@ -155,7 +159,7 @@ func _draw_building(crossroads: Vector2i, place: City.Place, spacing: float, str
 
 ## The path the courier would take to the hovered crossroads, and its length in steps.
 func _draw_path(street_width: float) -> void:
-	var paths := game.paths()
+	var paths := _paths
 	var points := PackedVector2Array([_point(game.state.courier_position)])
 	for crossroads in paths.path_to(_hovered):
 		points.append(_point(crossroads))
@@ -222,14 +226,6 @@ func _draw_courier(street_width: float) -> void:
 
 
 # --- Geometry -------------------------------------------------------------------------------
-
-## Crossroads the courier can ride to right now.
-func _reachable() -> Array[Vector2i]:
-	var state := game.state
-	if state.phase != GameState.Phase.PLAYING or state.steps <= 0 or state.bag.is_sorting():
-		return []
-	return game.paths().reachable_within(state.steps)
-
 
 func _spacing() -> float:
 	var city := game.state.city

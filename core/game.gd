@@ -195,13 +195,24 @@ func paths() -> CityPaths:
 
 ## Why the courier cannot ride to this crossroads now, or Problem.NONE.
 func move_problem(target: Vector2i) -> Problem:
+	return _move_problem(target, paths())
+
+
+## Crossroads the courier can ride to right now (empty when moving is not allowed).
+func reachable() -> Array[Vector2i]:
+	if not _is_playing() or state.bag.is_sorting():
+		return []
+	return paths().reachable_within(state.steps)
+
+
+func _move_problem(target: Vector2i, from_here: CityPaths) -> Problem:
 	if not _is_playing():
 		return Problem.WRONG_PHASE
 	if state.bag.is_sorting():
 		return Problem.SORTING
 	if target == state.courier_position:
 		return Problem.SAME_PLACE
-	var distance := paths().distance_to(target)
+	var distance := from_here.distance_to(target)
 	if distance < 0 or distance > state.steps:
 		return Problem.TOO_FAR
 	return Problem.NONE
@@ -210,10 +221,10 @@ func move_problem(target: Vector2i) -> Problem:
 ## Rides to a crossroads, spending one step per street. Deliveries only happen where the
 ## ride ends (§7.2): to deliver on the way, stop there.
 func move_to(target: Vector2i) -> Problem:
-	var problem := move_problem(target)
+	var from_here := paths()
+	var problem := _move_problem(target, from_here)
 	if problem != Problem.NONE:
 		return problem
-	var from_here := paths()
 	var distance := from_here.distance_to(target)
 	var previous := state.courier_position
 	var shaken := false
@@ -293,13 +304,21 @@ func set_held_aside() -> Problem:
 	return Problem.NONE
 
 
-func take_from_aside(order_id: int) -> Problem:
+## Why this dish set aside cannot be taken back in hand now, or Problem.NONE.
+func take_from_aside_problem(order_id: int) -> Problem:
 	if not _is_playing():
 		return Problem.WRONG_PHASE
 	if state.bag.held != null:
 		return Problem.HAND_BUSY
 	if state.bag.location_of(order_id) != Bag.Location.ASIDE:
 		return Problem.NOT_ASIDE
+	return Problem.NONE
+
+
+func take_from_aside(order_id: int) -> Problem:
+	var problem := take_from_aside_problem(order_id)
+	if problem != Problem.NONE:
+		return problem
 	state.bag.take_from_aside(order_id)
 	return Problem.NONE
 
@@ -451,6 +470,7 @@ func _start_night(night: int) -> void:
 	state.refresh_effects()
 	var started := GameEvent.new(GameEvent.Kind.NIGHT_STARTED)
 	started.value = night
+	started.source = state.event
 	_record(started)
 	if state.effects.relocates_works:
 		if state.city.relocate_works(state.rng, state.config.works_relocation_attempts):

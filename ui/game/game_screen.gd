@@ -12,6 +12,8 @@ extends Control
 
 const MAIN_MENU := "res://ui/main.tscn"
 const SIDE_WIDTH := 330
+## Seeds tried in a row before giving up when no city can be drawn.
+const MAX_SEED_ATTEMPTS := 100
 
 ## Seed of the run; a random one when negative. Set it before adding the screen to the tree.
 var run_seed: int = -1
@@ -58,9 +60,16 @@ func _start_run() -> void:
 	# The interface may use the global random numbers: only the rules need a seeded GameRng.
 	var seed_value := run_seed if run_seed >= 0 else randi()
 	game = Game.new_run(content, seed_value)
-	while game == null:
+	# No city for this seed: try the next ones, but not forever (a broken configuration would
+	# never give one).
+	var attempts := 1
+	while game == null and attempts < MAX_SEED_ATTEMPTS:
 		seed_value += 1
+		attempts += 1
 		game = Game.new_run(content, seed_value)
+	if game == null:
+		push_error("No city could be drawn after %d seeds" % MAX_SEED_ATTEMPTS)
+		return
 	for view in [_hud, _city, _hand, _offers, _orders, _bag, _feed]:
 		view.game = game
 	refresh()
@@ -211,10 +220,10 @@ func _hint_text() -> String:
 	for order in state.orders:
 		if game.take_dish_problem(order.id) == Game.Problem.NONE:
 			return UiText.t("HINT_AT_RESTAURANT")
-	if state.steps > 0:
-		return UiText.t("HINT_MOVE")
 	if state.orders.is_empty() and not state.offers.is_empty():
 		return UiText.t("HINT_ACCEPT")
+	if state.steps > 0:
+		return UiText.t("HINT_MOVE")
 	return UiText.t("HINT_PLAY_CARDS") % state.max_paid_cards()
 
 

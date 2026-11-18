@@ -88,3 +88,38 @@ func test_order_events_keep_the_order() -> void:
 	var cancelled := f.events(GameEvent.Kind.CANCELLED)
 	assert_eq(cancelled.size(), 1)
 	assert_true(cancelled[0].order == late)
+
+
+func test_reachable() -> void:
+	assert_true(f.game.reachable().is_empty(), "no step, nowhere to go")
+	f.state.steps = 2
+	var reachable := f.game.reachable()
+	assert_true(Vector2i(2, 0) in reachable)
+	assert_false(GameFixture.BASE in reachable, "not where the courier already is")
+	for crossroads in reachable:
+		assert_eq(f.game.move_problem(crossroads), Game.Problem.NONE)
+	var order := f.add_order(&"pizza", GameFixture.CLIENT_1)
+	f.state.courier_position = GameFixture.RESTAURANT
+	f.game.take_dish(order.id)
+	assert_true(f.game.reachable().is_empty(), "a dish in hand: no ride")
+
+
+func test_take_from_aside_problem() -> void:
+	var order := f.add_order(&"pizza", GameFixture.CLIENT_1)
+	assert_eq(f.game.take_from_aside_problem(order.id), Game.Problem.NOT_ASIDE)
+	f.state.courier_position = GameFixture.RESTAURANT
+	f.game.take_dish(order.id)
+	assert_eq(f.game.take_from_aside_problem(order.id), Game.Problem.HAND_BUSY)
+	f.game.set_held_aside()
+	assert_eq(f.game.take_from_aside_problem(order.id), Game.Problem.NONE)
+	assert_eq(f.state.bag.location_of(order.id), Bag.Location.ASIDE, "asking changes nothing")
+
+
+## The feed may show a night start later: the event of that night stays with it.
+func test_night_started_keeps_its_event() -> void:
+	f.open_shop()
+	f.game.start_next_night()
+	var started := f.events(GameEvent.Kind.NIGHT_STARTED)
+	assert_eq(started.size(), 1)
+	assert_eq(started[0].source, f.state.event)
+	assert_true(started[0].source != &"", "an event was drawn for the night")

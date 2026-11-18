@@ -6,7 +6,7 @@ extends RefCounted
 ## translated message.
 
 enum Kind {
-	## A night starts (value: night number).
+	## A night starts (value: night number, source: event of the night).
 	NIGHT_STARTED,
 	## An order was delivered (delivery holds the details).
 	DELIVERED,

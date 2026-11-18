@@ -96,7 +96,11 @@ func refresh() -> void:
 			properties.append(UiText.t("BAG_FRAGILE"))
 		_held_text.text = "#%d %s\n%s" % [order.id, UiText.dish_to_client(state, order.dish, order.client),
 				" · ".join(properties)]
-		_held_shape.custom_minimum_size = Vector2(3, 3) * SHAPE_CELL
+		# At least 3 × 3 so that turning a small dish does not move the text around.
+		var shape_size := Vector2i(3, 3)
+		for cell in bag.held.shape:
+			shape_size = shape_size.max(cell + Vector2i.ONE)
+		_held_shape.custom_minimum_size = Vector2(shape_size) * SHAPE_CELL
 		_held_shape.queue_redraw()
 		_cancel_button.text = UiText.t("BAG_CANCEL_" + Bag.Origin.keys()[bag.held_origin])
 
@@ -105,7 +109,10 @@ func refresh() -> void:
 	for item in bag.aside_items():
 		var button := UiStyle.button("#%d %s" % [item.order_id, UiText.name_of(item.dish)],
 				_on_aside_pressed.bind(item.order_id), "SmallButton")
-		button.disabled = bag.held != null or not playing
+		var problem := game.take_from_aside_problem(item.order_id)
+		button.disabled = problem != Game.Problem.NONE
+		if problem != Game.Problem.NONE:
+			button.tooltip_text = UiText.problem(problem)
 		_aside_row.add_child(button)
 
 	var cups := PackedStringArray()
