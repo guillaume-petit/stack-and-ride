@@ -154,3 +154,10 @@ func test_validate_reports_unknown_cards_of_upgrades_and_fatigue() -> void:
 	var problems := content.validate()
 	assert_true(problems.has("upgrade broken: unknown card teleport"), str(problems))
 	assert_true(problems.has("fatigue card: unknown card nap"), str(problems))
+
+
+func test_validate_needs_an_event_for_the_next_nights() -> void:
+	for id in content.event_ids():
+		if id != &"calm":
+			content.events.erase(id)
+	assert_true(content.validate().has("no event can be drawn for the next nights"))

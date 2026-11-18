@@ -38,7 +38,7 @@ func price(content: GameContent) -> int:
 
 
 ## The reward makes sense now (§8.5): bag not at its maximum size, a card left to remove,
-## a restaurant type missing from the city, equipment not owned yet.
+## a restaurant type missing from the city and a free crossroads for it, equipment not owned yet.
 func is_available(state: GameState) -> bool:
 	match kind:
 		Kind.CARD:
@@ -52,8 +52,11 @@ func is_available(state: GameState) -> bool:
 		return false
 	if upgrade.removes_card != &"" and not state.deck.has(upgrade.removes_card):
 		return false
-	if upgrade.opens_restaurant and missing_restaurant_kinds(state).is_empty():
-		return false
+	if upgrade.opens_restaurant:
+		var room := state.city.crossroads_without_place()
+		room.erase(state.courier_position)
+		if missing_restaurant_kinds(state).is_empty() or room.is_empty():
+			return false
 	return true
 
 

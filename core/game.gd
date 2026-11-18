@@ -332,7 +332,6 @@ func end_turn() -> Problem:
 			cancelled.rating_tenths = rating
 			_record(cancelled)
 
-	state.turn += 1
 	state.steps = 0
 	state.paid_cards_played = 0
 	state.crossing_works = false
@@ -341,9 +340,10 @@ func end_turn() -> Problem:
 
 	if state.rating_tenths < state.config.min_rating_tenths:
 		_lose(GameState.LossReason.RATING)
-	elif state.turn > state.config.turns_per_night:
+	elif state.turn >= state.config.turns_per_night:
 		_end_night()
 	else:
+		state.turn += 1
 		_start_turn()
 	return Problem.NONE
 
@@ -358,9 +358,14 @@ func choose_reward(index: int) -> Problem:
 		return Problem.NO_SUCH_REWARD
 	state.reward_choices[index].apply(state)
 	state.reward_choices.clear()
+	_open_shop()
+	return Problem.NONE
+
+
+## Also reached straight from the end of the night when no free reward is available.
+func _open_shop() -> void:
 	state.shop = Shop.stock(state)
 	state.phase = GameState.Phase.SHOPPING
-	return Problem.NONE
 
 
 ## Buys an item of the shop (§10).
@@ -448,7 +453,6 @@ func _end_night() -> void:
 	state.wallet = maxi(0, state.wallet - summary.rent)
 	summary.wallet = state.wallet
 	state.night_summaries.append(summary)
-	state.turn = state.config.turns_per_night
 
 	state.orders.clear()
 	state.offers.clear()
@@ -468,7 +472,10 @@ func _end_night() -> void:
 	else:
 		state.reward_choices = _draw_reward_choices()
 		state.next_event = _draw_next_event()
-		state.phase = GameState.Phase.CHOOSING_REWARD
+		if state.reward_choices.is_empty():
+			_open_shop()
+		else:
+			state.phase = GameState.Phase.CHOOSING_REWARD
 
 
 func _draw_reward_choices() -> Array[Reward]:

@@ -88,3 +88,19 @@ func test_choosing_a_reward_opens_the_shop() -> void:
 	assert_eq(f.state.phase, GameState.Phase.SHOPPING)
 	assert_true(f.state.shop != null)
 	assert_eq(f.game.choose_reward(0), Game.Problem.WRONG_PHASE)
+
+
+func test_new_partner_needs_a_free_crossroads() -> void:
+	f = GameFixture.start(GameFixture.NEUTRAL_PROFILE, ["B-R-C"] as Array[String])
+	assert_false(_upgrade(&"resto").is_available(f.state), "every crossroads has a place")
+
+
+func test_without_any_free_reward_the_shop_opens_directly() -> void:
+	for card: CardData in f.content.cards.values():
+		f.content.cards[card.id] = card.duplicate()
+		f.content.cards[card.id].shop_price = 0
+	for id in f.content.upgrade_ids():
+		f.content.upgrades.erase(id)
+	f.finish_night()
+	assert_eq(f.state.phase, GameState.Phase.SHOPPING)
+	assert_eq(f.state.reward_choices, [])

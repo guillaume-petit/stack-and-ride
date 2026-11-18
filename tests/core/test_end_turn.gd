@@ -140,3 +140,12 @@ func test_a_refused_end_of_turn_changes_nothing() -> void:
 	assert_eq(f.game.end_turn(), Game.Problem.SORTING)
 	assert_eq(f.state.bag.held.order_id, in_hand.id, "the dish stays in hand")
 	assert_true(in_hand.picked_up)
+
+
+func test_a_loss_on_the_last_turn_keeps_the_turn_counter() -> void:
+	f.state.turn = 10
+	f.state.rating_tenths = 44
+	f.add_order(&"pizza", GameFixture.CLIENT_1, -2)
+	f.game.end_turn()
+	assert_eq(f.state.phase, GameState.Phase.LOST)
+	assert_eq(f.state.turn, 10)

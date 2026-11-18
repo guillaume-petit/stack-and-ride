@@ -43,8 +43,7 @@ func _play(content: GameContent, seed: int, generous: bool = false) -> Game:
 		game.state.config = game.state.config.duplicate()
 		game.state.config.min_rating_tenths = 0
 	var dice := GameRng.new(seed * 31)
-	var profiles := content.profiles.keys()
-	profiles.sort()
+	var profiles := content.profile_ids()
 	game.choose_profile(profiles[dice.range_int(0, profiles.size() - 1)])
 	var s := game.state
 	for i in MAX_ACTIONS:
