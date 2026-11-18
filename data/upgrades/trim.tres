@@ -6,3 +6,4 @@
 script = ExtResource("1_script")
 id = &"trim"
 shop_price = 8
+removes_card = &"ped2"

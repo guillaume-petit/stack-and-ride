@@ -1,9 +1,15 @@
 [gd_resource type="Resource" script_class="ProfileData" format=3]
 
 [ext_resource type="Script" path="res://core/data/profile_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://core/data/effect_data.gd" id="2_effects"]
+
+[sub_resource type="Resource" id="Resource_effects"]
+script = ExtResource("2_effects")
+cards_never_shake = true
 
 [resource]
 script = ExtResource("1_script")
 id = &"sprinter"
 bag_columns = 3
 extra_cards = Array[StringName]([&"sprint"])
+effects = SubResource("Resource_effects")

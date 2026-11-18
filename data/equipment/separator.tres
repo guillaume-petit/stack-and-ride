@@ -1,8 +1,14 @@
 [gd_resource type="Resource" script_class="EquipmentData" format=3]
 
 [ext_resource type="Script" path="res://core/data/equipment_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://core/data/effect_data.gd" id="2_effects"]
+
+[sub_resource type="Resource" id="Resource_effects"]
+script = ExtResource("2_effects")
+hot_and_cold_may_touch = true
 
 [resource]
 script = ExtResource("1_script")
 id = &"separator"
 shop_price = 18
+effects = SubResource("Resource_effects")

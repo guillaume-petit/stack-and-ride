@@ -115,6 +115,11 @@ func brace() -> void:
 	_braced = true
 
 
+## End of the turn: an unused "Caler le sac" is lost (§6.5, "la prochaine secousse du tour").
+func release_brace() -> void:
+	_braced = false
+
+
 # --- Reading the bag ----------------------------------------------------------------------
 
 ## Dishes in the grid, from the bottom of the bag to the top (then by order id).

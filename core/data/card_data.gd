@@ -2,8 +2,7 @@ class_name CardData
 extends ContentData
 ## A movement card (design doc §8.3).
 ##
-## These fields only describe the card; the rules that use them come with the game flow
-## (iteration 3).
+## The rules that use these fields are in Game.play_card().
 
 ## Base number of steps (0 for cards that give no steps).
 @export var steps: int = 0

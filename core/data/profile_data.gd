@@ -6,6 +6,8 @@ extends ContentData
 @export var bag_columns: int = 0
 ## Cards added to the starting deck.
 @export var extra_cards: Array[StringName] = []
+## What it changes in the rules; null for none.
+@export var effects: EffectData
 
 
 func _key_prefix() -> String:

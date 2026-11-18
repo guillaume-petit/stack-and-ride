@@ -65,6 +65,11 @@ func validate() -> PackedStringArray:
 		for card_id in profile.extra_cards:
 			if not cards.has(card_id):
 				problems.append("profile %s: unknown card %s" % [profile.id, card_id])
+	if not cards.has(config.fatigue_card):
+		problems.append("fatigue card: unknown card %s" % config.fatigue_card)
+	for upgrade: UpgradeData in upgrades.values():
+		if upgrade.removes_card != &"" and not cards.has(upgrade.removes_card):
+			problems.append("upgrade %s: unknown card %s" % [upgrade.id, upgrade.removes_card])
 	for dish: DishData in dishes.values():
 		if dish.cells.is_empty():
 			problems.append("dish %s has no cell" % dish.id)

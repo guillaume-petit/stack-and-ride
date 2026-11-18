@@ -92,8 +92,10 @@ Les cartes non jouées **restent en main** d'un tour à l'autre.
 
 - Un **restaurant** tiré au hasard parmi ceux du quartier.
 - **Commande groupée** : probabilité **22 %** (**50 %** un soir de match). Elle contient **2 plats** du même restaurant
-  pour **2 clients** ; le second client est tiré parmi les 3 clients libres les plus proches du premier (distance de Manhattan).
-  Sinon, 1 plat pour 1 client.
+  pour **2 clients** ; le second client est tiré parmi les 3 clients libres les plus proches du premier (distance de Manhattan,
+  égalités départagées dans l'ordre de lecture). Sinon, 1 plat pour 1 client.
+  S'il n'y a pas de second client libre, la proposition devient une commande simple, **sans** le × 1,3 de la paie
+  (précision du 18/11/2026 ; le prototype garde le × 1,3).
 - Les clients sont tirés parmi ceux qui n'ont ni course en cours ni proposition en attente.
 - Chaque plat est tiré dans la liste du restaurant (voir §8 ; un plat présent deux fois dans la liste est deux fois plus probable).
 - **Modificateurs** (tirés indépendamment) :
@@ -159,7 +161,7 @@ Un plat est **calé** s'il a au moins une case bloquée **à gauche** (paroi ou 
 
 Lors d'une secousse, chaque plat **non calé** et pas encore abîmé devient **abîmé** (une seule fois).
 - Avec les Sangles, seuls les plats fragiles peuvent être abîmés.
-- La carte Caler le sac annule la **prochaine** secousse du tour (une seule).
+- La carte Caler le sac annule la **prochaine** secousse du tour (une seule). Si aucune secousse n'a lieu, l'effet se perd en fin de tour.
 - Les plats au porte-gobelet et ceux posés à côté du sac ne sont jamais secoués.
 
 ### 6.6 Sources de secousse
@@ -198,7 +200,12 @@ et n'est jamais secoué.
 La livraison est **automatique** quand le livreur est au carrefour du client avec la course **dans le sac** :
 en arrivant au carrefour, en rangeant le plat sur place ou en jouant une carte sur place.
 
-**5ᵉ étage** : la livraison coûte **1 pas**. Sans pas disponible, elle attend (un message le signale une fois).
+> **Écart volontaire avec le prototype** (décision du 17/11/2026). On ne livre qu'au carrefour où le trajet **se termine** :
+> passer chez un client sans s'y arrêter ne livre pas. Le joueur peut arrêter son trajet chez un client avant d'avoir
+> dépensé tous ses pas, mais **toute livraison remet les pas restants à 0** (une carte jouée ensuite redonne des pas).
+> Le prototype livrait à chaque carrefour traversé.
+
+**5ᵉ étage** : la livraison demande au moins **1 pas** disponible. Sans pas disponible, elle attend (un message le signale une fois).
 
 ### 7.3 Résultat d'une livraison
 
