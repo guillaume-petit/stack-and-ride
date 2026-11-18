@@ -5,7 +5,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-# Écran d'accueil provisoire (itération 0)
+# Écran d'accueil (ui/main.tscn)
 
 msgid "GAME_TITLE"
 msgstr "Stack & Ride"
@@ -16,8 +16,14 @@ msgstr "Roguelite de livraison à vélo"
 msgid "MENU_VERSION"
 msgstr "Version %s"
 
-msgid "MENU_COMING_SOON"
-msgstr "Le jeu arrive bientôt. Cette version ne contient que le socle du projet."
+msgid "MENU_PITCH"
+msgstr "Six soirs pour garder ton compte de livreur Grailleo."
+
+msgid "MENU_NEW_RUN"
+msgstr "Nouvelle partie"
+
+msgid "MENU_QUIT"
+msgstr "Quitter"
 
 # Plats (data/dishes)
 
@@ -287,6 +293,501 @@ msgstr "Canicule"
 
 msgid "EVENT_HEAT_DESC"
 msgstr "Les plats froids paient +50 %, mais leur délai est réduit d'un tour."
+
+# Écran de jeu (ui/game, itération 4)
+
+msgid "HUD_NIGHT"
+msgstr "Soir"
+
+msgid "HUD_TURN"
+msgstr "Tour"
+
+msgid "HUD_RATING"
+msgstr "Note"
+
+msgid "HUD_WALLET"
+msgstr "Portefeuille"
+
+msgid "HUD_RENT"
+msgstr "Loyer ce soir"
+
+msgid "HUD_PROFILE"
+msgstr "Profil"
+
+msgid "HUD_EVENT"
+msgstr "Ce soir"
+
+msgid "HUD_EQUIPMENT"
+msgstr "Équipements"
+
+msgid "HUD_MENU"
+msgstr "Menu"
+
+msgid "MAP_BASE"
+msgstr "Base"
+
+msgid "CLIENT_NUMBER"
+msgstr "n° %d"
+
+msgid "TURN_STEPS"
+msgstr "Pas : %d"
+
+msgid "TURN_CARDS"
+msgstr "cartes jouées %d/%d"
+
+msgid "TURN_DRAW_PILE"
+msgstr "pioche %d"
+
+msgid "TURN_CROSSING_WORKS"
+msgstr "chantiers franchissables"
+
+msgid "TURN_END"
+msgstr "Fin du tour"
+
+msgid "TURN_END_NIGHT"
+msgstr "Finir la soirée"
+
+msgid "HAND_EMPTY"
+msgstr "Plus de cartes en main. Termine le tour pour repiocher."
+
+msgid "CARD_STEPS"
+msgstr "%d pas"
+
+msgid "CARD_TAG_FREE"
+msgstr "Gratuite"
+
+msgid "CARD_TAG_SHAKE"
+msgstr "Secousse"
+
+msgid "HINT_HELD"
+msgstr "Clique une colonne du sac : le plat tombe au fond. R pour pivoter, Échap pour annuler, ou pose-le à côté le temps de réorganiser."
+
+msgid "HINT_ASIDE"
+msgstr "Des plats sont posés à côté du sac : range-les avant de repartir ou de finir le tour."
+
+msgid "HINT_AT_RESTAURANT"
+msgstr "Tu es devant un restaurant : prends le plat dans tes courses acceptées."
+
+msgid "HINT_MOVE"
+msgstr "Clique un carrefour surligné pour y aller. Tu livres le client chez qui ton trajet s'arrête. Les pavés secouent le sac."
+
+msgid "HINT_ACCEPT"
+msgstr "Accepte des propositions de l'appli, puis joue tes cartes pour avancer. Survole une proposition pour la voir sur le plan."
+
+msgid "HINT_PLAY_CARDS"
+msgstr "Joue jusqu'à %d cartes pour gagner des pas (les gratuites ne comptent pas), puis termine le tour."
+
+msgid "OFFERS_TITLE"
+msgstr "Propositions"
+
+msgid "OFFERS_ACCEPTANCE"
+msgstr "Taux d'acceptation %d %%"
+
+msgid "OFFERS_EMPTY"
+msgstr "Pas de nouvelle proposition. D'autres arrivent au prochain tour."
+
+msgid "OFFER_PAY_AND_TIME"
+msgstr "%s · %d t"
+
+msgid "OFFER_DISTANCE"
+msgstr "resto à %d pas"
+
+msgid "OFFER_ACCEPT"
+msgstr "Accepter"
+
+msgid "MODIFIER_URGENT"
+msgstr "Urgent"
+
+msgid "MODIFIER_VIP"
+msgstr "VIP"
+
+msgid "MODIFIER_FIFTH_FLOOR"
+msgstr "5ᵉ étage"
+
+msgid "MODIFIER_GROUPED"
+msgstr "Groupée"
+
+msgid "ORDERS_TITLE"
+msgstr "Courses acceptées"
+
+msgid "ORDERS_COUNT"
+msgstr "%d/%d · tours restants"
+
+msgid "ORDERS_EMPTY"
+msgstr "Aucune course en cours. Accepte une proposition."
+
+msgid "ORDER_WAITING"
+msgstr "À récupérer chez %s"
+
+msgid "ORDER_HELD"
+msgstr "En main"
+
+msgid "ORDER_ASIDE"
+msgstr "Posé à côté du sac"
+
+msgid "ORDER_CUP_HOLDER"
+msgstr "Au porte-gobelet"
+
+msgid "ORDER_IN_BAG"
+msgstr "Dans le sac"
+
+msgid "ORDER_IN_BAG_DAMAGED"
+msgstr "Dans le sac, abîmé"
+
+msgid "ORDER_TURNS_LEFT"
+msgstr "%d t"
+
+msgid "ORDER_LATE"
+msgstr "Retard"
+
+msgid "ORDER_TAKE"
+msgstr "Prendre le plat"
+
+msgid "BAG_TITLE"
+msgstr "Le sac"
+
+msgid "BAG_SIZE"
+msgstr "%d × %d"
+
+msgid "BAG_LOOSE_COUNT"
+msgstr "%d mal calé(s)"
+
+msgid "BAG_BRACED"
+msgstr "sac calé"
+
+msgid "BAG_LEGEND_HOT"
+msgstr "Chaud"
+
+msgid "BAG_LEGEND_COLD"
+msgstr "Froid"
+
+msgid "BAG_LEGEND_FRAGILE"
+msgstr "Fragile"
+
+msgid "BAG_LEGEND_LOOSE"
+msgstr "Mal calé"
+
+msgid "BAG_HINT_HELD"
+msgstr "Survole une colonne pour voir où le plat tombe."
+
+msgid "BAG_HINT_LIFT"
+msgstr "Clique un plat pour le reprendre en main (s'il n'a rien dessus). Le fond du sac est en bas."
+
+msgid "BAG_EMPTY"
+msgstr "Sac vide. Le fond du sac est en bas."
+
+msgid "BAG_FRAGILE"
+msgstr "fragile"
+
+msgid "BAG_ROTATE"
+msgstr "Pivoter (R)"
+
+msgid "BAG_SET_ASIDE"
+msgstr "Poser à côté"
+
+msgid "BAG_CANCEL_RESTAURANT"
+msgstr "Laisser au resto"
+
+msgid "BAG_CANCEL_BAG"
+msgstr "Remettre en place"
+
+msgid "BAG_CANCEL_ASIDE"
+msgstr "Reposer à côté"
+
+msgid "BAG_ASIDE_TITLE"
+msgstr "À côté du sac · clique un plat pour le reprendre"
+
+msgid "BAG_CUP_HOLDER"
+msgstr "Porte-gobelet : %s"
+
+msgid "TEMPERATURE_NEUTRAL"
+msgstr "Ni chaud ni froid"
+
+msgid "TEMPERATURE_HOT"
+msgstr "Chaud"
+
+msgid "TEMPERATURE_COLD"
+msgstr "Froid"
+
+msgid "FEED_TITLE"
+msgstr "Notifications"
+
+msgid "SENDER_APP"
+msgstr "Grailleo"
+
+msgid "SENDER_DELIVERY"
+msgstr "Livraison"
+
+msgid "SENDER_VIP"
+msgstr "Client VIP"
+
+msgid "SENDER_CANCELLED"
+msgstr "Annulation"
+
+msgid "SENDER_SHAKE"
+msgstr "Secousse"
+
+msgid "SENDER_BAG"
+msgstr "Sac"
+
+msgid "SENDER_REPORT"
+msgstr "Signalement"
+
+msgid "SENDER_REFUSED"
+msgstr "Impossible"
+
+msgid "SOURCE_PAVED"
+msgstr "Pavés"
+
+msgid "FEED_NIGHT_STARTED"
+msgstr "Soir %d · %s. Loyer à payer ce soir : %s."
+
+msgid "FEED_NIGHT_ENDED"
+msgstr "Fin du soir %d."
+
+msgid "FEED_DELIVERED_PERFECT"
+msgstr "Livré au %s : %s + %s de pourboire."
+
+msgid "FEED_DELIVERED_BONUS"
+msgstr "Prime : %s."
+
+msgid "FEED_DELIVERED_PERFECT_END"
+msgstr "« Parfait ! » %s ★"
+
+msgid "FEED_DELIVERED_LATE"
+msgstr "Livré en retard au %s : %s, pas de pourboire. « Tout était froid. » %s ★"
+
+msgid "FEED_DELIVERED_DAMAGED"
+msgstr "Livré abîmé au %s : %s, pas de pourboire. « Le plat a voyagé. » %s ★"
+
+msgid "FEED_CANCELLED"
+msgstr "Le client du %s a annulé sa commande. %s ★"
+
+msgid "FEED_SHAKE_BRACED"
+msgstr "%s : le sac était calé, rien n'a bougé."
+
+msgid "FEED_SHAKE_NOTHING"
+msgstr "%s : ça secoue, mais rien n'a été abîmé."
+
+msgid "FEED_SHAKE_DAMAGED"
+msgstr "%s : %s abîmé(s)."
+
+msgid "FEED_CRUSHED"
+msgstr "Les plats du dessus sont retombés et ont écrasé : %s."
+
+msgid "FEED_FIFTH_FLOOR"
+msgstr "%s : 5ᵉ étage sans ascenseur. Il te faut %d pas pour monter."
+
+msgid "FEED_OFFERS_IGNORED"
+msgstr "Propositions ignorées : %d. Ton taux d'acceptation baisse de %d points."
+
+msgid "FEED_CARD_RATING_COST"
+msgstr "%s : « Un livreur à contresens a failli me renverser ! » %s ★"
+
+msgid "FEED_DEADLINES_EXTENDED"
+msgstr "« J'arrive ! » Tes clients patientent : +%d tour sur chaque course."
+
+msgid "FEED_WORKS_MOVED"
+msgstr "Les chantiers ont changé de place dans le quartier."
+
+msgid "LEDGER_EARNINGS"
+msgstr "Gains du soir"
+
+msgid "LEDGER_RENT"
+msgstr "Loyer"
+
+msgid "LEDGER_RENT_UNPAID"
+msgstr "impayé (il manque %s)"
+
+msgid "LEDGER_WALLET"
+msgstr "Portefeuille"
+
+msgid "LEDGER_UNDELIVERED"
+msgstr "Courses non livrées"
+
+msgid "LEDGER_ACCEPTANCE"
+msgstr "Taux d'acceptation"
+
+msgid "LEDGER_RATING"
+msgstr "Note"
+
+msgid "PROFILE_TITLE"
+msgstr "Quel livreur es-tu ?"
+
+msgid "PROFILE_INTRO"
+msgstr "Ton profil change les règles pour toute la partie."
+
+msgid "PROFILE_KIND"
+msgstr "Profil"
+
+msgid "NIGHT_END_TITLE"
+msgstr "Fin du soir %d"
+
+msgid "NIGHT_END_REWARD"
+msgstr "Loyer payé. Choisis une récompense gratuite :"
+
+msgid "NIGHT_END_NO_REWARD"
+msgstr "Loyer payé. Pas de récompense possible ce soir."
+
+msgid "NIGHT_END_TO_SHOP"
+msgstr "Aller à la boutique"
+
+msgid "REWARD_KIND_CARD"
+msgstr "Carte"
+
+msgid "REWARD_KIND_UPGRADE"
+msgstr "Amélioration"
+
+msgid "REWARD_KIND_EQUIPMENT"
+msgstr "Équipement"
+
+msgid "SHOP_TITLE"
+msgstr "La boutique du coin"
+
+msgid "SHOP_INTRO"
+msgstr "Tu as %s. Chaque achat entame ce qu'il te faut pour le loyer de demain : %s."
+
+msgid "SHOP_TOMORROW"
+msgstr "Demain soir"
+
+msgid "SHOP_OWNED"
+msgstr "Ton paquet : %d cartes · ton sac : %d × %d."
+
+msgid "SHOP_SOLD"
+msgstr "Acheté"
+
+msgid "SHOP_NEXT_NIGHT"
+msgstr "Commencer le soir %d"
+
+msgid "RUN_END_TITLE_WON"
+msgstr "Six soirs tenus"
+
+msgid "RUN_END_TITLE_RENT"
+msgstr "Loyer impayé"
+
+msgid "RUN_END_TITLE_RATING"
+msgstr "Compte désactivé"
+
+msgid "RUN_END_TEXT_WON"
+msgstr "Ta note tient bon et ton loyer est payé. L'appli te garde."
+
+msgid "RUN_END_TEXT_RENT"
+msgstr "Il te manquait %s pour le loyer."
+
+msgid "RUN_END_TEXT_RATING"
+msgstr "Ta note est passée sous %s étoiles : l'appli a désactivé ton compte."
+
+msgid "RUN_END_STATS"
+msgstr "Soirs joués : %d · livraisons : %d · gains : %s · note finale : %s."
+
+msgid "RUN_END_NEW_RUN"
+msgstr "Nouvelle partie"
+
+msgid "RUN_END_MENU"
+msgstr "Menu principal"
+
+msgid "MENU_LEAVE_TITLE"
+msgstr "Quitter la partie ?"
+
+msgid "MENU_LEAVE_TEXT"
+msgstr "La sauvegarde n'existe pas encore : la partie en cours sera perdue."
+
+msgid "MENU_LEAVE_CONFIRM"
+msgstr "Quitter"
+
+msgid "MENU_LEAVE_CANCEL"
+msgstr "Continuer la partie"
+
+# Noms courts des restaurants, pour le plan
+
+msgid "RESTAURANT_BURGER_SHORT"
+msgstr "Smash"
+
+msgid "RESTAURANT_PIZZA_SHORT"
+msgstr "Nonna"
+
+msgid "RESTAURANT_SUSHI_SHORT"
+msgstr "Maki"
+
+msgid "RESTAURANT_TACOS_SHORT"
+msgstr "Loco"
+
+msgid "RESTAURANT_GLACIER_SHORT"
+msgstr "Polaire"
+
+# Actions refusées (core/game.gd, Game.Problem)
+
+msgid "PROBLEM_WRONG_PHASE"
+msgstr "Ce n'est pas le moment."
+
+msgid "PROBLEM_UNKNOWN_PROFILE"
+msgstr "Ce profil n'existe pas."
+
+msgid "PROBLEM_NO_SUCH_OFFER"
+msgstr "Cette proposition n'est plus disponible."
+
+msgid "PROBLEM_TOO_MANY_ORDERS"
+msgstr "Trop de courses en même temps : livre d'abord celles en cours."
+
+msgid "PROBLEM_NO_SUCH_CARD"
+msgstr "Cette carte n'est plus dans ta main."
+
+msgid "PROBLEM_CARD_LIMIT"
+msgstr "Plus de carte ce tour : tu as joué le maximum (les cartes gratuites restent jouables)."
+
+msgid "PROBLEM_SORTING"
+msgstr "Range d'abord le plat en main et ceux posés à côté du sac."
+
+msgid "PROBLEM_SAME_PLACE"
+msgstr "Tu y es déjà."
+
+msgid "PROBLEM_TOO_FAR"
+msgstr "Pas assez de pas pour aller jusque-là : joue une carte."
+
+msgid "PROBLEM_NO_SUCH_ORDER"
+msgstr "Cette course n'existe plus."
+
+msgid "PROBLEM_ALREADY_PICKED_UP"
+msgstr "Tu as déjà pris ce plat."
+
+msgid "PROBLEM_NOT_AT_RESTAURANT"
+msgstr "Va d'abord au restaurant pour prendre le plat."
+
+msgid "PROBLEM_NO_ROOM"
+msgstr "Plus de place dans cette colonne."
+
+msgid "PROBLEM_ON_FRAGILE"
+msgstr "On ne pose rien sur un plat fragile."
+
+msgid "PROBLEM_HOT_COLD_TOUCH"
+msgstr "Le chaud et le froid ne doivent pas se toucher."
+
+msgid "PROBLEM_SOMETHING_ON_TOP"
+msgstr "Un autre plat est posé dessus : retire-le d'abord."
+
+msgid "PROBLEM_HAND_BUSY"
+msgstr "Tu as déjà un plat en main : range-le d'abord."
+
+msgid "PROBLEM_NOTHING_HELD"
+msgstr "Tu n'as pas de plat en main."
+
+msgid "PROBLEM_NOT_IN_BAG"
+msgstr "Ce plat n'est pas rangé dans le sac."
+
+msgid "PROBLEM_NOT_ASIDE"
+msgstr "Ce plat n'est pas posé à côté du sac."
+
+msgid "PROBLEM_NO_SUCH_REWARD"
+msgstr "Cet article n'existe pas."
+
+msgid "PROBLEM_ALREADY_BOUGHT"
+msgstr "Déjà acheté."
+
+msgid "PROBLEM_NOT_ENOUGH_MONEY"
+msgstr "Pas assez d'argent."
+
+msgid "PROBLEM_NOT_AVAILABLE"
+msgstr "Ce n'est plus possible."
 
 # Écran de debug du quartier (ui/debug/city_debug.tscn, itération 1)
 
