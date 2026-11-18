@@ -34,6 +34,8 @@ var kind: Kind
 var order_id: int = -1
 var order_ids: Array[int] = []
 var value: int = 0
+## Rating change caused by the event, in tenths of a star, for every kind that changes it
+## (deliveries included, so that readers only look here).
 var rating_tenths: int = 0
 var source: StringName = &""
 var braced: bool = false

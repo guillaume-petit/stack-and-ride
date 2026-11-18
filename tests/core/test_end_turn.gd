@@ -130,3 +130,15 @@ func test_the_night_ends_after_the_10th_turn() -> void:
 	for event in f.state.history:
 		kinds.append(event.kind)
 	assert_eq(kinds, [GameEvent.Kind.NIGHT_ENDED, GameEvent.Kind.NIGHT_STARTED])
+
+
+func test_a_refused_end_of_turn_changes_nothing() -> void:
+	var aside := f.add_order(&"burger", GameFixture.CLIENT_1)
+	var in_hand := f.add_order(&"pizza", GameFixture.CLIENT_2)
+	f.state.courier_position = GameFixture.RESTAURANT
+	f.game.take_dish(aside.id)
+	f.game.set_held_aside()
+	f.game.take_dish(in_hand.id)
+	assert_eq(f.game.end_turn(), Game.Problem.SORTING)
+	assert_eq(f.state.bag.held.order_id, in_hand.id, "the dish stays in hand")
+	assert_true(in_hand.picked_up)

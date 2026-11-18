@@ -26,7 +26,9 @@ extends ContentData
 @export var cancels_next_shake: bool = false
 ## Removed from the game once played (Fatigue).
 @export var removed_when_played: bool = false
-## Removed from the deck at the end of the night (Fatigue).
+## Removed from the deck at the end of the night (Fatigue). The rules need not read it: such a
+## card only enters the discard pile, never the permanent deck, and CardPiles.start_night()
+## rebuilds the piles from that deck.
 @export var temporary: bool = false
 ## Price in the shop; 0 means the card is never sold nor offered as a reward.
 @export var shop_price: int = 0

@@ -3,7 +3,7 @@ extends RefCounted
 ## The rules of a run: the only way for the interface and the bot to change the state.
 ##
 ## Each action checks that it is allowed and returns Problem.NONE, or the reason why it is
-## refused; a refused action changes nothing. Everything that happens is also added to
+## refused; a refused action changes nothing (one exception, see end_turn()). Everything that happens is also added to
 ## state.history (see GameEvent).
 
 ## Why an action is refused.
@@ -35,6 +35,18 @@ enum Problem {
 	NOTHING_HELD,
 	NOT_IN_BAG,
 	NOT_ASIDE,
+}
+
+## The bag's reasons, in the game's terms.
+const BAG_PROBLEMS: Dictionary[Bag.Problem, Problem] = {
+	Bag.Problem.NONE: Problem.NONE,
+	Bag.Problem.NO_ROOM: Problem.NO_ROOM,
+	Bag.Problem.ON_FRAGILE: Problem.ON_FRAGILE,
+	Bag.Problem.HOT_COLD_TOUCH: Problem.HOT_COLD_TOUCH,
+	Bag.Problem.SOMETHING_ON_TOP: Problem.SOMETHING_ON_TOP,
+	Bag.Problem.HAND_BUSY: Problem.HAND_BUSY,
+	Bag.Problem.NOTHING_HELD: Problem.NOTHING_HELD,
+	Bag.Problem.NOT_IN_BAG: Problem.NOT_IN_BAG,
 }
 
 var state: GameState
@@ -70,7 +82,7 @@ func choose_profile(id: StringName) -> Problem:
 # --- Offers (§5) ----------------------------------------------------------------------------
 
 func accept_offer(id: int) -> Problem:
-	if state.phase != GameState.Phase.PLAYING:
+	if not _is_playing():
 		return Problem.WRONG_PHASE
 	var offer := state.find_offer(id)
 	if offer == null:
@@ -94,7 +106,7 @@ func accept_offer(id: int) -> Problem:
 
 
 func refuse_offer(id: int) -> Problem:
-	if state.phase != GameState.Phase.PLAYING:
+	if not _is_playing():
 		return Problem.WRONG_PHASE
 	var offer := state.find_offer(id)
 	if offer == null:
@@ -122,7 +134,7 @@ func card_steps(card_id: StringName) -> int:
 
 ## Why the card at this index of the hand cannot be played now, or Problem.NONE.
 func card_problem(hand_index: int) -> Problem:
-	if state.phase != GameState.Phase.PLAYING:
+	if not _is_playing():
 		return Problem.WRONG_PHASE
 	if hand_index < 0 or hand_index >= state.piles.hand.size():
 		return Problem.NO_SUCH_CARD
@@ -180,7 +192,7 @@ func paths() -> CityPaths:
 ## Rides to a crossroads, spending one step per street. Deliveries only happen where the
 ## ride ends (§7.2): to deliver on the way, stop there.
 func move_to(target: Vector2i) -> Problem:
-	if state.phase != GameState.Phase.PLAYING:
+	if not _is_playing():
 		return Problem.WRONG_PHASE
 	if state.bag.is_sorting():
 		return Problem.SORTING
@@ -208,7 +220,7 @@ func move_to(target: Vector2i) -> Problem:
 
 ## Takes the dish of an order at its restaurant: it goes in hand, or in the cup holder.
 func take_dish(order_id: int) -> Problem:
-	if state.phase != GameState.Phase.PLAYING:
+	if not _is_playing():
 		return Problem.WRONG_PHASE
 	var order := state.find_order(order_id)
 	if order == null:
@@ -226,7 +238,7 @@ func take_dish(order_id: int) -> Problem:
 
 ## Drops the dish in hand in a column; it is delivered at once if its client is here.
 func drop_held(column: int) -> Problem:
-	if state.phase != GameState.Phase.PLAYING:
+	if not _is_playing():
 		return Problem.WRONG_PHASE
 	var problem := _from_bag(state.bag.drop_held(column))
 	if problem == Problem.NONE:
@@ -235,7 +247,7 @@ func drop_held(column: int) -> Problem:
 
 
 func rotate_held() -> Problem:
-	if state.phase != GameState.Phase.PLAYING:
+	if not _is_playing():
 		return Problem.WRONG_PHASE
 	if state.bag.held == null:
 		return Problem.NOTHING_HELD
@@ -244,13 +256,13 @@ func rotate_held() -> Problem:
 
 
 func lift(order_id: int) -> Problem:
-	if state.phase != GameState.Phase.PLAYING:
+	if not _is_playing():
 		return Problem.WRONG_PHASE
 	return _from_bag(state.bag.lift(order_id))
 
 
 func set_held_aside() -> Problem:
-	if state.phase != GameState.Phase.PLAYING:
+	if not _is_playing():
 		return Problem.WRONG_PHASE
 	if state.bag.held == null:
 		return Problem.NOTHING_HELD
@@ -259,7 +271,7 @@ func set_held_aside() -> Problem:
 
 
 func take_from_aside(order_id: int) -> Problem:
-	if state.phase != GameState.Phase.PLAYING:
+	if not _is_playing():
 		return Problem.WRONG_PHASE
 	if state.bag.held != null:
 		return Problem.HAND_BUSY
@@ -271,7 +283,7 @@ func take_from_aside(order_id: int) -> Problem:
 
 ## Puts the dish in hand back where it came from (a dish from the restaurant goes back there).
 func cancel_held() -> Problem:
-	if state.phase != GameState.Phase.PLAYING:
+	if not _is_playing():
 		return Problem.WRONG_PHASE
 	if state.bag.held == null:
 		return Problem.NOTHING_HELD
@@ -283,11 +295,16 @@ func cancel_held() -> Problem:
 
 # --- End of the turn (§4, §7.4) -------------------------------------------------------------
 
+## A dish set aside blocks the end of the turn (§6.8). A dish in hand from the restaurant or
+## the bag goes back by itself first; if a dish from the bag can no longer go back to its
+## place, it is set aside instead (§6.3) and the end of the turn is then refused.
 func end_turn() -> Problem:
-	if state.phase != GameState.Phase.PLAYING:
+	if not _is_playing():
 		return Problem.WRONG_PHASE
-	if state.bag.held != null and state.bag.held_origin != Bag.Origin.ASIDE:
-		cancel_held()
+	var held_from_aside := state.bag.held != null and state.bag.held_origin == Bag.Origin.ASIDE
+	if held_from_aside or not state.bag.aside_items().is_empty():
+		return Problem.SORTING
+	cancel_held()
 	if state.bag.is_sorting():
 		return Problem.SORTING
 
@@ -438,6 +455,11 @@ func _remove_order(order: Order) -> void:
 
 # --- Helpers --------------------------------------------------------------------------------
 
+## The actions of a night are only allowed while playing (not in the shop, not after the run).
+func _is_playing() -> bool:
+	return state.phase == GameState.Phase.PLAYING
+
+
 func _shake(source: StringName) -> void:
 	var result := state.bag.shake()
 	var event := GameEvent.new(GameEvent.Kind.SHAKE)
@@ -461,22 +483,5 @@ func _record(event: GameEvent) -> void:
 
 
 static func _from_bag(problem: Bag.Problem) -> Problem:
-	match problem:
-		Bag.Problem.NONE:
-			return Problem.NONE
-		Bag.Problem.NO_ROOM:
-			return Problem.NO_ROOM
-		Bag.Problem.ON_FRAGILE:
-			return Problem.ON_FRAGILE
-		Bag.Problem.HOT_COLD_TOUCH:
-			return Problem.HOT_COLD_TOUCH
-		Bag.Problem.SOMETHING_ON_TOP:
-			return Problem.SOMETHING_ON_TOP
-		Bag.Problem.HAND_BUSY:
-			return Problem.HAND_BUSY
-		Bag.Problem.NOTHING_HELD:
-			return Problem.NOTHING_HELD
-		Bag.Problem.NOT_IN_BAG:
-			return Problem.NOT_IN_BAG
-	assert(false, "unknown bag problem %d" % problem)
-	return Problem.NONE
+	assert(BAG_PROBLEMS.has(problem), "unknown bag problem %d" % problem)
+	return BAG_PROBLEMS[problem]
