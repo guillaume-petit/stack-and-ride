@@ -59,6 +59,9 @@ Trois systèmes s'emboîtent :
   Si le tirage ne le permet pas, on recommence (200 essais au maximum).
 - **Déplacements** : de carrefour en carrefour, le long des rues, **1 pas par tronçon**.
 - **Distance** : le plus court chemin en pas (parcours en largeur), sans emprunter les chantiers.
+- **Trajet** : le livreur suit un plus court chemin. Entre plusieurs chemins de même longueur, il prend celui qui
+  emprunte le moins de rues pavées (décision du 18/11/2026). Pour éviter des pavés au prix de pas en plus, le joueur
+  s'arrête en route.
 
 ## 4. Un tour de jeu
 
@@ -375,9 +378,8 @@ Le soir 1 est toujours calme. L'événement des soirs suivants est tiré à la f
     et la paie tombe à × 0,6.
   - **Profils déséquilibrés** : le sprinteur gagne 86 % des parties (ses cartes ne secouent jamais), le chouchou 49 %
     (ses pénalités le font perdre tôt, mais il gagne le plus d'argent).
-  - **Les pavés sont la première source de plats abîmés** (environ 3 par partie). Le trajet suit toujours le plus court
-    chemin, même quand un chemin de même longueur évite les pavés : le joueur ne peut les contourner qu'en s'arrêtant
-    en route. À trancher : préférer automatiquement, à longueur égale, le chemin sans pavés ?
+  - **Les pavés sont la première source de plats abîmés** (environ 3 par partie). Depuis, à longueur égale, le trajet
+    évite les pavés (§3).
 - Les secousses peuvent être très punitives avec un sac de 4 colonnes : à surveiller.
 - L'écrasement des fragiles lors de la retombée est peut-être trop sévère (le bot n'en subit presque pas : 0,1 par partie).
 - Sur téléphone, la taille des cases du sac (itération 5).

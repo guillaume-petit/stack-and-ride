@@ -144,3 +144,35 @@ func test_moving_the_works_refreshes_the_paths() -> void:
 		city.relocate_works(GameRng.new(seed + 500), content.config.works_relocation_attempts)
 		var fresh := City.from_text(city.to_text().split("\n"))
 		assert_eq(city.distance(city.base, target), fresh.distance(fresh.base, target), "seed %d" % seed)
+
+
+func test_same_length_path_avoids_paved_streets() -> void:
+	# Two paths of 2 steps to (1, 1): through (1, 0) with a paved street, or through (0, 1).
+	var city := _city([
+		"B-+",
+		"| ~",
+		"+-+",
+	])
+	var paths := city.paths_from(city.base)
+	assert_eq(paths.path_to(Vector2i(1, 1)), [Vector2i(0, 1), Vector2i(1, 1)])
+	assert_eq(paths.distance_to(Vector2i(1, 1)), 2)
+
+
+func test_a_shorter_paved_path_is_still_taken() -> void:
+	var city := _city([
+		"B~+-+",
+		"| | |",
+		"+-+-+",
+	])
+	assert_eq(city.paths_from(city.base).path_to(Vector2i(1, 0)), [Vector2i(1, 0)])
+
+
+func test_the_path_with_fewer_paved_streets_wins_further_away() -> void:
+	# To (2, 1) in 3 steps: the top row has two paved streets, the bottom row none.
+	var city := _city([
+		"B~+~+",
+		"| | |",
+		"+-+-+",
+	])
+	var path := city.paths_from(city.base).path_to(Vector2i(2, 1))
+	assert_eq(path, [Vector2i(0, 1), Vector2i(1, 1), Vector2i(2, 1)])
