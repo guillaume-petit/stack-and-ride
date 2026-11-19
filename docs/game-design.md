@@ -189,6 +189,11 @@ Pour réorganiser, le joueur peut **poser un plat à côté du sac** (venant du 
 - Plusieurs plats peuvent être posés à côté.
 - Tant qu'un plat est à côté ou en main, **impossible de se déplacer ou de finir le tour**.
 - Un plat posé à côté n'est pas livré en passant chez le client.
+- **Rendre un plat au restaurant** (ajout du 19/11/2026) : tant que le livreur n'a pas quitté le carrefour du restaurant,
+  un plat pris là peut y retourner, même après avoir été posé à côté (on le reprend en main, puis « Laisser au resto »).
+  La course reste acceptée, son plat attend de nouveau au restaurant ; s'il avait été abîmé entre-temps, il le reste.
+  Sans cette règle, un plat qui ne rentre nulle part dans le sac (plus de place, chaud contre froid) restait à côté
+  pour toujours : impossible de bouger ou de finir le tour. Le prototype a ce blocage.
 
 ### 6.9 Porte-gobelet
 

@@ -236,6 +236,7 @@ func move_to(target: Vector2i) -> Problem:
 		previous = crossroads
 	state.steps -= distance
 	state.courier_position = target
+	state.bag.leave_stop()
 	_deliver_here()
 	return Problem.NONE
 
@@ -264,7 +265,9 @@ func take_dish(order_id: int) -> Problem:
 	if problem != Problem.NONE:
 		return problem
 	var order := state.find_order(order_id)
-	state.bag.take_from_restaurant(BagItem.new(order.id, order.dish))
+	var item := BagItem.new(order.id, order.dish)
+	item.damaged = order.damaged_before_return
+	state.bag.take_from_restaurant(item)
 	order.picked_up = true
 	_deliver_here()
 	return Problem.NONE
@@ -323,7 +326,8 @@ func take_from_aside(order_id: int) -> Problem:
 	return Problem.NONE
 
 
-## Puts the dish in hand back where it came from (a dish from the restaurant goes back there).
+## Puts the dish in hand back where it came from. A dish from the restaurant goes back there,
+## even after being set aside, while the courier has not left (see Bag.cancel_held()).
 func cancel_held() -> Problem:
 	if not _is_playing():
 		return Problem.WRONG_PHASE
@@ -331,7 +335,10 @@ func cancel_held() -> Problem:
 		return Problem.NOTHING_HELD
 	var back_to_restaurant := state.bag.cancel_held()
 	if back_to_restaurant != null:
-		state.find_order(back_to_restaurant.order_id).picked_up = false
+		var order := state.find_order(back_to_restaurant.order_id)
+		order.picked_up = false
+		# Shaken while it was in the bag: giving it back does not repair it.
+		order.damaged_before_return = back_to_restaurant.damaged
 	return Problem.NONE
 
 

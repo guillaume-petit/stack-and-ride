@@ -15,6 +15,9 @@ var pay: int
 var modifiers: OrderModifiers
 ## False while the dish waits at the restaurant (§7.1).
 var picked_up: bool = false
+## The dish was damaged, then given back to the restaurant (§6.8): it is still damaged when
+## taken again.
+var damaged_before_return: bool = false
 ## The player was told once that a step is needed to climb to the 5th floor (§7.2).
 var fifth_floor_warned: bool = false
 

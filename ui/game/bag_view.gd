@@ -102,7 +102,8 @@ func refresh() -> void:
 			shape_size = shape_size.max(cell + Vector2i.ONE)
 		_held_shape.custom_minimum_size = Vector2(shape_size) * SHAPE_CELL
 		_held_shape.queue_redraw()
-		_cancel_button.text = UiText.t("BAG_CANCEL_" + Bag.Origin.keys()[bag.held_origin])
+		var origin := Bag.Origin.RESTAURANT if bag.held_returns_to_restaurant() else bag.held_origin
+		_cancel_button.text = UiText.t("BAG_CANCEL_" + Bag.Origin.keys()[origin])
 
 	UiStyle.clear(_aside_row)
 	_aside_box.visible = not bag.aside_items().is_empty()
