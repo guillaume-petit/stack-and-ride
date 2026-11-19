@@ -172,6 +172,9 @@ static func event_line(event: GameEvent, state: GameState) -> Line:
 			return Line.new(t("SENDER_APP"), t("FEED_DEADLINES_EXTENDED") % event.value)
 		GameEvent.Kind.WORKS_MOVED:
 			return Line.new(t("SENDER_APP"), t("FEED_WORKS_MOVED"))
+		GameEvent.Kind.RETURNED_TO_RESTAURANT:
+			return Line.new(t("SENDER_BAG"), t("FEED_RETURNED_TO_RESTAURANT")
+					% ["#%d %s" % [event.order.id, name_of(event.order.dish)], restaurant_at(state, event.order.restaurant)])
 		GameEvent.Kind.NIGHT_ENDED:
 			return Line.new(t("SENDER_APP"), t("FEED_NIGHT_ENDED") % event.value)
 	return null

@@ -366,7 +366,7 @@ msgid "HINT_ASIDE"
 msgstr "Range les plats posés à côté du sac avant de repartir ou de finir le tour."
 
 msgid "HINT_ASIDE_RETURN"
-msgstr "Range les plats posés à côté avant de repartir. Un plat qui ne rentre pas : reprends-le, puis « Laisser au resto »."
+msgstr "Range les plats posés à côté avant de repartir. Ceux qui ne rentrent pas retourneront au resto en fin de tour."
 
 msgid "HINT_AT_RESTAURANT"
 msgstr "Tu es au restaurant : prends le plat dans tes courses acceptées."
@@ -592,6 +592,9 @@ msgstr "%s : « Un livreur à contresens a failli me renverser ! » %s ★"
 
 msgid "FEED_DEADLINES_EXTENDED"
 msgstr "« J'arrive ! » Tes clients patientent : +%d tour sur chaque course."
+
+msgid "FEED_RETURNED_TO_RESTAURANT"
+msgstr "%s ne rentrait pas dans le sac : rendu à %s en fin de tour. La course reste à livrer."
 
 msgid "FEED_WORKS_MOVED"
 msgstr "Les chantiers ont changé de place dans le quartier."

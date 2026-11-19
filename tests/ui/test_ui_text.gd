@@ -97,6 +97,18 @@ func test_shake_and_cancel_messages() -> void:
 	assert_eq(cancelled.text, "Le client du n° 2 a annulé sa commande. −0,5 ★")
 
 
+func test_returned_to_restaurant_message() -> void:
+	var f := GameFixture.start()
+	f.state.courier_position = GameFixture.RESTAURANT
+	f.state.bag = Bag.new(1, 1)
+	var pizza := f.add_order(&"pizza", GameFixture.CLIENT_1)
+	f.game.take_dish(pizza.id)
+	f.game.set_held_aside()
+	f.game.end_turn()
+	var line := UiText.event_line(f.events(GameEvent.Kind.RETURNED_TO_RESTAURANT)[0], f.state)
+	assert_eq(line.text, "#%d Pizza ne rentrait pas dans le sac : rendu à Pizzeria Nonna en fin de tour. La course reste à livrer." % pizza.id)
+
+
 ## Every kind of event of a whole run gets a message without error (a wrong number of values
 ## in a text would report an engine error and fail the test).
 func test_every_event_of_a_run_has_a_message() -> void:

@@ -335,34 +335,51 @@ func cancel_held() -> Problem:
 		return Problem.NOTHING_HELD
 	var back_to_restaurant := state.bag.cancel_held()
 	if back_to_restaurant != null:
-		var order := state.find_order(back_to_restaurant.order_id)
-		order.picked_up = false
-		# Shaken while it was in the bag: giving it back does not repair it.
-		order.damaged_before_return = back_to_restaurant.damaged
+		_given_back(back_to_restaurant)
 	return Problem.NONE
+
+
+## The dish went back to the restaurant: its order waits there again.
+func _given_back(item: BagItem) -> void:
+	var order := state.find_order(item.order_id)
+	order.picked_up = false
+	# Shaken while it was in the bag: giving it back does not repair it.
+	order.damaged_before_return = item.damaged
 
 
 # --- End of the turn (§4, §7.4) -------------------------------------------------------------
 
 ## Why the turn cannot end now, or Problem.NONE. A dish in hand from the restaurant or the
-## bag does not block it: end_turn() puts it back first (it may still refuse, see there).
+## bag does not block it, nor a dish set aside that can go back to the restaurant:
+## end_turn() puts them back first (it may still refuse, see there).
 func end_turn_problem() -> Problem:
 	if not _is_playing():
 		return Problem.WRONG_PHASE
-	var held_from_aside := state.bag.held != null and state.bag.held_origin == Bag.Origin.ASIDE
-	if held_from_aside or not state.bag.aside_items().is_empty():
+	var bag := state.bag
+	if bag.held != null and bag.held_origin == Bag.Origin.ASIDE and not bag.held_returns_to_restaurant():
 		return Problem.SORTING
+	for item in bag.aside_items():
+		if not bag.can_return_from_aside(item.order_id):
+			return Problem.SORTING
 	return Problem.NONE
 
 
-## A dish set aside blocks the end of the turn (§6.8). A dish in hand from the restaurant or
-## the bag goes back by itself first; if a dish from the bag can no longer go back to its
-## place, it is set aside instead (§6.3) and the end of the turn is then refused.
+## A dish set aside blocks the end of the turn (§6.8), unless it was taken at the restaurant
+## where the courier still stands: it then goes back there by itself (decision of 19/11/2026).
+## A dish in hand from the restaurant or the bag goes back by itself first; if a dish from
+## the bag can no longer go back to its place, it is set aside instead (§6.3) and the end of
+## the turn is then refused.
 func end_turn() -> Problem:
 	var problem := end_turn_problem()
 	if problem != Problem.NONE:
 		return problem
 	cancel_held()
+	for item in state.bag.return_aside_to_restaurant():
+		_given_back(item)
+		var returned := GameEvent.new(GameEvent.Kind.RETURNED_TO_RESTAURANT)
+		returned.order_id = item.order_id
+		returned.order = state.find_order(item.order_id)
+		_record(returned)
 	if state.bag.is_sorting():
 		return Problem.SORTING
 

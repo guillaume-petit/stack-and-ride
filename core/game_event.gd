@@ -26,13 +26,15 @@ enum Kind {
 	DEADLINES_EXTENDED,
 	## The road works moved (Nuit de travaux).
 	WORKS_MOVED,
+	## At the end of the turn, a dish set aside went back to its restaurant (order_id, order).
+	RETURNED_TO_RESTAURANT,
 	## The night is over (value: night number).
 	NIGHT_ENDED,
 }
 
 var kind: Kind
 var order_id: int = -1
-## The order of DELIVERED, CANCELLED and FIFTH_FLOOR_WAIT: it may have left the run since,
+## The order of DELIVERED, CANCELLED, FIFTH_FLOOR_WAIT and RETURNED_TO_RESTAURANT: it may have left the run since,
 ## and the feed still needs its dish and client.
 var order: Order = null
 var order_ids: Array[int] = []

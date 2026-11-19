@@ -25,7 +25,6 @@ func test_a_dish_set_aside_can_go_back_to_the_restaurant() -> void:
 	assert_eq(f.game.drop_held(0), Game.Problem.NO_ROOM)
 	f.game.set_held_aside()
 	assert_true(f.state.bag.can_return_from_aside(pizza.id))
-	assert_eq(f.game.end_turn_problem(), Game.Problem.SORTING)
 	f.game.take_from_aside(pizza.id)
 	assert_true(f.state.bag.held_returns_to_restaurant(), "the cancel button sends it back")
 	assert_eq(f.game.cancel_held(), Game.Problem.NONE)
@@ -65,6 +64,44 @@ func test_once_the_courier_left_a_dish_aside_stays_aside() -> void:
 	f.game.cancel_held()
 	assert_true(pizza.picked_up, "a dish carried since an earlier stop is not given back")
 	assert_eq(f.state.bag.location_of(pizza.id), Bag.Location.ASIDE)
+
+
+func test_the_end_of_the_turn_gives_back_the_dishes_set_aside() -> void:
+	var pizza := _bag_without_room_for_a_pizza()
+	f.game.take_dish(pizza.id)
+	f.game.set_held_aside()
+	assert_eq(f.game.end_turn_problem(), Game.Problem.NONE)
+	assert_eq(f.game.end_turn(), Game.Problem.NONE)
+	assert_eq(f.state.turn, 2)
+	assert_false(pizza.picked_up, "the dish waits at the restaurant again")
+	assert_true(f.state.find_order(pizza.id) != null, "the order is still accepted")
+	assert_eq(f.state.bag.location_of(pizza.id), Bag.Location.NONE)
+	var returned := f.events(GameEvent.Kind.RETURNED_TO_RESTAURANT)
+	assert_eq(returned.size(), 1)
+	assert_true(returned[0].order == pizza)
+
+
+func test_the_end_of_the_turn_gives_back_a_dish_held_from_aside() -> void:
+	var pizza := _bag_without_room_for_a_pizza()
+	f.game.take_dish(pizza.id)
+	f.game.set_held_aside()
+	f.game.take_from_aside(pizza.id)
+	assert_eq(f.game.end_turn(), Game.Problem.NONE)
+	assert_false(pizza.picked_up)
+
+
+func test_a_dish_from_an_earlier_stop_still_blocks_and_nothing_changes() -> void:
+	var carried := f.add_order(&"burger", GameFixture.CLIENT_2)
+	f.game.take_dish(carried.id)
+	f.game.set_held_aside()
+	f.state.bag.leave_stop()
+	var pizza := f.add_order(&"pizza", GameFixture.CLIENT_1)
+	f.game.take_dish(pizza.id)
+	f.game.set_held_aside()
+	assert_eq(f.game.end_turn(), Game.Problem.SORTING)
+	assert_true(pizza.picked_up, "a refused end of turn gives nothing back")
+	assert_eq(f.state.bag.location_of(pizza.id), Bag.Location.ASIDE)
+	assert_eq(f.state.turn, 1)
 
 
 func test_a_dish_damaged_before_going_back_stays_damaged() -> void:

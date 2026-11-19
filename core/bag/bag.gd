@@ -282,6 +282,18 @@ func can_return_from_aside(order_id: int) -> bool:
 	return location_of(order_id) == Location.ASIDE and order_id in _from_this_stop
 
 
+## Gives back to the restaurant every dish set aside that can go there (end of the turn).
+## Returns them; the caller marks their orders as waiting again.
+func return_aside_to_restaurant() -> Array[BagItem]:
+	var returned: Array[BagItem] = []
+	for item in _aside.duplicate():
+		if item.order_id in _from_this_stop:
+			_aside.erase(item)
+			_from_this_stop.erase(item.order_id)
+			returned.append(item)
+	return returned
+
+
 ## Lifts a dish of the grid into the hand; refused if a dish is already in hand
 ## or another dish sits on it (§6.3).
 func lift(order_id: int) -> Problem:

@@ -55,7 +55,9 @@ func test_end_turn_problem() -> void:
 	f.game.take_dish(order.id)
 	assert_eq(f.game.end_turn_problem(), Game.Problem.NONE, "a dish from the restaurant goes back by itself")
 	f.game.set_held_aside()
-	assert_eq(f.game.end_turn_problem(), Game.Problem.SORTING)
+	assert_eq(f.game.end_turn_problem(), Game.Problem.NONE, "set aside here: it can go back to the restaurant")
+	f.state.bag.leave_stop()
+	assert_eq(f.game.end_turn_problem(), Game.Problem.SORTING, "carried since an earlier stop")
 	assert_eq(f.state.turn, 1, "asking changes nothing")
 
 
