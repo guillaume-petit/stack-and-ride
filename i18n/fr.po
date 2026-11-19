@@ -363,6 +363,9 @@ msgid "HINT_HELD"
 msgstr "Clique une colonne du sac pour y lâcher le plat. R : pivoter. Échap : annuler."
 
 msgid "HINT_ASIDE"
+msgstr "Range les plats posés à côté du sac avant de repartir ou de finir le tour."
+
+msgid "HINT_ASIDE_RETURN"
 msgstr "Range les plats posés à côté avant de repartir. Un plat qui ne rentre pas : reprends-le, puis « Laisser au resto »."
 
 msgid "HINT_AT_RESTAURANT"
@@ -391,6 +394,9 @@ msgstr "%s · %d t"
 
 msgid "OFFER_DISTANCE"
 msgstr "resto à %d pas"
+
+msgid "OFFER_HERE"
+msgstr "tu es au resto"
 
 msgid "OFFER_ACCEPT"
 msgstr "Accepter"

@@ -53,6 +53,28 @@ func test_a_refused_action_is_reported_in_the_feed() -> void:
 	assert_eq(screen._feed._list.get_child_count(), lines + 1, "no step: the ride is refused")
 
 
+func test_a_dish_from_this_restaurant_can_be_given_back_from_aside() -> void:
+	screen.game.choose_profile(&"combo")
+	var state := screen.game.state
+	var order := Order.new()
+	order.id = state.next_order_id
+	state.next_order_id += 1
+	order.dish = state.content.dishes[&"pizza"]
+	order.restaurant = state.city.crossroads_with(City.Place.RESTAURANT)[0]
+	order.client = state.city.crossroads_with(City.Place.CLIENT)[0]
+	order.deadline = 5
+	order.modifiers = OrderModifiers.new()
+	state.orders.append(order)
+	state.courier_position = order.restaurant
+	screen.game.take_dish(order.id)
+	screen._bag.set_aside_pressed.emit()
+	assert_eq(screen._hud.hint.text, UiText.t("HINT_ASIDE_RETURN"))
+	screen._bag.aside_dish_clicked.emit(order.id)
+	assert_eq(screen._bag._cancel_button.text, UiText.t("BAG_CANCEL_RESTAURANT"))
+	screen._bag.cancel_pressed.emit()
+	assert_false(order.picked_up, "back at the restaurant")
+
+
 func test_the_menu_asks_before_leaving() -> void:
 	screen.game.choose_profile(&"combo")
 	screen._open_menu()

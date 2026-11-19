@@ -78,8 +78,12 @@ func _offer(offer: Offer, distance: int) -> PanelContainer:
 			chip_row.add_child(UiStyle.chip(chip[0], chip[1], UiStyle.INK if chip[1] == UiStyle.MUSTARD else Color.WHITE))
 		column.add_child(chip_row)
 	var bottom := UiStyle.hbox(6)
-	var spacer := UiStyle.label(UiText.t("OFFER_DISTANCE") % distance if distance >= 0 else "",
-			UiStyle.SMALL_FONT_SIZE, UiStyle.MUTED)
+	var where := ""
+	if distance == 0:
+		where = UiText.t("OFFER_HERE")
+	elif distance > 0:
+		where = UiText.t("OFFER_DISTANCE") % distance
+	var spacer := UiStyle.label(where, UiStyle.SMALL_FONT_SIZE, UiStyle.MUTED)
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom.add_child(spacer)
 	var accept := UiStyle.button(UiText.t("OFFER_ACCEPT"), func() -> void: accept_pressed.emit(offer.id), "YesButton")

@@ -36,16 +36,19 @@ var _overlay_center: CenterContainer
 ## Last night whose accounts the player has seen (the window of the end of the night).
 var _night_report_seen: int = 0
 var _menu_open: bool = false
+## start() already ran (the tests call it before _ready()).
+var _built: bool = false
 
 
 func _ready() -> void:
-	if game == null:
+	if not _built:
 		start()
 
 
 ## Builds the screen and starts a run. Called by _ready(); the tests call it directly, without
 ## adding the screen to the scene tree.
 func start() -> void:
+	_built = true
 	theme = UiStyle.make_theme()
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_build()
@@ -178,8 +181,10 @@ func _build() -> void:
 
 # --- Refresh --------------------------------------------------------------------------------
 
-## Shows the current state everywhere.
+## Shows the current state everywhere. Nothing to show when no run could start (see _start_run()).
 func refresh() -> void:
+	if game == null:
+		return
 	var state := game.state
 	_city.highlighted = []
 	for view in [_hud, _city, _hand, _offers, _orders, _bag, _feed]:
@@ -216,6 +221,9 @@ func _hint_text() -> String:
 	if bag.held != null:
 		return UiText.t("HINT_HELD")
 	if not bag.aside_items().is_empty():
+		for item in bag.aside_items():
+			if bag.can_return_from_aside(item.order_id):
+				return UiText.t("HINT_ASIDE_RETURN")
 		return UiText.t("HINT_ASIDE")
 	for order in state.orders:
 		if game.take_dish_problem(order.id) == Game.Problem.NONE:

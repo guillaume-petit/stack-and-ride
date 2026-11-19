@@ -276,6 +276,12 @@ func held_returns_to_restaurant() -> bool:
 			or (_held_origin == Origin.ASIDE and _held.order_id in _from_this_stop)
 
 
+## This dish set aside was taken at the restaurant where the courier still stands: taken back
+## in hand, it can go back there.
+func can_return_from_aside(order_id: int) -> bool:
+	return location_of(order_id) == Location.ASIDE and order_id in _from_this_stop
+
+
 ## Lifts a dish of the grid into the hand; refused if a dish is already in hand
 ## or another dish sits on it (§6.3).
 func lift(order_id: int) -> Problem:
