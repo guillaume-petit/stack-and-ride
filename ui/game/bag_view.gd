@@ -151,6 +151,11 @@ func summary() -> String:
 	return text
 
 
+## Shakes the bag (a card or a paved street shook it).
+func shake() -> void:
+	_grid.shake()
+
+
 func _on_aside_pressed(order_id: int) -> void:
 	aside_dish_clicked.emit(order_id)
 

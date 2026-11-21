@@ -13,6 +13,8 @@ const CARD_SIZE := Vector2(112, 132)
 var game: Game
 
 var _row: Container
+## The cards are dealt (they appear one after the other) when the turn changes.
+var _dealt_turn: int = -1
 
 
 func _init(compact: bool = false) -> void:
@@ -37,8 +39,15 @@ func refresh() -> void:
 		var empty := UiStyle.paragraph(UiText.t("HAND_EMPTY"), UiStyle.FONT_SIZE, UiStyle.MUTED)
 		empty.custom_minimum_size.x = 260
 		_row.add_child(empty)
+	var turn := game.state.night * 100 + game.state.turn
+	var deal := turn != _dealt_turn and game.state.phase == GameState.Phase.PLAYING
+	if deal:
+		_dealt_turn = turn
 	for index in hand.size():
-		_row.add_child(_card(index))
+		var card := _card(index)
+		_row.add_child(card)
+		if deal:
+			Motion.appear(card, index * Motion.STAGGER, true)
 
 
 func _card(index: int) -> ClickCard:

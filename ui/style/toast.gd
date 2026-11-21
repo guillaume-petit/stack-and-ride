@@ -52,6 +52,8 @@ func show_text(message: String) -> void:
 	if not is_inside_tree():
 		return
 	_tween = create_tween()
+	modulate.a = 0.0
+	_tween.tween_property(self, "modulate:a", 1.0, FADE_SECONDS)
 	_tween.tween_interval(SHOW_SECONDS)
 	_tween.tween_property(self, "modulate:a", 0.0, FADE_SECONDS)
 	_tween.tween_callback(hide)

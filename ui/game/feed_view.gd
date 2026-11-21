@@ -38,6 +38,7 @@ func add_line(line: UiText.Line) -> void:
 	panel.add_child(column)
 	_list.add_child(panel)
 	_list.move_child(panel, 0)
+	Motion.appear(panel)
 	while _list.get_child_count() > MAX_LINES:
 		var last := _list.get_child(_list.get_child_count() - 1)
 		_list.remove_child(last)

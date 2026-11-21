@@ -54,6 +54,12 @@ var _seen_turn: int = -1
 var _seen_held: bool = false
 ## Tab last opened by the screen (a TabContainer only shows it from the next frame).
 var _opened_tab := Tab.CARDS
+## History entries already shown as animations.
+var _events_shown: int = 0
+## Seconds the courier's ride lasts after the last move (what happens at the end waits for it).
+var _ride_seconds: float = 0.0
+## Kind of the window shown, to animate only a new one ("" when none).
+var _dialog_kind: String = ""
 ## start() already ran (the tests call it before _ready()).
 var _built: bool = false
 
@@ -96,6 +102,7 @@ func _start_run() -> void:
 		return
 	for view in [_hud, _city, _hand, _offers, _orders, _bag, _feed]:
 		view.game = game
+	_events_shown = game.state.history.size()
 	refresh()
 
 
@@ -401,11 +408,16 @@ func _refresh_overlay() -> void:
 				end.menu_pressed.connect(_to_main_menu)
 				dialog = end
 	_overlay.visible = dialog != null
+	var kind := ""
 	if dialog != null:
 		dialog.compact = compact
 		if dialog.game == null:
 			dialog.setup(game)
 		_overlay_center.add_child(dialog)
+		kind = "menu" if _menu_open else dialog.get_script().get_global_name()
+		if kind != _dialog_kind:
+			Motion.appear(dialog)
+	_dialog_kind = kind
 
 
 func _night_dialog() -> NightDialog:
@@ -438,18 +450,51 @@ func _menu_dialog() -> Dialog:
 
 # --- Actions --------------------------------------------------------------------------------
 
-## After every action: a refusal goes to the feed and pops up, then everything is shown again.
+## After every action: a refusal goes to the feed and pops up, what happened is animated, then
+## everything is shown again.
 func _after(problem: Game.Problem) -> void:
 	if problem != Game.Problem.NONE:
 		_feed.add_problem(problem)
 		_toast.show_text(UiText.problem(problem))
+	_show_events()
+	_ride_seconds = 0.0
 	refresh()
+
+
+## Animates the events of the history since the last action: money that rises from the client's
+## door, a bag that shakes...
+func _show_events() -> void:
+	var state := game.state
+	for index in range(_events_shown, state.history.size()):
+		var event := state.history[index]
+		match event.kind:
+			GameEvent.Kind.DELIVERED:
+				var delivery := event.delivery
+				var text := "+" + UiText.euros(delivery.total())
+				if delivery.rating_tenths != 0:
+					text += "  " + UiText.stars_change(delivery.rating_tenths) + " ★"
+				var good := delivery.outcome == Delivery.Outcome.PERFECT
+				_city.float_text(event.order.client, text, UiStyle.OK if good else UiStyle.BAD, _ride_seconds)
+			GameEvent.Kind.CANCELLED:
+				_city.float_text(event.order.client, UiText.stars_change(event.rating_tenths) + " ★", UiStyle.BAD)
+			GameEvent.Kind.CARD_RATING_COST:
+				_city.float_text(state.courier_position, UiText.stars_change(event.rating_tenths) + " ★", UiStyle.BAD)
+			GameEvent.Kind.SHAKE, GameEvent.Kind.CRUSHED:
+				if not event.braced:
+					_bag.shake()
+	_events_shown = state.history.size()
 
 
 func _on_crossroads_clicked(crossroads: Vector2i) -> void:
 	if crossroads == game.state.courier_position:
 		return
-	_after(game.move_to(crossroads))
+	var path: Array[Vector2i] = [game.state.courier_position]
+	path.append_array(game.paths().path_to(crossroads))
+	var problem := game.move_to(crossroads)
+	if problem == Game.Problem.NONE:
+		_city.ride(path)
+		_ride_seconds = CityView.ride_seconds(path.size() - 1)
+	_after(problem)
 
 
 func _on_end_turn() -> void:

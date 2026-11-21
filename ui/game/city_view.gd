@@ -10,6 +10,17 @@ extends Control
 ## a second touch on the same crossroads emits crossroads_clicked.
 
 signal crossroads_clicked(crossroads: Vector2i)
+## The courier, riding, reached the next crossroads of its path (for the sound of the pedals).
+signal rode_past(crossroads: Vector2i)
+
+## A text that rises from a crossroads and fades: money earned, stars lost.
+class Floater:
+	extends RefCounted
+	var crossroads: Vector2i
+	var text: String
+	var color: Color
+	## From 0 (appears) to 1 (gone); below 0 while it waits for the courier.
+	var time: float = 0.0
 
 const MARGIN := 34.0
 ## Street width and the other sizes are relative to the distance between two crossroads.
@@ -18,6 +29,11 @@ const PIN_SIZE := 17.0
 ## How far from a crossroads a click still selects it, relative to the spacing.
 const MOUSE_REACH := 1.0 / 3.0
 const TOUCH_REACH := 0.5
+## Seconds to ride from one crossroads to the next.
+const RIDE_STEP_SECONDS := 0.12
+const FLOAT_SECONDS := 1.4
+const FLOAT_RISE := 42.0
+const FLOAT_FONT_SIZE := 20
 
 var game: Game
 ## Crossroads to ring, e.g. the restaurant and clients of the offer under the mouse.
@@ -28,6 +44,12 @@ var _hovered := City.NOWHERE
 ## Paths from the courier and crossroads within reach, computed once per refresh().
 var _paths: CityPaths
 var _reachable: Array[Vector2i] = []
+## The path being ridden (from the start crossroads), empty when the courier stands still.
+var _ride: Array[Vector2i] = []
+## How far along _ride the courier is drawn, in streets.
+var _ride_progress: float = 0.0
+var _ride_tween: Tween
+var _floaters: Array[Floater] = []
 
 
 func _init() -> void:
@@ -73,6 +95,73 @@ func _notification(what: int) -> void:
 		queue_redraw()
 
 
+# --- Animations -----------------------------------------------------------------------------
+
+## Seconds the ride along this many streets lasts.
+static func ride_seconds(streets: int) -> float:
+	return RIDE_STEP_SECONDS * streets
+
+
+## Shows the courier riding along the path, from its first crossroads to its last. The game has
+## already moved it: only the drawing catches up.
+func ride(path: Array[Vector2i]) -> void:
+	if not is_inside_tree() or path.size() < 2:
+		return
+	if _ride_tween != null:
+		_ride_tween.kill()
+	_ride = path
+	_ride_progress = 0.0
+	_ride_tween = create_tween()
+	_ride_tween.tween_method(_set_ride_progress, 0.0, float(path.size() - 1), ride_seconds(path.size() - 1))
+	_ride_tween.tween_callback(func() -> void:
+		_ride = []
+		queue_redraw())
+
+
+func _set_ride_progress(value: float) -> void:
+	var passed := floori(value)
+	if passed > floori(_ride_progress) and passed < _ride.size():
+		rode_past.emit(_ride[passed])
+	_ride_progress = value
+	queue_redraw()
+
+
+## A text rising from a crossroads, after delay seconds (e.g. once the courier gets there).
+func float_text(crossroads: Vector2i, text: String, color: Color, delay: float = 0.0) -> void:
+	if not is_inside_tree():
+		return
+	var floater := Floater.new()
+	floater.crossroads = crossroads
+	floater.text = text
+	floater.color = color
+	floater.time = -1.0
+	_floaters.append(floater)
+	var tween := create_tween()
+	tween.tween_interval(delay)
+	tween.tween_method(func(value: float) -> void:
+		floater.time = value
+		queue_redraw(), 0.0, 1.0, FLOAT_SECONDS)
+	tween.tween_callback(func() -> void:
+		_floaters.erase(floater)
+		queue_redraw())
+
+
+func _draw_floaters() -> void:
+	var font := UiStyle.bold_font()
+	for floater in _floaters:
+		if floater.time < 0.0:
+			continue
+		var ease_out := 1.0 - pow(1.0 - floater.time, 3)
+		var at := _point(floater.crossroads) - Vector2(0, 18 + FLOAT_RISE * ease_out)
+		var alpha := 1.0 if floater.time < 0.6 else (1.0 - floater.time) / 0.4
+		var width := font.get_string_size(floater.text, HORIZONTAL_ALIGNMENT_LEFT, -1, FLOAT_FONT_SIZE).x
+		var start := at - Vector2(width / 2, 0)
+		draw_string_outline(font, start, floater.text, HORIZONTAL_ALIGNMENT_LEFT, -1, FLOAT_FONT_SIZE, 6,
+				Color(Color.WHITE, alpha))
+		draw_string(font, start, floater.text, HORIZONTAL_ALIGNMENT_LEFT, -1, FLOAT_FONT_SIZE,
+				Color(floater.color, alpha))
+
+
 # --- Drawing --------------------------------------------------------------------------------
 
 func _draw() -> void:
@@ -94,12 +183,13 @@ func _draw() -> void:
 	for crossroads in _reachable:
 		draw_circle(_point(crossroads), street_width * 0.75, Color(UiStyle.MUSTARD, 0.35))
 		draw_arc(_point(crossroads), street_width * 0.75, 0, TAU, 24, UiStyle.MUSTARD, 2.5, true)
-	if _hovered in _reachable:
+	if _hovered in _reachable and _ride.is_empty():
 		_draw_path(street_width)
 	for crossroads in highlighted:
 		draw_arc(_point(crossroads), street_width * 1.1, 0, TAU, 32, UiStyle.ACCENT, 3.5, true)
 	_draw_pins(street_width)
 	_draw_courier(street_width)
+	_draw_floaters()
 
 
 func _draw_street(key: Vector4i, street: City.Street, width: float) -> void:
@@ -223,6 +313,9 @@ func _draw_pins(street_width: float) -> void:
 ## A red disc with a small bike.
 func _draw_courier(street_width: float) -> void:
 	var center := _point(game.state.courier_position)
+	if not _ride.is_empty():
+		var street := mini(floori(_ride_progress), _ride.size() - 2)
+		center = _point(_ride[street]).lerp(_point(_ride[street + 1]), _ride_progress - street)
 	var radius := maxf(street_width * 1.05, 13.0)
 	draw_circle(center + Vector2(0, 2), radius + 2, Color(0, 0, 0, 0.25))
 	draw_circle(center, radius + 2, Color.WHITE)

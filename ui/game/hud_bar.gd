@@ -25,6 +25,9 @@ const COMPACT_NAME_WIDTH := 64
 
 var _compact: bool
 var _items: HBoxContainer
+## Value of each counter at the last refresh, by title: a counter that changed pulses.
+var _values: Dictionary[String, String] = {}
+var _new_values: Dictionary[String, String] = {}
 
 
 func _init(compact: bool = false) -> void:
@@ -49,6 +52,7 @@ func _init(compact: bool = false) -> void:
 
 func refresh() -> void:
 	UiStyle.clear(_items)
+	_new_values = {}
 	var state := game.state
 	var config := state.config
 	var live := state.phase == GameState.Phase.PLAYING
@@ -82,6 +86,7 @@ func refresh() -> void:
 		for id in state.equipment:
 			names.append(UiText.name_of(state.content.equipment[id]))
 		_add(UiText.t("HUD_EQUIPMENT"), str(state.equipment.size()), UiStyle.INK, "\n".join(names))
+	_values = _new_values
 
 
 func _add(title: String, value: String, color: Color = UiStyle.INK, tooltip: String = "") -> PanelContainer:
@@ -99,6 +104,9 @@ func _add(title: String, value: String, color: Color = UiStyle.INK, tooltip: Str
 	column.add_child(UiStyle.label(value, UiStyle.FONT_SIZE + 1, color, true))
 	panel.add_child(column)
 	_items.add_child(panel)
+	_new_values[title] = value
+	if _values.has(title) and _values[title] != value:
+		Motion.pulse(panel)
 	return panel
 
 
