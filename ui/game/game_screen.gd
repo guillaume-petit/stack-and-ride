@@ -20,6 +20,8 @@ const SIDE_WIDTH := 330
 ## Narrowest width of the tabs in the compact layout.
 const COMPACT_TABS_WIDTH := 340
 enum Tab { CARDS, OFFERS, ORDERS, BAG, FEED }
+## The pedals sound a little different at each crossroads.
+const PEDAL_PITCH_SPREAD := 0.08
 ## Seeds tried in a row before giving up when no city can be drawn.
 const MAX_SEED_ATTEMPTS := 100
 
@@ -60,6 +62,8 @@ var _events_shown: int = 0
 var _ride_seconds: float = 0.0
 ## Kind of the window shown, to animate only a new one ("" when none).
 var _dialog_kind: String = ""
+## Phase at the last action, for the sound of the end of the run.
+var _sound_phase := GameState.Phase.CHOOSE_PROFILE
 ## start() already ran (the tests call it before _ready()).
 var _built: bool = false
 
@@ -156,6 +160,7 @@ func _make_views() -> void:
 	_hud.menu_pressed.connect(_open_menu)
 	_city = CityView.new()
 	_city.crossroads_clicked.connect(_on_crossroads_clicked)
+	_city.rode_past.connect(func(_crossroads: Vector2i) -> void: Sfx.play(Sfx.Sound.PEDAL, PEDAL_PITCH_SPREAD))
 	_turn_info = UiStyle.label("", UiStyle.SMALL_FONT_SIZE + 1 if compact else UiStyle.FONT_SIZE, UiStyle.INK, true)
 	_turn_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_end_turn = UiStyle.button("", _on_end_turn, "AccentButton")
@@ -165,11 +170,11 @@ func _make_views() -> void:
 	_offers.accept_pressed.connect(func(id: int) -> void: _after(game.accept_offer(id)))
 	_offers.offer_hovered.connect(_highlight)
 	_orders = OrdersView.new()
-	_orders.take_pressed.connect(func(id: int) -> void: _after(game.take_dish(id)))
+	_orders.take_pressed.connect(func(id: int) -> void: _after(_sound_if_done(game.take_dish(id), Sfx.Sound.TAKE)))
 	_orders.order_hovered.connect(_highlight)
 	_bag = BagView.new(compact)
-	_bag.column_clicked.connect(func(column: int) -> void: _after(game.drop_held(column)))
-	_bag.dish_clicked.connect(func(id: int) -> void: _after(game.lift(id)))
+	_bag.column_clicked.connect(func(column: int) -> void: _after(_sound_if_done(game.drop_held(column), Sfx.Sound.DROP)))
+	_bag.dish_clicked.connect(func(id: int) -> void: _after(_sound_if_done(game.lift(id), Sfx.Sound.TAKE)))
 	_bag.rotate_pressed.connect(func() -> void: _after(game.rotate_held()))
 	_bag.set_aside_pressed.connect(func() -> void: _after(game.set_held_aside()))
 	_bag.cancel_pressed.connect(func() -> void: _after(game.cancel_held()))
@@ -399,7 +404,7 @@ func _refresh_overlay() -> void:
 					dialog = _night_dialog()
 				else:
 					var shop := ShopDialog.new()
-					shop.buy_pressed.connect(func(index: int) -> void: _after(game.buy(index)))
+					shop.buy_pressed.connect(func(index: int) -> void: _after(_sound_if_done(game.buy(index), Sfx.Sound.BUY)))
 					shop.next_night_pressed.connect(func() -> void: _after(game.start_next_night()))
 					dialog = shop
 			GameState.Phase.WON, GameState.Phase.LOST:
@@ -456,6 +461,7 @@ func _after(problem: Game.Problem) -> void:
 	if problem != Game.Problem.NONE:
 		_feed.add_problem(problem)
 		_toast.show_text(UiText.problem(problem))
+		Sfx.play(Sfx.Sound.REFUSE)
 	_show_events()
 	_ride_seconds = 0.0
 	refresh()
@@ -475,14 +481,41 @@ func _show_events() -> void:
 					text += "  " + UiText.stars_change(delivery.rating_tenths) + " ★"
 				var good := delivery.outcome == Delivery.Outcome.PERFECT
 				_city.float_text(event.order.client, text, UiStyle.OK if good else UiStyle.BAD, _ride_seconds)
+				_play_later(Sfx.Sound.DELIVER if good else Sfx.Sound.BAD, _ride_seconds)
 			GameEvent.Kind.CANCELLED:
 				_city.float_text(event.order.client, UiText.stars_change(event.rating_tenths) + " ★", UiStyle.BAD)
+				Sfx.play(Sfx.Sound.BAD)
 			GameEvent.Kind.CARD_RATING_COST:
 				_city.float_text(state.courier_position, UiText.stars_change(event.rating_tenths) + " ★", UiStyle.BAD)
-			GameEvent.Kind.SHAKE, GameEvent.Kind.CRUSHED:
+			GameEvent.Kind.SHAKE:
 				if not event.braced:
 					_bag.shake()
+					Sfx.play(Sfx.Sound.SHAKE)
+			GameEvent.Kind.CRUSHED:
+				_bag.shake()
+				Sfx.play(Sfx.Sound.BAD)
+			GameEvent.Kind.NIGHT_ENDED:
+				if state.phase not in [GameState.Phase.WON, GameState.Phase.LOST]:
+					_play_later(Sfx.Sound.NIGHT_END, _ride_seconds)
 	_events_shown = state.history.size()
+	if state.phase != _sound_phase and state.phase in [GameState.Phase.WON, GameState.Phase.LOST]:
+		_play_later(Sfx.Sound.WIN if state.phase == GameState.Phase.WON else Sfx.Sound.LOSE, _ride_seconds)
+	_sound_phase = state.phase
+
+
+## Plays a sound once the courier's ride is over.
+func _play_later(sound: Sfx.Sound, delay: float) -> void:
+	if delay <= 0.0 or not is_inside_tree():
+		Sfx.play(sound)
+		return
+	get_tree().create_timer(delay).timeout.connect(func() -> void: Sfx.play(sound))
+
+
+## The sound of an action, when it was done.
+func _sound_if_done(problem: Game.Problem, sound: Sfx.Sound) -> Game.Problem:
+	if problem == Game.Problem.NONE:
+		Sfx.play(sound)
+	return problem
 
 
 func _on_crossroads_clicked(crossroads: Vector2i) -> void:

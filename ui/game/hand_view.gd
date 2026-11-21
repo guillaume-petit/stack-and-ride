@@ -56,6 +56,7 @@ func _card(index: int) -> ClickCard:
 	var tired := card.removed_when_played
 	var view := ClickCard.new(UiStyle.ROAD if tired else UiStyle.PANEL, UiStyle.INK, tired)
 	view.custom_minimum_size = CARD_SIZE
+	view.sound = Sfx.Sound.CARD
 	var value := UiText.t("CARD_STEPS") % game.card_steps(card.id) if card.gives_steps() else ("…" if tired else "★")
 	view.add(UiStyle.label(value, UiStyle.BIG_FONT_SIZE - 4, UiStyle.MUTED if tired else UiStyle.ACCENT, true))
 	view.add(UiStyle.label(UiText.name_of(card), UiStyle.FONT_SIZE - 1, UiStyle.INK, true))

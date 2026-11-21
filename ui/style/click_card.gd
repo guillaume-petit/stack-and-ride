@@ -16,6 +16,8 @@ var disabled: bool = false:
 
 ## Contents go in this box.
 var content: VBoxContainer
+## Played when the card is pressed.
+var sound := Sfx.Sound.CLICK
 
 var _normal: StyleBoxFlat
 var _hover: StyleBoxFlat
@@ -64,6 +66,7 @@ func _gui_input(event: InputEvent) -> void:
 		# Why it cannot be used (see UiStyle.explain_on_press()).
 		Toast.show_from(self, tooltip_text)
 	else:
+		Sfx.play(sound)
 		pressed.emit()
 
 

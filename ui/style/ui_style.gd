@@ -213,6 +213,7 @@ static func button(text: String, on_pressed: Callable, variation: String = "") -
 	out.text = text
 	out.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	out.theme_type_variation = variation
+	out.pressed.connect(func() -> void: Sfx.play(Sfx.Sound.CLICK))
 	out.pressed.connect(on_pressed)
 	explain_on_press(out)
 	return out
