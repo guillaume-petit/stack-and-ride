@@ -4,7 +4,8 @@ extends Control
 ## it would land in the column under the mouse (green if allowed, red otherwise).
 ##
 ## Clicks: with a dish in hand, a click drops it in the column; otherwise a click on a dish
-## lifts it.
+## lifts it. With a finger there is no hover: a first touch on a column shows where the dish
+## would land, a second touch on the same column drops it.
 
 signal column_clicked(column: int)
 signal dish_clicked(order_id: int)
@@ -14,13 +15,18 @@ signal hover_changed(column: int)
 const MAX_CELL := 46.0
 ## The cells get smaller when the bag has many rows, so that the panel keeps its height.
 const MAX_GRID_HEIGHT := 190.0
+## In the compact layout, the bag has its own tab: bigger cells, easier to hit with a finger.
+const COMPACT_MAX_CELL := 56.0
+const COMPACT_MAX_GRID_HEIGHT := 250.0
 const GAP := 3.0
 const FLOOR := 8.0
 const PREVIEW_OK := Color(0.13, 0.57, 0.35, 0.55)
 const PREVIEW_BAD := Color(0.81, 0.21, 0.16, 0.55)
 
 var game: Game
+var compact: bool = false
 
+## Column under the mouse, or chosen by a first touch (-1: none).
 var _hover_column: int = -1
 
 
@@ -33,7 +39,7 @@ func refresh() -> void:
 	# One row above the bag shows a dish that does not fit.
 	var cell := _max_cell()
 	custom_minimum_size = Vector2(bag.columns * cell, (bag.rows + 1) * cell + FLOOR) + Vector2.ONE * GAP * 2
-	if _hover_column >= bag.columns:
+	if _hover_column >= bag.columns or bag.held == null:
 		_hover_column = -1
 	queue_redraw()
 
@@ -55,9 +61,14 @@ func _gui_input(event: InputEvent) -> void:
 	var bag := game.state.bag
 	var cell := _cell_at(click.position)
 	if bag.held != null:
-		if cell.x >= 0 and cell.x < bag.columns:
-			accept_event()
-			column_clicked.emit(cell.x)
+		var column := _column_at(click.position)
+		if column < 0:
+			return
+		accept_event()
+		if Device.is_touch(event) and column != _hover_column:
+			_set_hover(column)
+			return
+		column_clicked.emit(column)
 		return
 	var item := bag.item_at(cell)
 	if item != null:
@@ -66,7 +77,8 @@ func _gui_input(event: InputEvent) -> void:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_MOUSE_EXIT:
+	# A finger leaves the mouse on the bag after a touch: keep the chosen column.
+	if what == NOTIFICATION_MOUSE_EXIT and not Device.touch_screen():
 		_set_hover(-1)
 
 
@@ -194,7 +206,8 @@ func _cell_size() -> float:
 
 
 func _max_cell() -> float:
-	return minf(MAX_CELL, floorf(MAX_GRID_HEIGHT / game.state.bag.rows))
+	var height := COMPACT_MAX_GRID_HEIGHT if compact else MAX_GRID_HEIGHT
+	return minf(COMPACT_MAX_CELL if compact else MAX_CELL, floorf(height / game.state.bag.rows))
 
 
 ## Top left of the bag grid, centered horizontally, below the row for dishes that do not fit.

@@ -5,6 +5,9 @@ extends Control
 ##
 ## Everything is drawn in _draw() (Godot calls it after queue_redraw()), sized to the space
 ## the screen gives the map. A click on a crossroads emits crossroads_clicked.
+##
+## With a finger there is no hover: a first touch on a crossroads within reach shows the path,
+## a second touch on the same crossroads emits crossroads_clicked.
 
 signal crossroads_clicked(crossroads: Vector2i)
 
@@ -12,11 +15,15 @@ const MARGIN := 34.0
 ## Street width and the other sizes are relative to the distance between two crossroads.
 const STREET_RATIO := 0.17
 const PIN_SIZE := 17.0
+## How far from a crossroads a click still selects it, relative to the spacing.
+const MOUSE_REACH := 1.0 / 3.0
+const TOUCH_REACH := 0.5
 
 var game: Game
 ## Crossroads to ring, e.g. the restaurant and clients of the offer under the mouse.
 var highlighted: Array[Vector2i] = []
 
+## Crossroads under the mouse, or chosen by a first touch.
 var _hovered := City.NOWHERE
 ## Paths from the courier and crossroads within reach, computed once per refresh().
 var _paths: CityPaths
@@ -49,13 +56,19 @@ func _gui_input(event: InputEvent) -> void:
 	var click := event as InputEventMouseButton
 	if click != null and click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
 		var crossroads := _crossroads_at(click.position)
-		if crossroads != City.NOWHERE:
-			accept_event()
-			crossroads_clicked.emit(crossroads)
+		if crossroads == City.NOWHERE:
+			return
+		accept_event()
+		if Device.is_touch(event) and crossroads in _reachable and crossroads != _hovered:
+			_hovered = crossroads
+			queue_redraw()
+			return
+		crossroads_clicked.emit(crossroads)
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_MOUSE_EXIT and _hovered != City.NOWHERE:
+	# A finger leaves the mouse on the map after a touch: keep the chosen crossroads.
+	if what == NOTIFICATION_MOUSE_EXIT and _hovered != City.NOWHERE and not Device.touch_screen():
 		_hovered = City.NOWHERE
 		queue_redraw()
 
@@ -241,12 +254,14 @@ func _point(crossroads: Vector2i) -> Vector2:
 	return (size - map_size) / 2 + Vector2(crossroads) * spacing
 
 
-## Crossroads close enough to a position (within a third of the spacing), or NOWHERE.
+## Crossroads close enough to a position, or NOWHERE. A finger is less precise than a mouse:
+## it may land anywhere around the crossroads.
 func _crossroads_at(position: Vector2) -> Vector2i:
 	var city := game.state.city
 	var spacing := _spacing()
 	var origin := _point(Vector2i.ZERO)
 	var crossroads := Vector2i(((position - origin) / spacing).round())
-	if not city.is_inside(crossroads) or position.distance_to(_point(crossroads)) > spacing / 3:
+	var reach := spacing * (TOUCH_REACH if Device.touch_screen() else MOUSE_REACH)
+	if not city.is_inside(crossroads) or position.distance_to(_point(crossroads)) > reach:
 		return City.NOWHERE
 	return crossroads

@@ -26,7 +26,8 @@ func _initialize() -> void:
 		if not filter.is_empty() and not path.contains(filter):
 			continue
 		var script: GDScript = load(path)
-		if script == null:
+		# A script with a parse error still loads, but cannot be instantiated.
+		if script == null or not script.can_instantiate():
 			print("✗ %s : could not load the script" % path)
 			failed += 1
 			continue

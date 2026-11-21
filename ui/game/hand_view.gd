@@ -2,6 +2,9 @@ class_name HandView
 extends ScrollContainer
 ## The cards in hand. A card that cannot be played now is greyed out; clicking a card emits
 ## card_clicked with its index in the hand.
+##
+## Normally one row that scrolls sideways; in the compact layout (its own tab) the cards wrap
+## on several rows and the tab scrolls up and down.
 
 signal card_clicked(hand_index: int)
 
@@ -9,13 +12,21 @@ const CARD_SIZE := Vector2(112, 132)
 
 var game: Game
 
-var _row: HBoxContainer
+var _row: Container
 
 
-func _init() -> void:
-	vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	custom_minimum_size.y = CARD_SIZE.y + 12
-	_row = UiStyle.hbox(8)
+func _init(compact: bool = false) -> void:
+	if compact:
+		horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		var flow := HFlowContainer.new()
+		flow.add_theme_constant_override("h_separation", 8)
+		flow.add_theme_constant_override("v_separation", 10)
+		flow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_row = flow
+	else:
+		vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		custom_minimum_size.y = CARD_SIZE.y + 12
+		_row = UiStyle.hbox(8)
 	add_child(_row)
 
 
@@ -23,7 +34,9 @@ func refresh() -> void:
 	UiStyle.clear(_row)
 	var hand := game.state.piles.hand
 	if hand.is_empty():
-		_row.add_child(UiStyle.label(UiText.t("HAND_EMPTY"), UiStyle.FONT_SIZE, UiStyle.MUTED))
+		var empty := UiStyle.paragraph(UiText.t("HAND_EMPTY"), UiStyle.FONT_SIZE, UiStyle.MUTED)
+		empty.custom_minimum_size.x = 260
+		_row.add_child(empty)
 	for index in hand.size():
 		_row.add_child(_card(index))
 
