@@ -96,6 +96,9 @@ var _cup_holder: Array[BagItem] = []
 var _aside: Array[BagItem] = []
 ## Cells of the held dish before it was lifted from the bag.
 var _held_previous_cells: Array[Vector2i] = []
+## Orders whose dish was taken at the restaurant where the courier still stands: it can go
+## back there from the hand or from aside (decision of 19/11/2026). See leave_stop().
+var _from_this_stop: Array[int] = []
 
 
 func _init(p_columns: int, p_rows: int) -> void:
@@ -255,7 +258,40 @@ func take_from_restaurant(item: BagItem) -> bool:
 		_cup_holder.append(item)
 		return true
 	_take_in_hand(item, Origin.RESTAURANT)
+	_from_this_stop.append(item.order_id)
 	return true
+
+
+## The courier left the place: the dishes taken there can no longer be given back.
+func leave_stop() -> void:
+	_from_this_stop.clear()
+
+
+## Cancelling now sends the dish in hand back to the restaurant: it comes from there (straight,
+## or after being set aside) and the courier has not left since.
+func held_returns_to_restaurant() -> bool:
+	if _held == null:
+		return false
+	return _held_origin == Origin.RESTAURANT \
+			or (_held_origin == Origin.ASIDE and _held.order_id in _from_this_stop)
+
+
+## This dish set aside was taken at the restaurant where the courier still stands: taken back
+## in hand, it can go back there.
+func can_return_from_aside(order_id: int) -> bool:
+	return location_of(order_id) == Location.ASIDE and order_id in _from_this_stop
+
+
+## Gives back to the restaurant every dish set aside that can go there (end of the turn).
+## Returns them; the caller marks their orders as waiting again.
+func return_aside_to_restaurant() -> Array[BagItem]:
+	var returned: Array[BagItem] = []
+	for item in _aside.duplicate():
+		if item.order_id in _from_this_stop:
+			_aside.erase(item)
+			_from_this_stop.erase(item.order_id)
+			returned.append(item)
+	return returned
 
 
 ## Lifts a dish of the grid into the hand; refused if a dish is already in hand
@@ -287,6 +323,10 @@ func rotate_held() -> void:
 ## aside, or back at the restaurant (it then leaves the bag, the caller marks the order
 ## as waiting again). Returns the dish that went back to the restaurant, or null.
 ##
+## A dish taken from aside goes back to the restaurant when it was taken there and the courier
+## has not left (see held_returns_to_restaurant()): otherwise a dish that fits nowhere in the
+## bag would stay aside for good, and the courier could neither move nor end the turn.
+##
 ## While a dish is in hand, others can leave the bag (a delivery when a card is played on
 ## the spot) and the dishes above them fall. If its previous place is no longer free, no
 ## longer rests on something, or now breaks a rule, the dish is set aside instead.
@@ -296,9 +336,12 @@ func cancel_held() -> BagItem:
 	var item := _held
 	var origin := _held_origin
 	var previous := _held_previous_cells
+	if held_returns_to_restaurant():
+		origin = Origin.RESTAURANT
 	_release_hand()
 	match origin:
 		Origin.RESTAURANT:
+			_from_this_stop.erase(item.order_id)
 			return item
 		Origin.BAG:
 			if _can_rest_at(item, previous):
@@ -336,6 +379,7 @@ func take_from_aside(order_id: int) -> bool:
 ## the dishes above fall. Returns the fragile dishes crushed by the fall.
 func remove(order_id: int) -> Array[BagItem]:
 	var none: Array[BagItem] = []
+	_from_this_stop.erase(order_id)
 	var location := location_of(order_id)
 	match location:
 		Location.NONE:
@@ -373,6 +417,7 @@ func clear() -> void:
 	_cup_holder.clear()
 	_aside.clear()
 	_release_hand()
+	_from_this_stop.clear()
 	_braced = false
 
 

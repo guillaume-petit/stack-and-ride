@@ -58,16 +58,25 @@ static func play_run(content: GameContent, seed: int, profile: StringName) -> Ga
 
 func play() -> void:
 	for turn in MAX_TURNS_PER_RUN:
-		match state.phase:
-			GameState.Phase.PLAYING:
-				_play_turn()
-			GameState.Phase.CHOOSING_REWARD:
-				game.choose_reward(_pick_reward())
-			GameState.Phase.SHOPPING:
-				_shop()
-				game.start_next_night()
-			_:
-				return
+		if not play_step():
+			return
+
+
+## Plays one step of the run: a turn, the choice of a free reward, or a visit to the shop.
+## Returns false when there is nothing left to play (the run is over). Used by play() and by
+## the interface tests, which show the screen after each step.
+func play_step() -> bool:
+	match state.phase:
+		GameState.Phase.PLAYING:
+			_play_turn()
+		GameState.Phase.CHOOSING_REWARD:
+			game.choose_reward(_pick_reward())
+		GameState.Phase.SHOPPING:
+			_shop()
+			game.start_next_night()
+		_:
+			return false
+	return true
 
 
 # --- A turn ---------------------------------------------------------------------------------

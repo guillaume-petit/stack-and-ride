@@ -40,6 +40,8 @@ func test_no_end_of_turn_with_a_dish_aside() -> void:
 	f.state.courier_position = GameFixture.RESTAURANT
 	f.game.take_dish(order.id)
 	f.game.set_held_aside()
+	# As if the courier had ridden since the restaurant: the dish can no longer go back there.
+	f.state.bag.leave_stop()
 	assert_eq(f.game.end_turn(), Game.Problem.SORTING)
 	assert_eq(f.state.turn, 1)
 	f.game.take_from_aside(order.id)
@@ -147,6 +149,8 @@ func test_a_refused_end_of_turn_changes_nothing() -> void:
 	f.state.courier_position = GameFixture.RESTAURANT
 	f.game.take_dish(aside.id)
 	f.game.set_held_aside()
+	# As if the courier had ridden since the restaurant: the dish can no longer go back there.
+	f.state.bag.leave_stop()
 	f.game.take_dish(in_hand.id)
 	assert_eq(f.game.end_turn(), Game.Problem.SORTING)
 	assert_eq(f.state.bag.held.order_id, in_hand.id, "the dish stays in hand")

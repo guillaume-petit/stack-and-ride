@@ -16,6 +16,20 @@ trace ton trajet avec des cartes, cale les plats dans ton sac sans rien abîmer�
 
 Au premier lancement, Godot crée un dossier `.godot/` (cache local, ignoré par Git).
 
+## Jouer
+
+Tout se fait à la souris ; une ligne d'aide en haut de l'écran dit quoi faire ensuite.
+
+- **Propositions** (au milieu) : survole-en une pour voir le restaurant et les clients sur le plan, puis **Accepter**.
+- **Cartes** (en bas à gauche) : clique une carte pour gagner des pas (2 cartes par tour, les gratuites ne comptent pas).
+- **Plan** : clique un carrefour surligné ; le trajet s'affiche au survol. On livre le client chez qui le trajet s'arrête.
+- **Restaurant** : **Prendre le plat** dans la liste des courses, puis clique une colonne du sac pour l'y lâcher.
+  `R` fait pivoter le plat, `Échap` annule. Clique un plat rangé pour le reprendre.
+- **Fin du tour** quand tu as fini. Entre deux soirs : bilan, récompense gratuite, puis boutique.
+
+Les écrans `ui/debug/city_debug.tscn` et `ui/debug/bag_debug.tscn` (F6 dans l'éditeur) restent là pour tester
+un quartier ou les règles du sac à la main.
+
 ## Lancer les tests
 
 Les tests vérifient les règles du jeu sans ouvrir l'éditeur.

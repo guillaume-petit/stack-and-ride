@@ -24,6 +24,10 @@ Talk to the owner in French.
 - `data/` holds game content as `.tres` resources (dishes, cards, restaurants…), so adding
   content does not need code.
 - `ui/` reads the state and sends actions to the core; it never mutates the state directly.
+  Views emit signals, `ui/game/game_screen.gd` calls the matching `Game` action, reports a refusal
+  in the feed and refreshes every view. To grey out a button, ask the core (`card_problem()`,
+  `offer_problem()`, `move_problem()`...) instead of repeating a rule in the UI.
+  Shared look in `ui/style/ui_style.gd` (theme, colors), texts built in `ui/game/ui_text.gd`.
 - `sim/` holds headless simulations (bots) used for balancing.
 
 ## Tests
@@ -31,6 +35,8 @@ Talk to the owner in French.
 - Every core rule gets tests in `tests/`, in files named `test_*.gd` extending `TestCase`
   (see `tests/test_case.gd`). Test methods start with `test_`.
 - Run them with `scripts/run_tests.sh` (or `scripts\run_tests.ps1` on Windows).
+- `tests/ui/` checks that every translation key used by the UI exists and plays a whole run
+  through the game screen (without drawing).
 
 ## Workflow
 

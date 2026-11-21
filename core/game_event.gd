@@ -6,7 +6,7 @@ extends RefCounted
 ## translated message.
 
 enum Kind {
-	## A night starts (value: night number).
+	## A night starts (value: night number, source: event of the night).
 	NIGHT_STARTED,
 	## An order was delivered (delivery holds the details).
 	DELIVERED,
@@ -26,12 +26,17 @@ enum Kind {
 	DEADLINES_EXTENDED,
 	## The road works moved (Nuit de travaux).
 	WORKS_MOVED,
+	## At the end of the turn, a dish set aside went back to its restaurant (order_id, order).
+	RETURNED_TO_RESTAURANT,
 	## The night is over (value: night number).
 	NIGHT_ENDED,
 }
 
 var kind: Kind
 var order_id: int = -1
+## The order of DELIVERED, CANCELLED, FIFTH_FLOOR_WAIT and RETURNED_TO_RESTAURANT: it may have left the run since,
+## and the feed still needs its dish and client.
+var order: Order = null
 var order_ids: Array[int] = []
 var value: int = 0
 ## Rating change caused by the event, in tenths of a star, for every kind that changes it

@@ -1,6 +1,7 @@
 extends Control
 ## Throwaway debug screen for iteration 1: draws a generated city (streets, blocks and
-## buildings) and the shortest path from the base to the clicked crossroads. Not part of the game; the real UI comes in iteration 4.
+## buildings) and the shortest path from the base to the clicked crossroads. Not part of the game
+## (the real map is ui/game/city_view.gd); kept to check a seed or a city layout quickly.
 ##
 ## Open ui/debug/city_debug.tscn in the editor and press F6 (run the current scene).
 

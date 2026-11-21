@@ -1,7 +1,7 @@
 extends Control
 ## Throwaway debug screen for iteration 2: plays with a Bag by hand to check its rules
 ## (drop, rotate, lift, set aside, shake, delivery with falls and crushing, equipment).
-## Not part of the game; the real UI comes in iteration 4.
+## Not part of the game (the real bag is ui/game/bag_view.gd); kept to try bag rules by hand.
 ##
 ## Open ui/debug/bag_debug.tscn in the editor and press F6 (run the current scene).
 ## Mouse on the bag: left click drops the dish in hand in that column, or lifts the

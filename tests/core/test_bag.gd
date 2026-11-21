@@ -351,12 +351,26 @@ func test_several_dishes_can_wait_aside() -> void:
 func test_cancel_puts_a_dish_taken_from_aside_back_aside() -> void:
 	var bag := Bag.new(3, 3)
 	bag.take_from_restaurant(_item(1, &"burger"))
+	# The courier rode on since the restaurant: the dish can no longer go back there.
+	bag.leave_stop()
 	bag.rotate_held()
 	bag.set_held_aside()
 	bag.take_from_aside(1)
 	assert_null(bag.cancel_held())
 	assert_eq(bag.location_of(1), Bag.Location.ASIDE)
 	assert_eq(bag.find(1).width(), 1, "keeps its orientation")
+
+
+func test_a_dish_from_this_restaurant_goes_back_there_from_aside() -> void:
+	var bag := Bag.new(3, 3)
+	var burger := _item(1, &"burger")
+	bag.take_from_restaurant(burger)
+	bag.set_held_aside()
+	bag.take_from_aside(1)
+	assert_true(bag.held_returns_to_restaurant())
+	assert_true(bag.cancel_held() == burger, "back to the restaurant")
+	assert_eq(bag.location_of(1), Bag.Location.NONE)
+	assert_false(bag.is_sorting())
 
 
 func test_the_damage_follows_the_dish() -> void:

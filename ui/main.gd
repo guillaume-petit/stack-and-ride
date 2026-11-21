@@ -1,16 +1,14 @@
 extends Control
-## Temporary start screen. It only proves that the project boots,
-## that translations load and that the layout scales in landscape.
+## Start screen: title, new run, quit. The full menus (continue, options) come with saving
+## (iteration 6).
 
-const BACKGROUND := Color("#eceff3")
-const INK := Color("#1a1e24")
-const ACCENT := Color("#e2452b")
-const MUTED := Color("#5d6570")
+const GAME_SCREEN := "res://ui/game/game_screen.tscn"
 
 
 func _ready() -> void:
+	theme = UiStyle.make_theme()
 	var background := ColorRect.new()
-	background.color = BACKGROUND
+	background.color = UiStyle.BACKGROUND
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
 
@@ -18,23 +16,39 @@ func _ready() -> void:
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
 
-	var column := VBoxContainer.new()
+	var column := UiStyle.vbox(14)
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
-	column.add_theme_constant_override("separation", 12)
 	center.add_child(column)
 
-	column.add_child(_label(tr("GAME_TITLE"), 72, ACCENT))
-	column.add_child(_label(tr("GAME_TAGLINE"), 28, INK))
-	column.add_child(_label(tr("MENU_COMING_SOON"), 18, MUTED))
+	column.add_child(_centered(UiStyle.label(UiText.t("GAME_TITLE"), 72, UiStyle.ACCENT, true)))
+	column.add_child(_centered(UiStyle.label(UiText.t("GAME_TAGLINE"), 28, UiStyle.INK)))
+	column.add_child(_centered(UiStyle.label(UiText.t("MENU_PITCH"), 17, UiStyle.MUTED)))
+
+	var buttons := UiStyle.vbox(12)
+	buttons.custom_minimum_size = Vector2(280, 0)
+	buttons.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var play := UiStyle.button(UiText.t("MENU_NEW_RUN"), _on_new_run, "AccentButton")
+	play.custom_minimum_size.y = 48
+	buttons.add_child(play)
+	# There is no window to close on phones: quitting is left to the system there.
+	if not OS.has_feature("mobile"):
+		buttons.add_child(UiStyle.button(UiText.t("MENU_QUIT"), func() -> void: get_tree().quit()))
+	var spacer := Control.new()
+	spacer.custom_minimum_size.y = 16
+	column.add_child(spacer)
+	column.add_child(buttons)
+	play.grab_focus()
+
 	var version: String = ProjectSettings.get_setting("application/config/version", "?")
-	column.add_child(_label(tr("MENU_VERSION") % version, 16, MUTED))
+	var footer := UiStyle.label(UiText.t("MENU_VERSION") % version, 14, UiStyle.MUTED)
+	footer.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 12)
+	add_child(footer)
 
 
-func _label(text: String, size: int, color: Color) -> Label:
-	var label := Label.new()
-	label.text = text
+func _on_new_run() -> void:
+	get_tree().change_scene_to_file(GAME_SCREEN)
+
+
+func _centered(label: Label) -> Label:
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	label.add_theme_font_size_override("font_size", size)
-	label.add_theme_color_override("font_color", color)
 	return label
