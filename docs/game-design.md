@@ -392,8 +392,8 @@ Le soir 1 est toujours calme. L'événement des soirs suivants est tiré à la f
   loyer cause 16 à 33 % des défaites, sauf pour le chouchou (3 %) : son risque principal reste la note, c'est son identité.
 - Les secousses peuvent être très punitives avec un sac de 4 colonnes : à surveiller.
 - L'écrasement des fragiles lors de la retombée est peut-être trop sévère (le bot n'en subit presque pas : 0,1 par partie).
-- Sur téléphone, la taille des cases du sac : l'itération 5 lui donne un onglet entier (cases de 7 à 8 mm sur un
-  téléphone de 6,5 pouces) et un double toucher (voir, puis lâcher). À confirmer avec des parties sur un vrai téléphone.
+- Sur téléphone, la taille des cases du sac : le sac s'ouvre en fenêtre au centre (cases d'environ 8 mm sur un
+  téléphone de 6,5 pouces) avec un double toucher (voir, puis lâcher). À confirmer avec des parties sur un vrai téléphone.
 - Le plan de rues (§3) change les distances par rapport au prototype : délais et paies (§5.3) à revérifier avec le bot.
 - Idée pour après le MVP : des rues à sens unique, que la carte Contresens permettrait de prendre à l'envers.
 - Le prototype ne contient ni sauvegarde, ni progression entre les parties.

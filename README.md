@@ -18,33 +18,42 @@ Au premier lancement, Godot crée un dossier `.godot/` (cache local, ignoré par
 
 ## Jouer
 
-Tout se fait à la souris (ou au doigt, voir plus bas) ; une ligne d'aide dit quoi faire ensuite.
+Tout se fait à la souris ou au doigt. Le plan occupe l'écran ; des bulles d'aide montrent quoi utiliser ensuite.
 
-- **Propositions** (au milieu) : survole-en une pour voir le restaurant et les clients sur le plan, puis **Accepter**.
-- **Cartes** (en bas à gauche) : clique une carte pour gagner des pas (2 cartes par tour, les gratuites ne comptent pas).
-- **Plan** : clique un carrefour surligné ; le trajet s'affiche au survol. On livre le client chez qui le trajet s'arrête.
-- **Restaurant** : **Prendre le plat** dans la liste des courses, puis clique une colonne du sac pour l'y lâcher.
-  `R` fait pivoter le plat, `Échap` annule. Clique un plat rangé pour le reprendre.
-- **Fin du tour** quand tu as fini. Entre deux soirs : bilan, récompense gratuite, puis boutique.
+- **En haut**, les compteurs : soir, tour, note, argent et loyer, puis le profil et l'événement du soir (sur
+  téléphone, derrière le bouton **i**). Le bouton ☰ ouvre le menu.
+- **En bas**, ta main de cartes : clique une carte pour gagner des pas (2 cartes par tour, les gratuites ne
+  comptent pas). Le bouton **Fin du tour** montre les cartes jouées ce tour (petites cartes pleines) et la pioche.
+- **Les icônes à côté** ouvrent :
+  - **le téléphone** : l'appli Grailleo, avec les **propositions** à accepter (la pastille rouge les compte) et
+    **mes courses** en cours, en détail ;
+  - **le sac** : clique une colonne pour y lâcher le plat en main, `R` le fait pivoter, `Échap` le repose ;
+    clique un plat rangé pour le reprendre ;
+  - **la bulle** : l'historique des messages.
+- **Sur le plan**, chaque course a son repère (au restaurant, puis chez le client) avec les tours restants.
+  Clique un carrefour surligné pour y aller : on livre le client chez qui le trajet s'arrête. Au restaurant,
+  un bouton **Prendre** apparaît près du livreur : il ouvre le sac, qui se referme une fois le plat rangé.
+- **Les messages** (livraisons, secousses, refus) passent en bas du plan quelques secondes.
+- Entre deux soirs : bilan, récompense gratuite, puis boutique.
 
-Un bouton grisé ou un compteur de la barre du haut s'explique quand on clique dessus.
+Un bouton grisé ou un compteur s'explique quand on clique dessus.
 
 ### Sur téléphone
 
-L'interface s'agrandit selon la densité de l'écran et passe en mise en page compacte : le plan à gauche, et à droite
-un onglet par panneau (**Cartes**, **Appli**, **Courses**, **Sac**, **Fil**) ; le jeu ouvre tout seul l'onglet dont
-l'action suivante a besoin. Sans survol possible, on touche deux fois : un premier toucher sur un carrefour montre le
-trajet, un second y va ; même chose pour une colonne du sac. Le bouton Retour d'Android repose le plat en main ou ouvre
-le menu.
+Le jeu se tient en portrait. L'interface s'agrandit selon la densité de l'écran, et le plan se dessine tourné d'un
+quart de tour quand ça le rend plus grand. Sans survol possible, on touche deux fois : un premier toucher sur un
+carrefour montre le trajet, un second y va ; même chose pour une colonne du sac. Le bouton Retour d'Android repose
+le plat en main, ferme la fenêtre ouverte ou ouvre le menu.
 
-Pour essayer la version téléphone sur ordinateur, ajoute des options après `--` :
+Pour essayer la version téléphone sur ordinateur, donne à la fenêtre la forme d'un téléphone et ajoute des options
+après `--` :
 
 ```bash
-godot --path . -- --ui-scale=1.6 --touch
+godot --path . --resolution 540x1200 -- --ui-scale=2.8 --touch
 ```
 
-`--ui-scale=X` agrandit l'interface X fois, `--compact` force la mise en page compacte, `--touch` fait agir la souris
-comme un doigt.
+`--ui-scale=X` agrandit l'interface X fois, `--narrow` force la version étroite (barre du haut sur une ligne),
+`--touch` fait agir la souris comme un doigt.
 
 Les écrans `ui/debug/city_debug.tscn` et `ui/debug/bag_debug.tscn` (F6 dans l'éditeur) restent là pour tester
 un quartier ou les règles du sac à la main.

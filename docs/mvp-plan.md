@@ -28,7 +28,8 @@ Les règles et les chiffres sont décrits dans [game-design.md](game-design.md) 
 - Godot 4.7, GDScript typé, rendu « Compatibility » (le plus large côté mobile).
 - Code en anglais, jeu en français via `i18n/fr.po`.
 - Noyau de règles (`core/`) séparé de l'interface (`ui/`), aléatoire à graine.
-- Écran en paysage, résolution de base 1280×720, mise à l'échelle automatique.
+- Écran en paysage sur PC, en portrait sur téléphone et tablette ; résolution de base 1280×720, mise à l'échelle
+  automatique (agrandie selon la densité de l'écran sur mobile).
 - Tests avec un petit lanceur maison (`tests/run_tests.gd`), lançable en ligne de commande.
 
 ## Itérations
@@ -40,12 +41,13 @@ Les règles et les chiffres sont décrits dans [game-design.md](game-design.md) 
 | 2 | Noyau : le sac (toutes ses règles) | Tests sur chaque règle et ses cas limites | Fait |
 | 3 | Noyau : déroulé de partie (cartes, propositions, livraisons, note, loyer, boutique, profils, événements) + bot | Tests + premier rapport d'équilibrage | Fait |
 | 4 | Interface jouable | Une partie complète sur PC | Fait |
-| 5 | Animations, sons provisoires, tactile, export Android | La partie sur téléphone | En revue |
+| 5 | Animations, sons provisoires, tactile, export Android | La partie sur téléphone | Fait |
+| 5 bis | Interface « plateau » : le plan plein écran, la main en bas, l'appli, le sac et l'historique en fenêtres, portrait sur téléphone | Une partie sur téléphone et sur PC | En revue |
 | 6 | Sauvegarde, menus, options, aide au premier lancement, équilibrage | Une version à faire tester | À faire |
 
 ## Risques
 
-- Le sac sur téléphone (cases petites) : à l'itération 5, la mise en page compacte lui donne un onglet entier et des
+- Le sac sur téléphone (cases petites) : depuis l'interface « plateau », il s'ouvre en fenêtre au centre de l'écran,
   cases d'environ 8 mm ; à confirmer en jouant sur un vrai téléphone.
 - L'équilibrage : le bot et son rapport sont là (itération 3, voir [balance-report.md](balance-report.md)). Une passe grossière a été faite le 18/11/2026 ; le réglage fin, avec des parties humaines, reste pour l'itération 6.
 - L'envie d'ajouter des choses : toute nouvelle idée va dans « Après le MVP », sauf si elle corrige un vrai problème de jeu.
