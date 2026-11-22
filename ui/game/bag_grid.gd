@@ -118,7 +118,9 @@ func _gui_input(event: InputEvent) -> void:
 		return
 	var motion := event as InputEventMouseMotion
 	if motion != null:
-		_set_hover(_column_at(motion.position))
+		# A finger (or --touch) chooses the column by a first touch, not by moving.
+		if not Device.is_touch(motion):
+			_set_hover(_column_at(motion.position))
 		return
 	var click := event as InputEventMouseButton
 	if click == null or not click.pressed or click.button_index != MOUSE_BUTTON_LEFT:

@@ -339,8 +339,7 @@ func _refresh_tabs() -> void:
 	elif not held and _seen_held and state.bag.aside_items().is_empty():
 		_open_tab(Tab.ORDERS if _can_take_a_dish() else Tab.CARDS)
 	elif turn != _seen_turn:
-		var room := state.orders.size() < state.config.max_active_orders
-		_open_tab(Tab.OFFERS if room and not state.offers.is_empty() else Tab.CARDS)
+		_open_tab(Tab.OFFERS if _can_accept_an_offer() else Tab.CARDS)
 	_seen_held = held
 	_seen_turn = turn
 
@@ -348,6 +347,13 @@ func _refresh_tabs() -> void:
 func _open_tab(tab: Tab) -> void:
 	_opened_tab = tab
 	_tabs.current_tab = tab
+
+
+func _can_accept_an_offer() -> bool:
+	for offer in game.state.offers:
+		if game.offer_problem(offer.id) == Game.Problem.NONE:
+			return true
+	return false
 
 
 func _can_take_a_dish() -> bool:
@@ -476,17 +482,15 @@ func _show_events() -> void:
 		match event.kind:
 			GameEvent.Kind.DELIVERED:
 				var delivery := event.delivery
-				var text := "+" + UiText.euros(delivery.total())
-				if delivery.rating_tenths != 0:
-					text += "  " + UiText.stars_change(delivery.rating_tenths) + " ★"
 				var good := delivery.outcome == Delivery.Outcome.PERFECT
-				_city.float_text(event.order.client, text, UiStyle.OK if good else UiStyle.BAD, _ride_seconds)
+				_city.float_text(event.order.client, UiText.delivery_float(delivery), UiStyle.OK if good else UiStyle.BAD,
+						_ride_seconds)
 				_play_later(Sfx.Sound.DELIVER if good else Sfx.Sound.BAD, _ride_seconds)
 			GameEvent.Kind.CANCELLED:
-				_city.float_text(event.order.client, UiText.stars_change(event.rating_tenths) + " ★", UiStyle.BAD)
+				_city.float_text(event.order.client, UiText.rating_float(event.rating_tenths), UiStyle.BAD)
 				Sfx.play(Sfx.Sound.BAD)
 			GameEvent.Kind.CARD_RATING_COST:
-				_city.float_text(state.courier_position, UiText.stars_change(event.rating_tenths) + " ★", UiStyle.BAD)
+				_city.float_text(state.courier_position, UiText.rating_float(event.rating_tenths), UiStyle.BAD)
 			GameEvent.Kind.SHAKE:
 				if not event.braced:
 					_bag.shake()

@@ -26,7 +26,9 @@ static func appear(control: Control, delay: float = 0.0, from_bottom: bool = fal
 	control.scale = Vector2.ONE * APPEAR_SCALE
 	var tween := control.create_tween().set_parallel().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(control, "modulate:a", 1.0, APPEAR).set_delay(delay)
-	tween.tween_property(control, "scale", Vector2.ONE, APPEAR).set_delay(delay)
+	# A container resets the scale of its children when it sorts them (before the tween starts):
+	# from() keeps the start value.
+	tween.tween_property(control, "scale", Vector2.ONE, APPEAR).from(Vector2.ONE * APPEAR_SCALE).set_delay(delay)
 
 
 ## Makes a counter grow and shrink back, to show that its value changed.
@@ -37,7 +39,7 @@ static func pulse(control: Control) -> void:
 	_set_pivot(control, false)
 	control.scale = Vector2.ONE * PULSE_SCALE
 	var tween := control.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(control, "scale", Vector2.ONE, PULSE)
+	tween.tween_property(control, "scale", Vector2.ONE, PULSE).from(Vector2.ONE * PULSE_SCALE)
 
 
 static func _set_pivot(control: Control, bottom: bool) -> void:

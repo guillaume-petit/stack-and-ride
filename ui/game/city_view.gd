@@ -60,6 +60,10 @@ func _init() -> void:
 func refresh() -> void:
 	_paths = game.paths()
 	_reachable = game.reachable()
+	# No mouse moves a finger's choice away: forget it once it cannot be ridden to (the courier
+	# got there, the night ended...), so that an old choice is neither shown nor ridden at once.
+	if Device.touch_screen() and _hovered not in _reachable:
+		_hovered = City.NOWHERE
 	queue_redraw()
 
 
@@ -68,6 +72,9 @@ func _gui_input(event: InputEvent) -> void:
 		return
 	var motion := event as InputEventMouseMotion
 	if motion != null:
+		# A finger (or --touch) shows a path by a first touch, not by moving.
+		if Device.is_touch(motion):
+			return
 		var crossroads := _crossroads_at(motion.position)
 		if crossroads != _hovered:
 			_hovered = crossroads
