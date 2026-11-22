@@ -6,6 +6,7 @@ const GAME_SCREEN := "res://ui/game/game_screen.tscn"
 
 
 func _ready() -> void:
+	Device.apply_scale(get_window())
 	theme = UiStyle.make_theme()
 	var background := ColorRect.new()
 	background.color = UiStyle.BACKGROUND
@@ -43,6 +44,12 @@ func _ready() -> void:
 	var footer := UiStyle.label(UiText.t("MENU_VERSION") % version, 14, UiStyle.MUTED)
 	footer.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 12)
 	add_child(footer)
+
+
+## The back button of Android leaves the game from the start screen.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		get_tree().quit()
 
 
 func _on_new_run() -> void:

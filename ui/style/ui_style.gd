@@ -104,6 +104,7 @@ static func make_theme() -> Theme:
 	theme.set_stylebox("panel", "ScrollContainer", StyleBoxEmpty.new())
 	theme.set_stylebox("background", "ProgressBar", box(ROAD, ROAD, 0, 3, 0))
 	theme.set_stylebox("fill", "ProgressBar", box(OK, OK, 0, 3, 0))
+	_set_tabs(theme)
 	theme.set_color("font_color", "TooltipLabel", Color.WHITE)
 	theme.set_stylebox("panel", "TooltipPanel", box(INK, INK, 0, 6, 8))
 	return theme
@@ -154,6 +155,34 @@ static func _set_button(theme: Theme, type: String, color: Color, text: Color, b
 	theme.set_font_size("font_size", type, font_size)
 
 
+## Tabs of the compact layout: big enough for a finger.
+static func _set_tabs(theme: Theme) -> void:
+	var selected := box(PANEL, INK, 2, RADIUS, 8)
+	selected.border_width_bottom = 0
+	selected.corner_radius_bottom_left = 0
+	selected.corner_radius_bottom_right = 0
+	selected.content_margin_left = 12
+	selected.content_margin_right = 12
+	var unselected := selected.duplicate() as StyleBoxFlat
+	unselected.bg_color = ROAD
+	unselected.border_color = LINE
+	var hovered := unselected.duplicate() as StyleBoxFlat
+	hovered.bg_color = Color("#f3f4f6")
+	theme.set_stylebox("tab_selected", "TabContainer", selected)
+	theme.set_stylebox("tab_unselected", "TabContainer", unselected)
+	theme.set_stylebox("tab_hovered", "TabContainer", hovered)
+	theme.set_stylebox("tab_focus", "TabContainer", StyleBoxEmpty.new())
+	var panel := box(PANEL, INK, 2, RADIUS, 10)
+	panel.corner_radius_top_left = 0
+	theme.set_stylebox("panel", "TabContainer", panel)
+	theme.set_font("font", "TabContainer", bold_font())
+	theme.set_font_size("font_size", "TabContainer", FONT_SIZE)
+	theme.set_color("font_selected_color", "TabContainer", ACCENT)
+	theme.set_color("font_unselected_color", "TabContainer", MUTED)
+	theme.set_color("font_hovered_color", "TabContainer", INK)
+	theme.set_constant("side_margin", "TabContainer", 0)
+
+
 # --- Widget helpers -------------------------------------------------------------------------
 
 ## A label that is not translated again by Godot: every text is passed through tr() by the
@@ -184,8 +213,24 @@ static func button(text: String, on_pressed: Callable, variation: String = "") -
 	out.text = text
 	out.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	out.theme_type_variation = variation
+	out.pressed.connect(func() -> void: Sfx.play(Sfx.Sound.CLICK))
 	out.pressed.connect(on_pressed)
+	explain_on_press(out)
 	return out
+
+
+## When the control is pressed, shows its tooltip in a Toast: the reason why a greyed out button
+## cannot be used, or what a counter means. Phones show no tooltips, and a click on a greyed out
+## button would otherwise do nothing at all. An enabled button does its job instead.
+static func explain_on_press(control: Control) -> void:
+	control.gui_input.connect(func(event: InputEvent) -> void:
+		var press := event as InputEventMouseButton
+		if press == null or not press.pressed or press.button_index != MOUSE_BUTTON_LEFT:
+			return
+		var button := control as BaseButton
+		if button != null and not button.disabled:
+			return
+		Toast.show_from(control, control.tooltip_text))
 
 
 ## A small rounded tag (Urgent, VIP...).

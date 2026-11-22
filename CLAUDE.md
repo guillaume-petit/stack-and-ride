@@ -28,6 +28,11 @@ Talk to the owner in French.
   in the feed and refreshes every view. To grey out a button, ask the core (`card_problem()`,
   `offer_problem()`, `move_problem()`...) instead of repeating a rule in the UI.
   Shared look in `ui/style/ui_style.gd` (theme, colors), texts built in `ui/game/ui_text.gd`.
+  Phones: `ui/device.gd` (interface scale, compact layout, touch). Hover does not exist on a phone:
+  anything shown on hover needs a touch equivalent (first touch shows, second acts).
+  Animations (`ui/style/motion.gd`, tweens) and sounds (`ui/sfx.gd`, `assets/sounds/`) only show the
+  state, never change it, and do nothing outside the scene tree (the tests). No autoloads: they do not
+  exist when the tests run with `--script`.
 - `sim/` holds headless simulations (bots) used for balancing.
 
 ## Tests

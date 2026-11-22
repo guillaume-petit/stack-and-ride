@@ -16,6 +16,8 @@ var disabled: bool = false:
 
 ## Contents go in this box.
 var content: VBoxContainer
+## Played when the card is pressed.
+var sound := Sfx.Sound.CLICK
 
 var _normal: StyleBoxFlat
 var _hover: StyleBoxFlat
@@ -38,8 +40,9 @@ func _init(color: Color = UiStyle.PANEL, border: Color = UiStyle.INK, dashed_loo
 	content = UiStyle.vbox(3)
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(content)
+	# After a tap, a finger leaves the mouse where it was: no hover look on phones.
 	mouse_entered.connect(func() -> void:
-		_hovered = true
+		_hovered = not Device.touch_screen()
 		_update_style())
 	mouse_exited.connect(func() -> void:
 		_hovered = false
@@ -56,8 +59,14 @@ func add(control: Control) -> Control:
 
 func _gui_input(event: InputEvent) -> void:
 	var click := event as InputEventMouseButton
-	if click != null and click.pressed and click.button_index == MOUSE_BUTTON_LEFT and not disabled:
-		accept_event()
+	if click == null or not click.pressed or click.button_index != MOUSE_BUTTON_LEFT:
+		return
+	accept_event()
+	if disabled:
+		# Why it cannot be used (see UiStyle.explain_on_press()).
+		Toast.show_from(self, tooltip_text)
+	else:
+		Sfx.play(sound)
 		pressed.emit()
 
 

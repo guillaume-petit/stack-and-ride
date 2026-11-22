@@ -39,12 +39,13 @@ Les règles et les chiffres sont décrits dans [game-design.md](game-design.md) 
 | 1 | Noyau : état de jeu, fichiers de données, génération du quartier, chemins | Tests : quartier connecté, chemins corrects, même graine = même quartier | Fait |
 | 2 | Noyau : le sac (toutes ses règles) | Tests sur chaque règle et ses cas limites | Fait |
 | 3 | Noyau : déroulé de partie (cartes, propositions, livraisons, note, loyer, boutique, profils, événements) + bot | Tests + premier rapport d'équilibrage | Fait |
-| 4 | Interface jouable | Une partie complète sur PC | En revue |
-| 5 | Animations, sons provisoires, tactile, export Android | La partie sur téléphone | À faire |
+| 4 | Interface jouable | Une partie complète sur PC | Fait |
+| 5 | Animations, sons provisoires, tactile, export Android | La partie sur téléphone | En revue |
 | 6 | Sauvegarde, menus, options, aide au premier lancement, équilibrage | Une version à faire tester | À faire |
 
 ## Risques
 
-- Le sac sur téléphone (cases petites) : traité à l'itération 5.
+- Le sac sur téléphone (cases petites) : à l'itération 5, la mise en page compacte lui donne un onglet entier et des
+  cases d'environ 8 mm ; à confirmer en jouant sur un vrai téléphone.
 - L'équilibrage : le bot et son rapport sont là (itération 3, voir [balance-report.md](balance-report.md)). Une passe grossière a été faite le 18/11/2026 ; le réglage fin, avec des parties humaines, reste pour l'itération 6.
 - L'envie d'ajouter des choses : toute nouvelle idée va dans « Après le MVP », sauf si elle corrige un vrai problème de jeu.

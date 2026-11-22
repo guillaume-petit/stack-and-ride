@@ -1,7 +1,10 @@
 class_name BagView
-extends VBoxContainer
+extends BoxContainer
 ## The bag panel: the grid, the dish in hand with its buttons, the dishes set aside and the
 ## cup holder. Sends the player's actions as signals; GameScreen calls the core.
+##
+## Normally everything is stacked; in the compact layout (phones) the grid and its legend are
+## on the left and the rest on the right, so that the whole bag fits in its tab.
 
 signal column_clicked(column: int)
 signal dish_clicked(order_id: int)
@@ -25,13 +28,21 @@ var _aside_row: HFlowContainer
 var _cup_holder: Label
 
 
-func _init() -> void:
-	add_theme_constant_override("separation", 6)
+func _init(compact: bool = false) -> void:
+	var touch := Device.touch_screen()
+	vertical = not compact
+	add_theme_constant_override("separation", 12 if compact else 6)
+	var grid_column := UiStyle.vbox(6)
+	add_child(grid_column)
+	var side := UiStyle.vbox(6)
+	side.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	add_child(side)
 	_grid = BagGrid.new()
+	_grid.compact = compact
 	_grid.column_clicked.connect(func(column: int) -> void: column_clicked.emit(column))
 	_grid.dish_clicked.connect(func(order_id: int) -> void: dish_clicked.emit(order_id))
 	_grid.hover_changed.connect(func(_column: int) -> void: _update_status())
-	add_child(_grid)
+	grid_column.add_child(_grid)
 
 	var legend := UiStyle.hbox(10)
 	legend.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -39,11 +50,11 @@ func _init() -> void:
 	legend.add_child(UiStyle.label("● " + UiText.t("BAG_LEGEND_COLD"), UiStyle.SMALL_FONT_SIZE, UiStyle.COLD))
 	legend.add_child(UiStyle.label("▲ " + UiText.t("BAG_LEGEND_FRAGILE"), UiStyle.SMALL_FONT_SIZE, UiStyle.MUTED))
 	legend.add_child(UiStyle.label("▢ " + UiText.t("BAG_LEGEND_LOOSE"), UiStyle.SMALL_FONT_SIZE, UiStyle.MUSTARD.darkened(0.2)))
-	add_child(legend)
+	grid_column.add_child(legend)
 
-	_status = UiStyle.paragraph("", UiStyle.SMALL_FONT_SIZE, UiStyle.MUTED)
-	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	add_child(_status)
+	_status = UiStyle.paragraph("", UiStyle.SMALL_FONT_SIZE + (1 if compact else 0), UiStyle.MUTED)
+	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT if compact else HORIZONTAL_ALIGNMENT_CENTER
+	side.add_child(_status)
 
 	_held_box = PanelContainer.new()
 	_held_box.add_theme_stylebox_override("panel", _dashed_box(UiStyle.MUSTARD))
@@ -59,26 +70,27 @@ func _init() -> void:
 	var buttons := HFlowContainer.new()
 	buttons.add_theme_constant_override("h_separation", 6)
 	buttons.add_theme_constant_override("v_separation", 6)
-	buttons.add_child(UiStyle.button(UiText.t("BAG_ROTATE"), func() -> void: rotate_pressed.emit(), "SmallButton"))
+	buttons.add_child(UiStyle.button(UiText.t("BAG_ROTATE_TOUCH" if touch else "BAG_ROTATE"), func() -> void: rotate_pressed.emit(), "SmallButton"))
 	buttons.add_child(UiStyle.button(UiText.t("BAG_SET_ASIDE"), func() -> void: set_aside_pressed.emit(), "SmallButton"))
 	_cancel_button = UiStyle.button("", func() -> void: cancel_pressed.emit(), "SmallButton")
 	buttons.add_child(_cancel_button)
 	held.add_child(buttons)
-	add_child(_held_box)
+	side.add_child(_held_box)
 
 	_aside_box = PanelContainer.new()
 	_aside_box.theme_type_variation = "Inset"
 	var aside := UiStyle.vbox(6)
-	aside.add_child(UiStyle.label(UiText.t("BAG_ASIDE_TITLE"), UiStyle.SMALL_FONT_SIZE, UiStyle.MUTED, true))
+	aside.add_child(UiStyle.paragraph(UiText.t("BAG_ASIDE_TITLE_TOUCH" if touch else "BAG_ASIDE_TITLE"),
+			UiStyle.SMALL_FONT_SIZE, UiStyle.MUTED))
 	_aside_row = HFlowContainer.new()
 	_aside_row.add_theme_constant_override("h_separation", 6)
 	_aside_row.add_theme_constant_override("v_separation", 6)
 	aside.add_child(_aside_row)
 	_aside_box.add_child(aside)
-	add_child(_aside_box)
+	side.add_child(_aside_box)
 
-	_cup_holder = UiStyle.label("", UiStyle.SMALL_FONT_SIZE, UiStyle.MUTED)
-	add_child(_cup_holder)
+	_cup_holder = UiStyle.paragraph("", UiStyle.SMALL_FONT_SIZE, UiStyle.MUTED)
+	side.add_child(_cup_holder)
 
 
 func refresh() -> void:
@@ -139,6 +151,11 @@ func summary() -> String:
 	return text
 
 
+## Shakes the bag (a card or a paved street shook it).
+func shake() -> void:
+	_grid.shake()
+
+
 func _on_aside_pressed(order_id: int) -> void:
 	aside_dish_clicked.emit(order_id)
 
@@ -155,10 +172,11 @@ func _update_status() -> void:
 			_status.add_theme_color_override("font_color", UiStyle.BAD)
 			_status.text = UiText.problem(problem)
 			return
+	var touch := Device.touch_screen()
 	if bag.held != null:
-		_status.text = UiText.t("BAG_HINT_HELD")
+		_status.text = UiText.t("BAG_HINT_HELD_TOUCH" if touch else "BAG_HINT_HELD")
 	elif not bag.items().is_empty():
-		_status.text = UiText.t("BAG_HINT_LIFT")
+		_status.text = UiText.t("BAG_HINT_LIFT_TOUCH" if touch else "BAG_HINT_LIFT")
 	else:
 		_status.text = UiText.t("BAG_EMPTY")
 

@@ -6,17 +6,29 @@ extends Control
 ## screen calls the matching action of Game, reports a refusal in the feed, then refreshes
 ## every view: simple and always in sync (the whole screen is cheap to rebuild).
 ##
-## Layout: the top bar (with a hint for the next action); the map, the hand and the end-of-turn button on the left; the offers
-## and accepted orders in the middle; the bag and the notifications on the right. The windows
-## of the other phases (profile, end of night, shop, end of run) cover the board.
+## Layout: the top bar (with a hint for the next action); the map, the hand and the end-of-turn
+## button on the left; the offers and accepted orders in the middle; the bag and the
+## notifications on the right. The windows of the other phases (profile, end of night, shop,
+## end of run) cover the board.
+##
+## Compact layout (phones, see Device): the map on the left, and on the right one tab each for
+## the cards, the offers, the orders, the bag and the notifications, with the hint and the
+## end-of-turn button under them. The screen opens the tab that the next action needs.
 
 const MAIN_MENU := "res://ui/main.tscn"
 const SIDE_WIDTH := 330
+## Narrowest width of the tabs in the compact layout.
+const COMPACT_TABS_WIDTH := 340
+enum Tab { CARDS, OFFERS, ORDERS, BAG, FEED }
+## The pedals sound a little different at each crossroads.
+const PEDAL_PITCH_SPREAD := 0.08
 ## Seeds tried in a row before giving up when no city can be drawn.
 const MAX_SEED_ATTEMPTS := 100
 
 ## Seed of the run; a random one when negative. Set it before adding the screen to the tree.
 var run_seed: int = -1
+## Compact layout (phones). Chosen from the size of the screen in _ready(); the tests set it.
+var compact: bool = false
 var game: Game
 
 var _hud: HudBar
@@ -31,17 +43,36 @@ var _orders_panel: PanelContainer
 var _bag: BagView
 var _bag_panel: PanelContainer
 var _feed: FeedView
+## Compact layout only.
+var _tabs: TabContainer
 var _overlay: Control
 var _overlay_center: CenterContainer
+var _toast: Toast
 ## Last night whose accounts the player has seen (the window of the end of the night).
 var _night_report_seen: int = 0
 var _menu_open: bool = false
+## What the compact layout last saw, to open the right tab when it changes.
+var _seen_turn: int = -1
+var _seen_held: bool = false
+## Tab last opened by the screen (a TabContainer only shows it from the next frame).
+var _opened_tab := Tab.CARDS
+## History entries already shown as animations.
+var _events_shown: int = 0
+## Seconds the courier's ride lasts after the last move (what happens at the end waits for it).
+var _ride_seconds: float = 0.0
+## Kind of the window shown, to animate only a new one ("" when none).
+var _dialog_kind: String = ""
+## Phase at the last action, for the sound of the end of the run.
+var _sound_phase := GameState.Phase.CHOOSE_PROFILE
 ## start() already ran (the tests call it before _ready()).
 var _built: bool = false
 
 
 func _ready() -> void:
 	if not _built:
+		# Already done by the main menu; needed when this scene is launched alone (F6).
+		Device.apply_scale(get_window())
+		compact = compact or Device.is_compact(get_viewport_rect().size)
 		start()
 
 
@@ -75,6 +106,7 @@ func _start_run() -> void:
 		return
 	for view in [_hud, _city, _hand, _offers, _orders, _bag, _feed]:
 		view.game = game
+	_events_shown = game.state.history.size()
 	refresh()
 
 
@@ -88,16 +120,79 @@ func _build() -> void:
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 12)
+	var sides := ["left", "top", "right", "bottom"]
+	var safe := Device.safe_margins(get_viewport()) if is_inside_tree() else PackedFloat32Array([0, 0, 0, 0])
+	for i in sides.size():
+		margin.add_theme_constant_override("margin_" + sides[i], (8 if compact else 12) + int(safe[i]))
 	add_child(margin)
-	var page := UiStyle.vbox(10)
-	margin.add_child(page)
 
-	_hud = HudBar.new()
+	_make_views()
+	if compact:
+		margin.add_child(_compact_page())
+	else:
+		margin.add_child(_wide_page())
+
+	# Windows over the board. They scroll when they are taller than the screen.
+	_overlay = Control.new()
+	_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	var dim := ColorRect.new()
+	dim.color = Color(UiStyle.BACKGROUND, 0.8)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_overlay.add_child(dim)
+	var overlay_scroll := ScrollContainer.new()
+	overlay_scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_overlay.add_child(overlay_scroll)
+	_overlay_center = CenterContainer.new()
+	_overlay_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_overlay_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	overlay_scroll.add_child(_overlay_center)
+	add_child(_overlay)
+
+	_toast = Toast.new()
+	add_child(_toast)
+
+
+## The views, wired to the core; the layouts only place them.
+func _make_views() -> void:
+	_hud = HudBar.new(compact)
 	_hud.menu_pressed.connect(_open_menu)
-	page.add_child(_hud)
+	_city = CityView.new()
+	_city.crossroads_clicked.connect(_on_crossroads_clicked)
+	_city.rode_past.connect(func(_crossroads: Vector2i) -> void: Sfx.play(Sfx.Sound.PEDAL, PEDAL_PITCH_SPREAD))
+	_turn_info = UiStyle.label("", UiStyle.SMALL_FONT_SIZE + 1 if compact else UiStyle.FONT_SIZE, UiStyle.INK, true)
+	_turn_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_end_turn = UiStyle.button("", _on_end_turn, "AccentButton")
+	_hand = HandView.new(compact)
+	_hand.card_clicked.connect(func(index: int) -> void: _after(game.play_card(index)))
+	_offers = OffersView.new()
+	_offers.accept_pressed.connect(func(id: int) -> void: _after(game.accept_offer(id)))
+	_offers.offer_hovered.connect(_highlight)
+	_orders = OrdersView.new()
+	_orders.take_pressed.connect(func(id: int) -> void: _after(_sound_if_done(game.take_dish(id), Sfx.Sound.TAKE)))
+	_orders.order_hovered.connect(_highlight)
+	_bag = BagView.new(compact)
+	_bag.column_clicked.connect(func(column: int) -> void: _after(_sound_if_done(game.drop_held(column), Sfx.Sound.DROP)))
+	_bag.dish_clicked.connect(func(id: int) -> void: _after(_sound_if_done(game.lift(id), Sfx.Sound.TAKE)))
+	_bag.rotate_pressed.connect(func() -> void: _after(game.rotate_held()))
+	_bag.set_aside_pressed.connect(func() -> void: _after(game.set_held_aside()))
+	_bag.cancel_pressed.connect(func() -> void: _after(game.cancel_held()))
+	_bag.aside_dish_clicked.connect(func(id: int) -> void: _after(game.take_from_aside(id)))
+	_feed = FeedView.new()
 
+
+func _map_panel() -> PanelContainer:
+	var map_panel := PanelContainer.new()
+	map_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	map_panel.add_theme_stylebox_override("panel", UiStyle.box(UiStyle.PANEL, UiStyle.LINE, 1, 14, 0))
+	map_panel.add_child(_city)
+	return map_panel
+
+
+func _wide_page() -> VBoxContainer:
+	var page := UiStyle.vbox(10)
+	page.add_child(_hud)
 	var columns := UiStyle.hbox(12)
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	page.add_child(columns)
@@ -106,38 +201,21 @@ func _build() -> void:
 	var left := UiStyle.vbox(8)
 	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	columns.add_child(left)
-	var map_panel := PanelContainer.new()
-	map_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	map_panel.add_theme_stylebox_override("panel", UiStyle.box(UiStyle.PANEL, UiStyle.LINE, 1, 14, 0))
-	_city = CityView.new()
-	_city.crossroads_clicked.connect(_on_crossroads_clicked)
-	map_panel.add_child(_city)
-	left.add_child(map_panel)
+	left.add_child(_map_panel())
 	var turn_row := UiStyle.hbox(10)
-	_turn_info = UiStyle.label("", UiStyle.FONT_SIZE, UiStyle.INK, true)
-	_turn_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	turn_row.add_child(_turn_info)
-	_end_turn = UiStyle.button("", _on_end_turn, "AccentButton")
 	turn_row.add_child(_end_turn)
 	left.add_child(turn_row)
-	_hand = HandView.new()
-	_hand.card_clicked.connect(func(index: int) -> void: _after(game.play_card(index)))
 	left.add_child(_hand)
 
 	# Middle: offers and accepted orders.
 	var middle := UiStyle.vbox(10)
 	middle.custom_minimum_size.x = SIDE_WIDTH
 	columns.add_child(middle)
-	_offers = OffersView.new()
-	_offers.accept_pressed.connect(func(id: int) -> void: _after(game.accept_offer(id)))
-	_offers.offer_hovered.connect(_highlight)
 	_offers_panel = UiStyle.titled_panel(UiText.t("OFFERS_TITLE"), _offers)
 	_offers_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_offers_panel.size_flags_stretch_ratio = 1.15
 	middle.add_child(_offers_panel)
-	_orders = OrdersView.new()
-	_orders.take_pressed.connect(func(id: int) -> void: _after(game.take_dish(id)))
-	_orders.order_hovered.connect(_highlight)
 	_orders_panel = UiStyle.titled_panel(UiText.t("ORDERS_TITLE"), _orders)
 	_orders_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	middle.add_child(_orders_panel)
@@ -150,33 +228,66 @@ func _build() -> void:
 	var right_scroll := UiStyle.scroll(right)
 	right_scroll.custom_minimum_size.x = SIDE_WIDTH
 	columns.add_child(right_scroll)
-	_bag = BagView.new()
-	_bag.column_clicked.connect(func(column: int) -> void: _after(game.drop_held(column)))
-	_bag.dish_clicked.connect(func(id: int) -> void: _after(game.lift(id)))
-	_bag.rotate_pressed.connect(func() -> void: _after(game.rotate_held()))
-	_bag.set_aside_pressed.connect(func() -> void: _after(game.set_held_aside()))
-	_bag.cancel_pressed.connect(func() -> void: _after(game.cancel_held()))
-	_bag.aside_dish_clicked.connect(func(id: int) -> void: _after(game.take_from_aside(id)))
 	_bag_panel = UiStyle.titled_panel(UiText.t("BAG_TITLE"), _bag)
 	right.add_child(_bag_panel)
-	_feed = FeedView.new()
 	var feed_panel := UiStyle.titled_panel(UiText.t("FEED_TITLE"), _feed)
 	feed_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	feed_panel.custom_minimum_size.y = 150
 	right.add_child(feed_panel)
+	return page
 
-	# Windows over the board.
-	_overlay = Control.new()
-	_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
-	var dim := ColorRect.new()
-	dim.color = Color(UiStyle.BACKGROUND, 0.8)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_overlay.add_child(dim)
-	_overlay_center = CenterContainer.new()
-	_overlay_center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_overlay.add_child(_overlay_center)
-	add_child(_overlay)
+
+func _compact_page() -> VBoxContainer:
+	var page := UiStyle.vbox(6)
+	page.add_child(_hud)
+	var columns := UiStyle.hbox(8)
+	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	page.add_child(columns)
+
+	var left := UiStyle.vbox(4)
+	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left.add_child(_map_panel())
+	left.add_child(_turn_info)
+	columns.add_child(left)
+
+	var right := UiStyle.vbox(6)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.custom_minimum_size.x = COMPACT_TABS_WIDTH
+	columns.add_child(right)
+	_tabs = TabContainer.new()
+	_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right.add_child(_tabs)
+	# Same order as the Tab enum.
+	_tabs.add_child(_hand)
+	_offers_panel = _tab_page(_offers)
+	_tabs.add_child(_offers_panel)
+	_orders_panel = _tab_page(_orders)
+	_tabs.add_child(_orders_panel)
+	_bag_panel = _tab_page(UiStyle.scroll(_bag))
+	_tabs.add_child(_bag_panel)
+	_tabs.add_child(_feed)
+	var bottom := UiStyle.hbox(8)
+	_hud.hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bottom.add_child(_hud.hint)
+	_end_turn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	bottom.add_child(_end_turn)
+	right.add_child(bottom)
+	return page
+
+
+## A tab with a detail line at its top (acceptance rate, bag size...).
+func _tab_page(content: Control) -> PanelContainer:
+	var page := PanelContainer.new()
+	page.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	var column := UiStyle.vbox(6)
+	page.add_child(column)
+	var detail := UiStyle.label("", UiStyle.SMALL_FONT_SIZE, UiStyle.MUTED)
+	detail.name = "Detail"
+	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	column.add_child(detail)
+	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(content)
+	return page
 
 
 # --- Refresh --------------------------------------------------------------------------------
@@ -205,10 +316,54 @@ func refresh() -> void:
 	_end_turn.disabled = problem != Game.Problem.NONE
 	_end_turn.tooltip_text = UiText.problem(problem) if problem != Game.Problem.NONE else ""
 	_hud.hint.text = _hint_text()
+	if compact:
+		_refresh_tabs()
 	_refresh_overlay()
 
 
-func _set_detail(panel: PanelContainer, text: String) -> void:
+## Tab titles with their counts, and the tab that the next action needs: the bag when a dish is
+## taken, the orders or the cards once it is stowed, the offers at the start of a turn.
+func _refresh_tabs() -> void:
+	var state := game.state
+	_tabs.set_tab_title(Tab.CARDS, UiText.t("TAB_CARDS") % state.piles.hand.size())
+	_tabs.set_tab_title(Tab.OFFERS, UiText.t("TAB_OFFERS") % state.offers.size())
+	_tabs.set_tab_title(Tab.ORDERS, UiText.t("TAB_ORDERS") % state.orders.size())
+	_tabs.set_tab_title(Tab.BAG, UiText.t("TAB_BAG"))
+	_tabs.set_tab_title(Tab.FEED, UiText.t("TAB_FEED"))
+	if state.phase != GameState.Phase.PLAYING:
+		return
+	var held := state.bag.held != null
+	var turn := state.night * 100 + state.turn
+	if held and not _seen_held:
+		_open_tab(Tab.BAG)
+	elif not held and _seen_held and state.bag.aside_items().is_empty():
+		_open_tab(Tab.ORDERS if _can_take_a_dish() else Tab.CARDS)
+	elif turn != _seen_turn:
+		_open_tab(Tab.OFFERS if _can_accept_an_offer() else Tab.CARDS)
+	_seen_held = held
+	_seen_turn = turn
+
+
+func _open_tab(tab: Tab) -> void:
+	_opened_tab = tab
+	_tabs.current_tab = tab
+
+
+func _can_accept_an_offer() -> bool:
+	for offer in game.state.offers:
+		if game.offer_problem(offer.id) == Game.Problem.NONE:
+			return true
+	return false
+
+
+func _can_take_a_dish() -> bool:
+	for order in game.state.orders:
+		if game.take_dish_problem(order.id) == Game.Problem.NONE:
+			return true
+	return false
+
+
+func _set_detail(panel: Control, text: String) -> void:
 	(panel.find_child("Detail", true, false) as Label).text = text
 
 
@@ -216,22 +371,22 @@ func _set_detail(panel: PanelContainer, text: String) -> void:
 func _hint_text() -> String:
 	var state := game.state
 	var bag := state.bag
+	var touch := Device.touch_screen()
 	if state.phase != GameState.Phase.PLAYING:
 		return ""
 	if bag.held != null:
-		return UiText.t("HINT_HELD")
+		return UiText.t("HINT_HELD_TOUCH" if touch else "HINT_HELD")
 	if not bag.aside_items().is_empty():
 		for item in bag.aside_items():
 			if bag.can_return_from_aside(item.order_id):
 				return UiText.t("HINT_ASIDE_RETURN")
 		return UiText.t("HINT_ASIDE")
-	for order in state.orders:
-		if game.take_dish_problem(order.id) == Game.Problem.NONE:
-			return UiText.t("HINT_AT_RESTAURANT")
+	if _can_take_a_dish():
+		return UiText.t("HINT_AT_RESTAURANT")
 	if state.orders.is_empty() and not state.offers.is_empty():
-		return UiText.t("HINT_ACCEPT")
+		return UiText.t("HINT_ACCEPT_TOUCH" if touch else "HINT_ACCEPT")
 	if state.steps > 0:
-		return UiText.t("HINT_MOVE")
+		return UiText.t("HINT_MOVE_TOUCH" if touch else "HINT_MOVE")
 	return UiText.t("HINT_PLAY_CARDS") % state.max_paid_cards()
 
 
@@ -255,7 +410,7 @@ func _refresh_overlay() -> void:
 					dialog = _night_dialog()
 				else:
 					var shop := ShopDialog.new()
-					shop.buy_pressed.connect(func(index: int) -> void: _after(game.buy(index)))
+					shop.buy_pressed.connect(func(index: int) -> void: _after(_sound_if_done(game.buy(index), Sfx.Sound.BUY)))
 					shop.next_night_pressed.connect(func() -> void: _after(game.start_next_night()))
 					dialog = shop
 			GameState.Phase.WON, GameState.Phase.LOST:
@@ -264,10 +419,16 @@ func _refresh_overlay() -> void:
 				end.menu_pressed.connect(_to_main_menu)
 				dialog = end
 	_overlay.visible = dialog != null
+	var kind := ""
 	if dialog != null:
+		dialog.compact = compact
 		if dialog.game == null:
 			dialog.setup(game)
 		_overlay_center.add_child(dialog)
+		kind = "menu" if _menu_open else dialog.get_script().get_global_name()
+		if kind != _dialog_kind:
+			Motion.appear(dialog)
+	_dialog_kind = kind
 
 
 func _night_dialog() -> NightDialog:
@@ -300,17 +461,77 @@ func _menu_dialog() -> Dialog:
 
 # --- Actions --------------------------------------------------------------------------------
 
-## After every action: a refusal goes to the feed, then everything is shown again.
+## After every action: a refusal goes to the feed and pops up, what happened is animated, then
+## everything is shown again.
 func _after(problem: Game.Problem) -> void:
 	if problem != Game.Problem.NONE:
 		_feed.add_problem(problem)
+		_toast.show_text(UiText.problem(problem))
+		Sfx.play(Sfx.Sound.REFUSE)
+	_show_events()
+	_ride_seconds = 0.0
 	refresh()
+
+
+## Animates the events of the history since the last action: money that rises from the client's
+## door, a bag that shakes...
+func _show_events() -> void:
+	var state := game.state
+	for index in range(_events_shown, state.history.size()):
+		var event := state.history[index]
+		match event.kind:
+			GameEvent.Kind.DELIVERED:
+				var delivery := event.delivery
+				var good := delivery.outcome == Delivery.Outcome.PERFECT
+				_city.float_text(event.order.client, UiText.delivery_float(delivery), UiStyle.OK if good else UiStyle.BAD,
+						_ride_seconds)
+				_play_later(Sfx.Sound.DELIVER if good else Sfx.Sound.BAD, _ride_seconds)
+			GameEvent.Kind.CANCELLED:
+				_city.float_text(event.order.client, UiText.rating_float(event.rating_tenths), UiStyle.BAD)
+				Sfx.play(Sfx.Sound.BAD)
+			GameEvent.Kind.CARD_RATING_COST:
+				_city.float_text(state.courier_position, UiText.rating_float(event.rating_tenths), UiStyle.BAD)
+			GameEvent.Kind.SHAKE:
+				if not event.braced:
+					_bag.shake()
+					Sfx.play(Sfx.Sound.SHAKE)
+			GameEvent.Kind.CRUSHED:
+				_bag.shake()
+				Sfx.play(Sfx.Sound.BAD)
+			GameEvent.Kind.NIGHT_ENDED:
+				if state.phase not in [GameState.Phase.WON, GameState.Phase.LOST]:
+					_play_later(Sfx.Sound.NIGHT_END, _ride_seconds)
+	_events_shown = state.history.size()
+	if state.phase != _sound_phase and state.phase in [GameState.Phase.WON, GameState.Phase.LOST]:
+		_play_later(Sfx.Sound.WIN if state.phase == GameState.Phase.WON else Sfx.Sound.LOSE, _ride_seconds)
+	_sound_phase = state.phase
+
+
+## Plays a sound once the courier's ride is over.
+func _play_later(sound: Sfx.Sound, delay: float) -> void:
+	if delay <= 0.0 or not is_inside_tree():
+		Sfx.play(sound)
+		return
+	get_tree().create_timer(delay).timeout.connect(func() -> void: Sfx.play(sound))
+
+
+## The sound of an action, when it was done.
+func _sound_if_done(problem: Game.Problem, sound: Sfx.Sound) -> Game.Problem:
+	if problem == Game.Problem.NONE:
+		Sfx.play(sound)
+	return problem
 
 
 func _on_crossroads_clicked(crossroads: Vector2i) -> void:
 	if crossroads == game.state.courier_position:
 		return
-	_after(game.move_to(crossroads))
+	var path: Array[Vector2i] = [game.state.courier_position]
+	path.append_array(game.paths().path_to(crossroads))
+	var problem := game.move_to(crossroads)
+	if problem == Game.Problem.NONE:
+		_city.ride(path)
+		_ride_seconds = CityView.ride_seconds(path.size() - 1)
+	_after(problem)
 
 
 func _on_end_turn() -> void:
@@ -333,6 +554,20 @@ func _new_run() -> void:
 
 func _to_main_menu() -> void:
 	get_tree().change_scene_to_file(MAIN_MENU)
+
+
+## The back button of Android (or gesture): puts back the dish in hand, closes the menu or opens
+## it. Without this, Godot would quit the game (project setting application/config/quit_on_go_back).
+func _notification(what: int) -> void:
+	if what != NOTIFICATION_WM_GO_BACK_REQUEST or game == null:
+		return
+	if _menu_open:
+		_menu_open = false
+		refresh()
+	elif game.state.bag.held != null and not _overlay.visible:
+		_after(game.cancel_held())
+	else:
+		_open_menu()
 
 
 ## Keyboard shortcuts while a dish is in hand: R turns it, Escape puts it back.

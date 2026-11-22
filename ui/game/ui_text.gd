@@ -38,6 +38,19 @@ static func stars_change(tenths: int) -> String:
 	return ("+" if tenths >= 0 else "") + stars(tenths)
 
 
+## Text rising from a crossroads when the rating changes: "−0,3 ★".
+static func rating_float(tenths: int) -> String:
+	return stars_change(tenths) + " ★"
+
+
+## Text rising from the client's door after a delivery: "+12 €", then the rating change if any.
+static func delivery_float(delivery: Delivery) -> String:
+	var text := "+" + euros(delivery.total())
+	if delivery.rating_tenths != 0:
+		text += "  " + rating_float(delivery.rating_tenths)
+	return text
+
+
 ## Five stars drawn with the characters ★ and ☆ (rounded to the nearest star).
 static func star_bar(tenths: int) -> String:
 	var full := clampi(roundi(tenths / 10.0), 0, 5)

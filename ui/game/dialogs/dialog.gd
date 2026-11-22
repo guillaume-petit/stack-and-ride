@@ -4,6 +4,8 @@ extends PanelContainer
 ## a framed panel with a title, filled by setup() in each subclass.
 
 var game: Game
+## Compact layout of the game screen (phones): set before setup(), long lists get shorter.
+var compact: bool = false
 ## Contents go in this box, under the title.
 var body: VBoxContainer
 

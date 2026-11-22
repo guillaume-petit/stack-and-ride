@@ -311,6 +311,9 @@ msgstr "Portefeuille"
 msgid "HUD_RENT"
 msgstr "Loyer ce soir"
 
+msgid "HUD_WALLET_RENT"
+msgstr "Argent / loyer"
+
 msgid "HUD_PROFILE"
 msgstr "Profil"
 
@@ -377,8 +380,34 @@ msgstr "Clique un carrefour surligné. Tu livres le client où ton trajet s'arr�
 msgid "HINT_ACCEPT"
 msgstr "Accepte une proposition (survole-la pour la voir sur le plan), puis joue tes cartes."
 
+msgid "HINT_HELD_TOUCH"
+msgstr "Touche une colonne du sac pour voir où le plat tombe, puis touche-la encore pour l'y lâcher."
+
+msgid "HINT_MOVE_TOUCH"
+msgstr "Touche un carrefour surligné pour voir le trajet, puis touche-le encore pour y aller."
+
+msgid "HINT_ACCEPT_TOUCH"
+msgstr "Accepte une proposition (touche-la pour la voir sur le plan), puis joue tes cartes."
+
 msgid "HINT_PLAY_CARDS"
 msgstr "Joue jusqu'à %d cartes pour gagner des pas, puis termine le tour."
+
+# Onglets de la mise en page compacte (téléphones, itération 5)
+
+msgid "TAB_CARDS"
+msgstr "Cartes (%d)"
+
+msgid "TAB_OFFERS"
+msgstr "Appli (%d)"
+
+msgid "TAB_ORDERS"
+msgstr "Courses (%d)"
+
+msgid "TAB_BAG"
+msgstr "Sac"
+
+msgid "TAB_FEED"
+msgstr "Fil"
 
 msgid "OFFERS_TITLE"
 msgstr "Propositions"
@@ -479,6 +508,12 @@ msgstr "Survole une colonne pour voir où le plat tombe."
 msgid "BAG_HINT_LIFT"
 msgstr "Clique un plat pour le reprendre en main (s'il n'a rien dessus). Le fond du sac est en bas."
 
+msgid "BAG_HINT_HELD_TOUCH"
+msgstr "Touche une colonne pour voir où le plat tombe, puis touche-la encore pour l'y lâcher."
+
+msgid "BAG_HINT_LIFT_TOUCH"
+msgstr "Touche un plat pour le reprendre en main (s'il n'a rien dessus). Le fond du sac est en bas."
+
 msgid "BAG_EMPTY"
 msgstr "Sac vide. Le fond du sac est en bas."
 
@@ -487,6 +522,9 @@ msgstr "fragile"
 
 msgid "BAG_ROTATE"
 msgstr "Pivoter (R)"
+
+msgid "BAG_ROTATE_TOUCH"
+msgstr "Pivoter"
 
 msgid "BAG_SET_ASIDE"
 msgstr "Poser à côté"
@@ -502,6 +540,9 @@ msgstr "Reposer à côté"
 
 msgid "BAG_ASIDE_TITLE"
 msgstr "À côté du sac · clique un plat pour le reprendre"
+
+msgid "BAG_ASIDE_TITLE_TOUCH"
+msgstr "À côté du sac · touche un plat pour le reprendre"
 
 msgid "BAG_CUP_HOLDER"
 msgstr "Porte-gobelet : %s"
