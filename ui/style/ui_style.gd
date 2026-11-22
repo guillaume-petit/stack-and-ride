@@ -155,7 +155,7 @@ static func _set_button(theme: Theme, type: String, color: Color, text: Color, b
 	theme.set_font_size("font_size", type, font_size)
 
 
-## Tabs of the compact layout: big enough for a finger.
+## Tabs (the two screens of the app): big enough for a finger.
 static func _set_tabs(theme: Theme) -> void:
 	var selected := box(PANEL, INK, 2, RADIUS, 8)
 	selected.border_width_bottom = 0

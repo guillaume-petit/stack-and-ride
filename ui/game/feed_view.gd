@@ -1,7 +1,10 @@
 class_name FeedView
 extends ScrollContainer
-## The notifications: what happened (read from the history of the run) and why an action was
-## refused. Newest first.
+## The history of the notifications: what happened (read from the history of the run) and why
+## an action was refused. Newest first. Each new message of the run is also sent with line_added
+## (the game screen shows it in the snack bar).
+
+signal line_added(line: UiText.Line)
 
 const MAX_LINES := 40
 
@@ -26,6 +29,7 @@ func refresh() -> void:
 		var line := UiText.event_line(history[index], game.state)
 		if line != null:
 			add_line(line)
+			line_added.emit(line)
 	_seen = history.size()
 
 

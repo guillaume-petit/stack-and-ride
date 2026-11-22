@@ -16,7 +16,7 @@ func setup(p_game: Game) -> void:
 	body.add_child(ledger(summary, state))
 	if state.phase == GameState.Phase.CHOOSING_REWARD:
 		add_text(UiText.t("NIGHT_END_REWARD"))
-		var row := UiStyle.hbox(10)
+		var row: BoxContainer = UiStyle.vbox(8) if narrow else UiStyle.hbox(10)
 		for index in state.reward_choices.size():
 			var card := reward_card(state.reward_choices[index], state.content)
 			card.size_flags_horizontal = Control.SIZE_EXPAND_FILL

@@ -1,10 +1,7 @@
 class_name BagView
-extends BoxContainer
-## The bag panel: the grid, the dish in hand with its buttons, the dishes set aside and the
+extends VBoxContainer
+## The bag window: the grid, the dish in hand with its buttons, the dishes set aside and the
 ## cup holder. Sends the player's actions as signals; GameScreen calls the core.
-##
-## Normally everything is stacked; in the compact layout (phones) the grid and its legend are
-## on the left and the rest on the right, so that the whole bag fits in its tab.
 
 signal column_clicked(column: int)
 signal dish_clicked(order_id: int)
@@ -13,7 +10,7 @@ signal set_aside_pressed
 signal cancel_pressed
 signal aside_dish_clicked(order_id: int)
 
-const SHAPE_CELL := 16.0
+const SHAPE_CELL := 22.0
 
 var game: Game
 
@@ -28,17 +25,15 @@ var _aside_row: HFlowContainer
 var _cup_holder: Label
 
 
-func _init(compact: bool = false) -> void:
+func _init() -> void:
 	var touch := Device.touch_screen()
-	vertical = not compact
-	add_theme_constant_override("separation", 12 if compact else 6)
+	add_theme_constant_override("separation", 6)
 	var grid_column := UiStyle.vbox(6)
 	add_child(grid_column)
 	var side := UiStyle.vbox(6)
 	side.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(side)
 	_grid = BagGrid.new()
-	_grid.compact = compact
 	_grid.column_clicked.connect(func(column: int) -> void: column_clicked.emit(column))
 	_grid.dish_clicked.connect(func(order_id: int) -> void: dish_clicked.emit(order_id))
 	_grid.hover_changed.connect(func(_column: int) -> void: _update_status())
@@ -52,8 +47,8 @@ func _init(compact: bool = false) -> void:
 	legend.add_child(UiStyle.label("▢ " + UiText.t("BAG_LEGEND_LOOSE"), UiStyle.SMALL_FONT_SIZE, UiStyle.MUSTARD.darkened(0.2)))
 	grid_column.add_child(legend)
 
-	_status = UiStyle.paragraph("", UiStyle.SMALL_FONT_SIZE + (1 if compact else 0), UiStyle.MUTED)
-	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT if compact else HORIZONTAL_ALIGNMENT_CENTER
+	_status = UiStyle.paragraph("", UiStyle.SMALL_FONT_SIZE + 1, UiStyle.MUTED)
+	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	side.add_child(_status)
 
 	_held_box = PanelContainer.new()

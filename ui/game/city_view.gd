@@ -4,7 +4,10 @@ extends Control
 ## reach, the path to the crossroads under the mouse and a pin for each accepted order.
 ##
 ## Everything is drawn in _draw() (Godot calls it after queue_redraw()), sized to the space
-## the screen gives the map. A click on a crossroads emits crossroads_clicked.
+## the screen gives the map minus the room kept for what floats over it (insets). When it is
+## bigger that way (a phone held upright), the neighbourhood is drawn turned a quarter of a turn:
+## same streets, same places, only the drawing turns. A click on a crossroads emits
+## crossroads_clicked. Each pin shows its order number and the turns left.
 ##
 ## With a finger there is no hover: a first touch on a crossroads within reach shows the path,
 ## a second touch on the same crossroads emits crossroads_clicked.
@@ -25,7 +28,7 @@ class Floater:
 const MARGIN := 34.0
 ## Street width and the other sizes are relative to the distance between two crossroads.
 const STREET_RATIO := 0.17
-const PIN_SIZE := 17.0
+const PIN_SIZE := 21.0
 ## How far from a crossroads a click still selects it, relative to the spacing.
 const MOUSE_REACH := 1.0 / 3.0
 const TOUCH_REACH := 0.5
@@ -38,6 +41,10 @@ const FLOAT_FONT_SIZE := 20
 var game: Game
 ## Crossroads to ring, e.g. the restaurant and clients of the offer under the mouse.
 var highlighted: Array[Vector2i] = []
+## Room kept free on each side for what is drawn over the map: left, top, right, bottom.
+var insets := Vector4.ZERO
+## Where the map sits in its free room when it does not fill it (0.5: centered, 1: right / bottom).
+var align := Vector2(0.5, 0.5)
 
 ## Crossroads under the mouse, or chosen by a first touch.
 var _hovered := City.NOWHERE
@@ -177,7 +184,7 @@ func _draw() -> void:
 	var city := game.state.city
 	var spacing := _spacing()
 	var street_width := spacing * STREET_RATIO
-	draw_rect(Rect2(_point(Vector2i.ZERO), Vector2(city.columns - 1, city.rows - 1) * spacing), UiStyle.BLOCK)
+	draw_rect(Rect2(_point(Vector2i.ZERO), Vector2.ZERO).expand(_point(Vector2i(city.columns - 1, city.rows - 1))), UiStyle.BLOCK)
 	for street in [City.Street.NORMAL, City.Street.PAVED, City.Street.WORKS]:
 		for key in city.streets_of(street):
 			_draw_street(key, street, street_width)
@@ -230,7 +237,7 @@ func _draw_building(crossroads: Vector2i, place: City.Place, spacing: float, str
 	if block == City.NOWHERE:
 		return
 	var corner := _point(crossroads)
-	var block_center := _point(block) + Vector2.ONE * spacing / 2
+	var block_center := _block_center(block)
 	var toward := (block_center - corner).sign()
 	var near := corner + toward * (street_width / 2 + 2)
 	var far := block_center - toward * 3
@@ -297,14 +304,21 @@ func _draw_pins(street_width: float) -> void:
 		var toward := Vector2(1, -1)
 		var block := city.building_block(where)
 		if block != City.NOWHERE:
-			toward = -(_point(block) + Vector2.ONE * _spacing() / 2 - _point(where)).sign()
+			toward = -(_block_center(block) - _point(where)).sign()
+		# At the edge of the map, the pins go back inside rather than off the map.
+		var grid := Rect2(_point(Vector2i.ZERO), Vector2.ZERO).expand(_point(Vector2i(city.columns - 1, city.rows - 1)))
+		var probe := _point(where) + toward * street_width * 2
+		if probe.x < grid.position.x or probe.x > grid.end.x:
+			toward.x = -toward.x
+		if probe.y < grid.position.y or probe.y > grid.end.y:
+			toward.y = -toward.y
 		var orders: Array = by_place[where]
-		var row_width := orders.size() * (PIN_SIZE + 2) - 2
+		var row_width := orders.size() * (PIN_SIZE + 8) - 8
 		var anchor := _point(where) + toward * (street_width * 0.6 + PIN_SIZE / 2)
 		var start := anchor - Vector2(PIN_SIZE / 2 if toward.x > 0 else row_width - PIN_SIZE / 2, PIN_SIZE / 2)
 		var index := 0
 		for order: Order in orders:
-			var rect := Rect2(start + Vector2(index * (PIN_SIZE + 2), 0), Vector2(PIN_SIZE, PIN_SIZE))
+			var rect := Rect2(start + Vector2(index * (PIN_SIZE + 8), 0), Vector2(PIN_SIZE, PIN_SIZE))
 			var color := UiStyle.order_color(order.id)
 			if order.picked_up:
 				draw_rect(rect.grow(2), Color.WHITE)
@@ -312,8 +326,15 @@ func _draw_pins(street_width: float) -> void:
 			else:
 				draw_circle(rect.get_center(), PIN_SIZE / 2 + 2, Color.WHITE)
 				draw_circle(rect.get_center(), PIN_SIZE / 2, color)
-			draw_string(font, Vector2(rect.position.x, rect.end.y - 4), str(order.id),
-					HORIZONTAL_ALIGNMENT_CENTER, PIN_SIZE, 11, Color.WHITE)
+			draw_string(font, Vector2(rect.position.x, rect.end.y - 5), str(order.id),
+					HORIZONTAL_ALIGNMENT_CENTER, PIN_SIZE, 13, Color.WHITE)
+			# Under the pin, the turns left: the essentials of the order without opening the app.
+			var late := order.is_late()
+			var turns := "!" if late else UiText.t("ORDER_TURNS_LEFT") % order.deadline
+			var turns_color := UiStyle.BAD if late or order.deadline <= 1 else UiStyle.INK
+			var turns_at := Vector2(rect.position.x - 6, rect.end.y + 13)
+			draw_string_outline(font, turns_at, turns, HORIZONTAL_ALIGNMENT_CENTER, PIN_SIZE + 12, 12, 5, Color.WHITE)
+			draw_string(font, turns_at, turns, HORIZONTAL_ALIGNMENT_CENTER, PIN_SIZE + 12, 12, turns_color)
 			index += 1
 
 
@@ -340,18 +361,60 @@ func _draw_courier(street_width: float) -> void:
 
 # --- Geometry -------------------------------------------------------------------------------
 
+## Whether the map is drawn turned a quarter of a turn (clockwise): when that makes it bigger.
+func turned() -> bool:
+	var free := _free_rect().size
+	var across := Vector2(game.state.city.columns - 1, game.state.city.rows - 1)
+	var flat := minf(free.x / across.x, free.y / across.y)
+	var upright := minf(free.x / across.y, free.y / across.x)
+	return upright > flat
+
+
+func _free_rect() -> Rect2:
+	var free := Rect2(Vector2(insets.x, insets.y), size - Vector2(insets.x + insets.z, insets.y + insets.w))
+	return free.grow(-MARGIN)
+
+
+## Streets between the first and the last crossroads, across and down the screen.
+func _grid_size() -> Vector2:
+	var city := game.state.city
+	var across := Vector2(city.columns - 1, city.rows - 1)
+	return Vector2(across.y, across.x) if turned() else across
+
+
 func _spacing() -> float:
-	var city := game.state.city
-	var free := size - Vector2.ONE * MARGIN * 2
-	return maxf(10.0, minf(free.x / maxi(1, city.columns - 1), free.y / maxi(1, city.rows - 1)))
+	var free := _free_rect().size
+	var grid := _grid_size()
+	return maxf(10.0, minf(free.x / maxf(1.0, grid.x), free.y / maxf(1.0, grid.y)))
 
 
-## Screen position of a crossroads, the map being centered in the view.
+func _origin() -> Vector2:
+	var free := _free_rect()
+	return free.position + (free.size - _grid_size() * _spacing()) * align
+
+
+## Screen position of a crossroads, the map being centered in its free room.
 func _point(crossroads: Vector2i) -> Vector2:
-	var city := game.state.city
-	var spacing := _spacing()
-	var map_size := Vector2(city.columns - 1, city.rows - 1) * spacing
-	return (size - map_size) / 2 + Vector2(crossroads) * spacing
+	var grid := Vector2(crossroads)
+	if turned():
+		grid = Vector2(game.state.city.rows - 1 - crossroads.y, crossroads.x)
+	return _origin() + grid * _spacing()
+
+
+## Position of a crossroads in this view (for what floats over the map, e.g. a button by the
+## courier).
+func point_of(crossroads: Vector2i) -> Vector2:
+	return _point(crossroads)
+
+
+## Distance between two crossroads on screen.
+func spacing() -> float:
+	return _spacing()
+
+
+## Center of the block whose top left corner (in the city) is this crossroads.
+func _block_center(block: Vector2i) -> Vector2:
+	return (_point(block) + _point(block + Vector2i.ONE)) / 2
 
 
 ## Crossroads close enough to a position, or NOWHERE. A finger is less precise than a mouse:
@@ -359,8 +422,8 @@ func _point(crossroads: Vector2i) -> Vector2:
 func _crossroads_at(position: Vector2) -> Vector2i:
 	var city := game.state.city
 	var spacing := _spacing()
-	var origin := _point(Vector2i.ZERO)
-	var crossroads := Vector2i(((position - origin) / spacing).round())
+	var grid := Vector2i(((position - _origin()) / spacing).round())
+	var crossroads := Vector2i(grid.y, city.rows - 1 - grid.x) if turned() else grid
 	var reach := spacing * (TOUCH_REACH if Device.touch_screen() else MOUSE_REACH)
 	if not city.is_inside(crossroads) or position.distance_to(_point(crossroads)) > reach:
 		return City.NOWHERE

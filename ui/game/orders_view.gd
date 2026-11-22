@@ -19,10 +19,6 @@ func _init() -> void:
 	add_child(area)
 
 
-func summary() -> String:
-	return UiText.t("ORDERS_COUNT") % [game.state.orders.size(), game.state.config.max_active_orders]
-
-
 func refresh() -> void:
 	UiStyle.clear(_list)
 	if game.state.orders.is_empty():
