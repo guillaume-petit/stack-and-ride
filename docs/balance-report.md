@@ -8,12 +8,12 @@ Généré par `scripts/run_sim.sh 200 1` : ne pas modifier à la main.
 
 ## Résultats par profil
 
-| Profil | Victoires | Défaites (loyer) | Défaites (note) | Bloquées | Taux d'acceptation final |
-|---|---|---|---|---|---|
-| combo | 59 % | 16 % | 26 % | 0 | 71 % |
-| darling | 51 % | 3 % | 47 % | 0 | 76 % |
-| mule | 56 % | 17 % | 27 % | 0 | 69 % |
-| sprinter | 51 % | 33 % | 16 % | 0 | 67 % |
+| Profil | Parties | Victoires | Défaites (loyer) | Défaites (note) | Bloquées | Taux d'acceptation final |
+|---|---|---|---|---|---|---|
+| combo | 200 | 59 % | 16 % | 26 % | 0 | 71 % |
+| darling | 200 | 51 % | 3 % | 47 % | 0 | 76 % |
+| mule | 200 | 56 % | 17 % | 27 % | 0 | 69 % |
+| sprinter | 200 | 51 % | 33 % | 16 % | 0 | 67 % |
 
 ## Soir où la partie se termine
 

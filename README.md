@@ -18,11 +18,21 @@ Au premier lancement, Godot crée un dossier `.godot/` (cache local, ignoré par
 
 ## Jouer
 
+Le menu principal propose **Continuer** (la partie en cours), **Nouvelle partie**, **Comment jouer** (les règles en
+six pages, qui s'ouvrent aussi d'elles-mêmes avant la toute première partie), **Options** et **Quitter** (sur ordinateur).
+
+La partie est **sauvegardée à chaque action** : on peut quitter le jeu n'importe quand et la reprendre au même endroit.
+Une partie terminée (gagnée, perdue ou abandonnée) n'a plus de sauvegarde : on ne revient pas en arrière.
+
+Les **options** : volume des sons, taille de l'interface, plein écran (sur ordinateur), bulles d'aide (et « Revoir toute
+l'aide » pour qu'elles repartent du début). Elles sont gardées d'un lancement à l'autre.
+
 Tout se fait à la souris ou au doigt. Le plan occupe l'écran. Des bulles d'aide montrent quoi utiliser ensuite :
 chacune une seule fois, puis seulement si tu restes quelques secondes sans rien faire.
 
 - **En haut**, les compteurs : soir, tour, note, argent et loyer, puis le profil et l'événement du soir (sur
-  téléphone, derrière le bouton **i**). Le bouton ☰ ouvre le menu.
+  téléphone, derrière le bouton **i**). Le bouton ☰ ouvre le menu (reprendre, comment jouer, options, menu principal,
+  abandonner la partie).
 - **En bas**, ta main de cartes : clique une carte pour la choisir (elle se soulève), puis encore pour la jouer
   et gagner des pas (2 cartes par tour, les gratuites ne comptent pas). Le bouton **Fin du tour** montre les cartes jouées ce tour (petites cartes pleines) et la pioche.
 - **Les icônes à côté** ouvrent :
@@ -106,6 +116,30 @@ On peut choisir le nombre de parties par profil et la première graine : `script
 Avec les mêmes paramètres, le rapport est toujours identique : relance-le après avoir changé un chiffre
 dans `data/` pour comparer.
 
+## Faire tester le jeu
+
+Le jeu garde chaque partie terminée (ou abandonnée) dans le dossier `runs` de ses données :
+
+| Système | Dossier |
+|---------|---------|
+| Windows | `%APPDATA%\Godot\app_userdata\Stack & Ride\runs` |
+| Linux | `~/.local/share/godot/app_userdata/Stack & Ride/runs` |
+| macOS | `~/Library/Application Support/Godot/app_userdata/Stack & Ride/runs` |
+
+Chaque fichier contient les actions de la partie (pour la rejouer avec les mêmes règles) et ses chiffres. Pour en faire un
+rapport, avec les mêmes tableaux que celui du bot, dans `docs/playtest-report.md` :
+
+```bash
+scripts/run_playtests.sh
+```
+
+Sans argument, il lit les parties jouées sur ton ordinateur. Pour celles d'un testeur, copie ses fichiers dans un dossier
+et donne-le : `scripts/run_playtests.sh ~/parties-de-lea`. Un second argument ne garde qu'une version du jeu :
+`scripts/run_playtests.sh ~/parties-de-lea 0.1.0` (pense à changer la version, **Projet > Paramètres du projet >
+Application > Config > Version**, quand tu changes des chiffres). Sous Windows : `scripts\run_playtests.ps1`.
+
+Ce qu'il faut regarder pendant les tests : [docs/playtest.md](docs/playtest.md).
+
 ## Exporter sur Android
 
 Le préréglage d'export « Android » est dans `export_presets.cfg` (APK pour les téléphones 64 bits, sans les tests ni
@@ -146,7 +180,7 @@ Les sons sont provisoires : `scripts/make_sounds.sh` (ou `scripts\make_sounds.ps
 | `data/` | Le contenu du jeu (plats, cartes, restaurants…) sous forme de fichiers de données |
 | `assets/` | Les sons (et plus tard les images) |
 | `ui/` | Les scènes et l'interface |
-| `sim/` | Les simulations sans affichage, pour l'équilibrage |
+| `sim/` | Les simulations sans affichage (le bot) et le rapport des parties de test, pour l'équilibrage |
 | `tests/` | Les tests (`test_*.gd`) et leur lanceur |
 | `i18n/` | Les textes du jeu (`fr.po`) |
 | `docs/` | Le plan du MVP et les notes de conception |

@@ -19,6 +19,10 @@ const FORMAT := 1
 ## (on Windows %APPDATA%\Godot\app_userdata\Stack & Ride, on Android the private storage of the app).
 const DEFAULT_PATH := "user://run.json"
 
+## Where the game keeps the runs that are over, for the reports of the runs played by people
+## (scripts/run_playtests.sh).
+const ARCHIVE_FOLDER := "user://runs"
+
 ## The argument each action takes, to reject a damaged file before playing it.
 const ARGUMENTS: Dictionary[String, int] = {
 	"choose_profile": TYPE_STRING,
@@ -51,7 +55,7 @@ static func to_data(game: Game) -> Dictionary:
 
 ## Plays the saved run again. Returns null if the data is damaged or no longer gives the same run.
 static func from_data(content: GameContent, data: Dictionary) -> Game:
-	data = _ints(data)
+	data = whole_numbers(data)
 	if not data.get("format") is int or data["format"] != FORMAT or not data.get("seed") is int or not data.get("actions") is Array \
 			or not data.get("check") is Dictionary:
 		return null
@@ -83,13 +87,40 @@ static func save_game(game: Game, path: String = DEFAULT_PATH) -> bool:
 
 ## The run saved in this file, or null if there is none or it cannot be played again.
 static func load_game(content: GameContent, path: String = DEFAULT_PATH) -> Game:
+	var data := read_json(path)
+	return from_data(content, data) if not data.is_empty() else null
+
+
+## Keeps a run that is over (or given up) in this folder, in a new file named after the date and
+## the seed: its actions (to play it again with the same rules), the numbers of the reports
+## (RunSummary: still readable when the rules change) and the version of the game. Returns the path
+## of the file, or "" if it could not be written.
+static func archive(game: Game, folder: String = ARCHIVE_FOLDER) -> String:
+	if DirAccess.make_dir_recursive_absolute(folder) != OK:
+		return ""
+	var data := to_data(game)
+	data["summary"] = RunSummary.of(game.state)
+	data["version"] = ProjectSettings.get_setting("application/config/version", "?")
+	data["date"] = Time.get_datetime_string_from_system()
+	var name := "%s_%d.json" % [String(data["date"]).replace(":", "-").replace("T", "_"), data["seed"]]
+	var path := folder.path_join(name)
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		return ""
+	file.store_string(JSON.stringify(data, "\t"))
+	file.close()
+	return path
+
+
+## Reads a JSON file: its Dictionary, or {} if it is missing or damaged.
+static func read_json(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
-		return null
+		return {}
 	# JSON.parse_string() would report a damaged file as an engine error; parse() only returns it.
 	var json := JSON.new()
 	if json.parse(FileAccess.get_file_as_string(path)) != OK or not json.data is Dictionary:
-		return null
-	return from_data(content, json.data)
+		return {}
+	return whole_numbers(json.data)
 
 
 static func has_save(path: String = DEFAULT_PATH) -> bool:
@@ -164,17 +195,17 @@ static func _check(state: GameState) -> Dictionary:
 
 
 ## JSON has only one kind of number: it reads 3 as 3.0. Whole numbers become ints again.
-static func _ints(value: Variant) -> Variant:
+static func whole_numbers(value: Variant) -> Variant:
 	if value is float and value == floorf(value):
 		return int(value)
 	if value is Array:
 		var out: Array = []
 		for item: Variant in value:
-			out.append(_ints(item))
+			out.append(whole_numbers(item))
 		return out
 	if value is Dictionary:
 		var out := {}
 		for key: Variant in value:
-			out[key] = _ints(value[key])
+			out[key] = whole_numbers(value[key])
 		return out
 	return value

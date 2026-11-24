@@ -396,4 +396,16 @@ Le soir 1 est toujours calme. L'événement des soirs suivants est tiré à la f
   téléphone de 6,5 pouces) avec un double toucher (voir, puis lâcher). À confirmer avec des parties sur un vrai téléphone.
 - Le plan de rues (§3) change les distances par rapport au prototype : délais et paies (§5.3) à revérifier avec le bot.
 - Idée pour après le MVP : des rues à sens unique, que la carte Contresens permettrait de prendre à l'envers.
-- Le prototype ne contient ni sauvegarde, ni progression entre les parties.
+- Le prototype ne contient ni sauvegarde, ni progression entre les parties. La sauvegarde est décrite au §14 ;
+  la progression entre les parties vient après le MVP.
+
+## 14. La sauvegarde
+
+Ajout du 24/11/2026 (le prototype n'en a pas).
+
+- La partie en cours est sauvegardée **après chaque action** du joueur. En la reprenant, on retrouve exactement le même
+  état, y compris le hasard à venir : quitter puis reprendre ne change pas la suite de la partie.
+- Une seule partie en cours à la fois. En commencer une nouvelle efface l'ancienne (le jeu demande confirmation).
+- Une partie terminée (gagnée, perdue) ou abandonnée n'a plus de sauvegarde : on ne peut pas revenir en arrière.
+- Une sauvegarde faite avec d'autres règles ou d'autres chiffres (une autre version du jeu) ne peut pas être reprise :
+  elle est effacée et le joueur est prévenu.

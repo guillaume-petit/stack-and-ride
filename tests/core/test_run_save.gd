@@ -108,6 +108,47 @@ func test_a_run_changed_by_new_rules_is_rejected() -> void:
 	assert_null(RunSave.from_data(changed, data))
 
 
+func test_a_run_that_is_over_is_kept_with_its_numbers() -> void:
+	var folder := "user://test_runs"
+	_empty(folder)
+	var game := Bot.play_run(content, 12, &"darling")
+	var path := RunSave.archive(game, folder)
+	assert_true(path.begins_with(folder) and path.ends_with("_12.json"), path)
+	var data := RunSave.read_json(path)
+	assert_eq(data["summary"], RunSummary.of(game.state), "the numbers, read back from JSON")
+	assert_eq(data["version"], ProjectSettings.get_setting("application/config/version"))
+	var loaded := RunSave.from_data(content, data)
+	assert_true(loaded != null, "the run can be played again")
+	_empty(folder)
+
+
+func test_the_summary_of_a_run() -> void:
+	var game := Bot.play_run(content, 12, &"combo")
+	var state := game.state
+	var summary := RunSummary.of(state)
+	assert_eq(summary["profile"], "combo")
+	assert_eq(summary["night"], state.night)
+	assert_eq(summary["nights"].size(), state.night_summaries.size())
+	var deliveries := 0
+	for event in state.history:
+		if event.kind == GameEvent.Kind.DELIVERED:
+			deliveries += 1
+	assert_eq(summary["perfect"] + summary["late"] + summary["damaged"], deliveries)
+	var expected := RunSummary.WON if state.phase == GameState.Phase.WON else (RunSummary.LOST_RENT
+			if state.loss_reason == GameState.LossReason.RENT else RunSummary.LOST_RATING)
+	assert_eq(summary["outcome"], expected)
+	assert_eq(RunSummary.of(Game.new_run(content, 1).state)["outcome"], RunSummary.UNFINISHED)
+
+
+func _empty(folder: String) -> void:
+	var dir := DirAccess.open(folder)
+	if dir == null:
+		return
+	for name in dir.get_files():
+		dir.remove(name)
+	DirAccess.remove_absolute(folder)
+
+
 ## Saved, written as JSON, read back and played again.
 func _through_json(game: Game, rules: GameContent = content) -> Game:
 	var text := JSON.stringify(RunSave.to_data(game))

@@ -50,6 +50,9 @@ var run_seed: int = -1
 ## File where the run is saved, and resumed from ("" = not saved). Set by _ready(): the tests,
 ## which call start() without adding the screen to the tree, never touch the player's save.
 var save_path: String = ""
+## Folder where the runs that are over are kept, for the playtest report ("" = not kept). Set by
+## _ready(), like save_path.
+var archive_folder: String = ""
 ## Narrow screen (a phone held upright): one-line top bar, stacked cards in the windows.
 ## Chosen from the size of the screen in _ready(); the tests set it.
 var narrow: bool = false
@@ -88,6 +91,8 @@ var _night_report_seen: int = 0
 var _menu := Menu.NONE
 ## Number of actions of the run already saved.
 var _saved_actions: int = 0
+## The run that is over was kept in archive_folder.
+var _archived: bool = false
 ## The bag was opened by taking a dish: it closes once the dish is stowed.
 var _bag_opened_by_take := false
 ## Help that applies now ("" when none).
@@ -112,6 +117,7 @@ func _ready() -> void:
 		Settings.use_file()
 		Settings.apply(get_window())
 		save_path = RunSave.DEFAULT_PATH
+		archive_folder = RunSave.ARCHIVE_FOLDER
 		var area := get_viewport_rect().size
 		narrow = narrow or Device.is_narrow(area)
 		portrait = portrait or area.y > area.x
@@ -721,11 +727,21 @@ func _options_closed() -> void:
 		get_tree().reload_current_scene()
 
 
-## The run stops here: its save is erased.
+## The run stops here: it is kept for the playtest report, and its save is erased.
 func _give_up() -> void:
+	_archive()
 	if save_path != "":
 		RunSave.erase(save_path)
 	_to_main_menu()
+
+
+## Keeps the run for the report of the runs played by people (scripts/run_playtests.sh), once.
+func _archive() -> void:
+	if archive_folder == "" or _archived or game.state.actions.is_empty():
+		return
+	_archived = true
+	if RunSave.archive(game, archive_folder) == "":
+		push_warning("The run could not be kept in %s" % archive_folder)
 
 
 # --- Actions --------------------------------------------------------------------------------
@@ -744,11 +760,15 @@ func _after(problem: Game.Problem) -> void:
 
 
 ## Saves the run when an action was accepted since the last save. A run that is over has nothing
-## left to resume: its save is erased.
+## left to resume: its save is erased, and the run is kept for the playtest report.
 func _save() -> void:
-	if save_path == "" or game == null:
+	if game == null:
 		return
 	var state := game.state
+	if state.phase in [GameState.Phase.WON, GameState.Phase.LOST]:
+		_archive()
+	if save_path == "":
+		return
 	if state.phase in [GameState.Phase.WON, GameState.Phase.LOST]:
 		RunSave.erase(save_path)
 	elif state.actions.size() != _saved_actions:

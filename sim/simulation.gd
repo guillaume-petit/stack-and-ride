@@ -57,48 +57,48 @@ static func run(content: GameContent, runs_per_profile: int, first_seed: int) ->
 
 
 static func _add_run(stats: ProfileStats, state: GameState) -> void:
+	add_summary(stats, RunSummary.of(state))
+
+
+## Adds the numbers of one run (see RunSummary) to the numbers of its profile.
+static func add_summary(stats: ProfileStats, summary: Dictionary) -> void:
 	stats.runs += 1
-	match state.phase:
-		GameState.Phase.WON:
+	match summary["outcome"]:
+		RunSummary.WON:
 			stats.wins += 1
-		GameState.Phase.LOST:
-			if state.loss_reason == GameState.LossReason.RENT:
-				stats.rent_losses += 1
-			else:
-				stats.rating_losses += 1
+		RunSummary.LOST_RENT:
+			stats.rent_losses += 1
+		RunSummary.LOST_RATING:
+			stats.rating_losses += 1
 		_:
 			stats.stuck += 1
-	stats.ended_on_night[state.night] += 1
-	stats.acceptance_sum += state.acceptance
-	for summary in state.night_summaries:
-		stats.nights_played[summary.night] += 1
-		stats.night_earnings[summary.night] += summary.earnings
-		stats.night_rating[summary.night] += summary.rating_after
-		stats.night_wallet[summary.night] += summary.wallet
-		stats.undelivered += summary.undelivered
-	for event in state.history:
-		match event.kind:
-			GameEvent.Kind.DELIVERED:
-				match event.delivery.outcome:
-					Delivery.Outcome.PERFECT:
-						stats.perfect += 1
-					Delivery.Outcome.LATE:
-						stats.late += 1
-					Delivery.Outcome.DAMAGED:
-						stats.damaged += 1
-			GameEvent.Kind.CANCELLED:
-				stats.cancelled += 1
-			GameEvent.Kind.SHAKE:
-				stats.shakes[event.source] = stats.shakes.get(event.source, 0) + 1
-				stats.shake_damage[event.source] = stats.shake_damage.get(event.source, 0) + event.order_ids.size()
-			GameEvent.Kind.CRUSHED:
-				stats.crushed += event.order_ids.size()
+	var last_night := stats.ended_on_night.size() - 1
+	stats.ended_on_night[clampi(summary["night"], 1, last_night)] += 1
+	stats.acceptance_sum += summary["acceptance"]
+	for night: Dictionary in summary["nights"]:
+		var index: int = night["night"]
+		if index < 1 or index > last_night:
+			continue
+		stats.nights_played[index] += 1
+		stats.night_earnings[index] += night["earnings"]
+		stats.night_rating[index] += night["rating"]
+		stats.night_wallet[index] += night["wallet"]
+		stats.undelivered += night["undelivered"]
+	stats.perfect += summary["perfect"]
+	stats.late += summary["late"]
+	stats.damaged += summary["damaged"]
+	stats.cancelled += summary["cancelled"]
+	stats.crushed += summary["crushed"]
+	for source: String in summary["shakes"]:
+		stats.shakes[StringName(source)] = stats.shakes.get(StringName(source), 0) + summary["shakes"][source]
+	for source: String in summary["shake_damage"]:
+		stats.shake_damage[StringName(source)] = stats.shake_damage.get(StringName(source), 0) \
+				+ summary["shake_damage"][source]
 
 
 ## The report, in Markdown (for the team: French, like the other documents).
 static func report(all: Array[ProfileStats], content: GameContent, runs_per_profile: int,
 		first_seed: int) -> String:
-	var config := content.config
 	var lines := PackedStringArray()
 	lines.append("# Rapport d'équilibrage")
 	lines.append("")
@@ -109,13 +109,21 @@ static func report(all: Array[ProfileStats], content: GameContent, runs_per_prof
 	lines.append("- Joueur : le bot « raisonnable » de `sim/bot.gd` (une stratégie simple et gourmande, pas optimale).")
 	lines.append("  Ses résultats donnent des tendances, pas la difficulté ressentie par un humain.")
 	lines.append("")
+	lines.append_array(tables(all, content, "Bloquées"))
+	return "\n".join(lines)
 
+
+## The tables of a report, shared by the bot's report and the report of the runs played by people.
+## unfinished: title of the column of the runs that stopped before their end.
+static func tables(all: Array[ProfileStats], content: GameContent, unfinished: String) -> PackedStringArray:
+	var config := content.config
+	var lines := PackedStringArray()
 	lines.append("## Résultats par profil")
 	lines.append("")
-	lines.append("| Profil | Victoires | Défaites (loyer) | Défaites (note) | Bloquées | Taux d'acceptation final |")
-	lines.append("|---|---|---|---|---|---|")
+	lines.append("| Profil | Parties | Victoires | Défaites (loyer) | Défaites (note) | %s | Taux d'acceptation final |" % unfinished)
+	lines.append("|---|---|---|---|---|---|---|")
 	for s in all:
-		lines.append("| %s | %s | %s | %s | %d | %d %% |" % [s.profile, _percent(s.wins, s.runs),
+		lines.append("| %s | %d | %s | %s | %s | %d | %d %% |" % [s.profile, s.runs, _percent(s.wins, s.runs),
 				_percent(s.rent_losses, s.runs), _percent(s.rating_losses, s.runs), s.stuck,
 				roundi(_average(s.acceptance_sum, s.runs))])
 	lines.append("")
@@ -195,7 +203,7 @@ static func report(all: Array[ProfileStats], content: GameContent, runs_per_prof
 					_average(s.shake_damage.get(source, 0), s.runs)]
 		lines.append(row + " %.1f |" % _average(s.crushed, s.runs))
 	lines.append("")
-	return "\n".join(lines)
+	return lines
 
 
 static func _night_header(first: String, nights: int) -> String:

@@ -21,6 +21,9 @@ Talk to the owner in French.
 - `core/` holds the game rules. It must not depend on nodes, scenes or anything under `ui/`.
   Core classes extend `RefCounted` (or `Resource` for data), take a `GameRng` for every random
   choice, and never call the global `randi()`/`randf()`.
+- Every action of `Game` that changes the state is recorded in `state.actions` (`_log()`): a save is the seed plus
+  these actions, loaded by playing them again (`core/save/run_save.gd`). A new action must be logged and replayed
+  there; the state must only change through `Game` actions and the seeded `GameRng`, or saves break.
 - `data/` holds game content as `.tres` resources (dishes, cards, restaurants…), so adding
   content does not need code.
 - `ui/` reads the state and sends actions to the core; it never mutates the state directly.
@@ -33,10 +36,14 @@ Talk to the owner in French.
   bubbles `ui/style/help_bubble.gd`). Phones are held upright: `ui/device.gd` (interface scale,
   narrow screens, touch). Hover does not exist on a phone: anything shown on hover needs a touch
   equivalent (first touch shows, second acts).
+  Menus and option windows are in `ui/menus/`; options and helps already seen in `ui/settings.gd` (static, file only
+  once `Settings.use_file()` is called). The game screen saves and resumes the run only when `save_path` is set
+  (its `_ready()` does it): the tests never touch the player's save or settings.
   Animations (`ui/style/motion.gd`, tweens) and sounds (`ui/sfx.gd`, `assets/sounds/`) only show the
   state, never change it, and do nothing outside the scene tree (the tests). No autoloads: they do not
   exist when the tests run with `--script`.
-- `sim/` holds headless simulations (bots) used for balancing.
+- `sim/` holds headless simulations (bots) used for balancing, and the report of the runs played by people
+  (`scripts/run_playtests.sh`, runs kept by the game in `user://runs`).
 
 ## Tests
 

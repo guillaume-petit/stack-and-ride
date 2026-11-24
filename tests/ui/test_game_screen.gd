@@ -246,11 +246,18 @@ func test_the_run_is_saved_and_resumed() -> void:
 	assert_eq(resumed.game.state.turn, 2)
 	assert_true(resumed._feed._list.get_child_count() > 0, "with its messages")
 	resumed.free()
-	# A run that is over has nothing to resume.
+	# A run that is over has nothing to resume; it is kept for the playtest report.
+	var folder := "user://test_screen_runs"
+	screen.archive_folder = folder
 	state.rating_tenths = 0
 	screen._end_button.pressed.emit()
 	assert_eq(state.phase, GameState.Phase.LOST)
 	assert_false(RunSave.has_save(path), "erased at the end of the run")
+	var kept := DirAccess.get_files_at(folder)
+	assert_eq(kept.size(), 1, "kept once")
+	for name in kept:
+		DirAccess.remove_absolute(folder.path_join(name))
+	DirAccess.remove_absolute(folder)
 	RunSave.erase(path)
 
 
