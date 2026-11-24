@@ -1,8 +1,8 @@
 class_name HelpBubble
 extends Control
 ## A help bubble pointing at something on the screen (the phone icon, the hand, the courier...):
-## a short text saying what to do, with a tail toward its target. It fades away by itself;
-## touching it hides it at once.
+## a short text saying what to do, with a tail toward its target. It fades away by itself and
+## lets clicks through to what is under it.
 
 ## Where the bubble goes, relative to its target.
 enum Placement { LEFT, ABOVE, BELOW }
@@ -24,7 +24,8 @@ var _tween: Tween
 
 
 func _init() -> void:
-	mouse_filter = Control.MOUSE_FILTER_STOP
+	# Clicks go through: the bubble often sits over the crossroads it tells to touch.
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel = PanelContainer.new()
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# The tail is drawn over the border of the bubble, so that they join.
@@ -39,13 +40,6 @@ func _init() -> void:
 ## The text shown ("" when hidden).
 func text() -> String:
 	return _label.text if visible else ""
-
-
-func _gui_input(event: InputEvent) -> void:
-	var click := event as InputEventMouseButton
-	if click != null and click.pressed:
-		accept_event()
-		hide()
 
 
 ## Shows the text next to a point of the screen (in the coordinates of the bubble's parent).

@@ -93,6 +93,25 @@ func test_the_help_follows_the_turn() -> void:
 	assert_true(screen._help_key in ["HELP_MOVE", "HELP_MOVE_TOUCH"], "then the map")
 
 
+func test_a_help_that_faded_does_not_come_back() -> void:
+	screen.game.choose_profile(&"combo")
+	screen.refresh()
+	screen._update_help()
+	assert_eq(screen._help.text(), UiText.t("HELP_ACCEPT"))
+	screen._help.hide()
+	screen.refresh()
+	screen._update_help()
+	assert_eq(screen._help.text(), "", "same help: not shown again")
+
+
+func test_the_back_button_opens_the_menu_over_a_phase_window() -> void:
+	assert_true(_dialog() is ProfileDialog)
+	screen._notification(Control.NOTIFICATION_WM_GO_BACK_REQUEST)
+	assert_true(screen._menu_open, "the menu to leave the run")
+	screen._notification(Control.NOTIFICATION_WM_GO_BACK_REQUEST)
+	assert_false(screen._menu_open, "pressed again: closed")
+
+
 func test_the_icons_open_their_windows() -> void:
 	screen.game.choose_profile(&"combo")
 	screen.refresh()

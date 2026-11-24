@@ -100,7 +100,7 @@ func test_the_insets_keep_the_map_clear() -> void:
 func test_the_narrow_top_bar_keeps_the_profile_behind_the_info_button() -> void:
 	assert_true(screen._hud.info_button != null)
 	var profile: ProfileData = screen.game.state.content.profiles[&"combo"]
-	assert_true(HudBar.info_text(screen.game.state).contains(UiText.name_of(profile)))
+	assert_true(UiText.night_info(screen.game.state).contains(UiText.name_of(profile)))
 	screen._show_info()
 	assert_true(screen._help.text().contains(UiText.name_of(profile)), "shown in a bubble")
 

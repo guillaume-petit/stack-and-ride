@@ -73,34 +73,15 @@ func _add_profile(state: GameState) -> void:
 	var event: EventData = state.content.events[state.event]
 	if _narrow:
 		info_button.lit = event.drawable
-		info_button.tooltip_text = info_text(state)
+		info_button.tooltip_text = UiText.night_info(state)
 	else:
 		var profile: ProfileData = state.content.profiles[state.profile]
 		_add(UiText.t("HUD_PROFILE"), UiText.name_of(profile), UiStyle.INK, UiText.description_of(profile))
 		_add(UiText.t("HUD_EVENT"), UiText.name_of(event), UiStyle.ACCENT if event.drawable else UiStyle.INK,
 				UiText.description_of(event))
 		if not state.equipment.is_empty():
-			_add(UiText.t("HUD_EQUIPMENT"), str(state.equipment.size()), UiStyle.INK, _equipment(state))
-
-
-## What the (i) of the narrow bar shows: the profile, the event of the night and the equipment.
-static func info_text(state: GameState) -> String:
-	var profile: ProfileData = state.content.profiles[state.profile]
-	var event: EventData = state.content.events[state.event]
-	var lines := PackedStringArray([
-		UiText.t("HUD_INFO_LINE") % [UiText.t("HUD_PROFILE"), UiText.name_of(profile), UiText.description_of(profile)],
-		UiText.t("HUD_INFO_LINE") % [UiText.t("HUD_EVENT"), UiText.name_of(event), UiText.description_of(event)],
-	])
-	if not state.equipment.is_empty():
-		lines.append(UiText.t("HUD_INFO_EQUIPMENT") % [UiText.t("HUD_EQUIPMENT"), _equipment(state).replace("\n", ", ")])
-	return "\n\n".join(lines)
-
-
-static func _equipment(state: GameState) -> String:
-	var names := PackedStringArray()
-	for id in state.equipment:
-		names.append(UiText.name_of(state.content.equipment[id]))
-	return "\n".join(names)
+			_add(UiText.t("HUD_EQUIPMENT"), str(state.equipment.size()), UiStyle.INK,
+					"\n".join(UiText.equipment_names(state)))
 
 
 func _add(title: String, value: String, color: Color = UiStyle.INK, tooltip: String = "") -> void:

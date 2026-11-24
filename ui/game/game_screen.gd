@@ -396,6 +396,11 @@ func refresh() -> void:
 	if game == null:
 		return
 	var state := game.state
+	# The bag opened by "take" closes once the dish is stowed.
+	if _bag_opened_by_take and state.bag.held == null and state.bag.aside_items().is_empty():
+		_bag_opened_by_take = false
+		if pane == Pane.BAG:
+			_show_pane(Pane.NONE)
 	_city.highlighted = []
 	for view in _views():
 		view.refresh()
@@ -405,11 +410,6 @@ func refresh() -> void:
 	_app_tabs.set_tab_title(AppTab.ORDERS, UiText.t("APP_TAB_ORDERS") % [state.orders.size(), state.config.max_active_orders])
 	_refresh_icons()
 	_refresh_take_buttons()
-	# The bag opened by "take" closes once the dish is stowed.
-	if _bag_opened_by_take and state.bag.held == null and state.bag.aside_items().is_empty():
-		_bag_opened_by_take = false
-		if pane == Pane.BAG:
-			close_pane()
 	_refresh_overlay()
 	if is_inside_tree():
 		_layout.call_deferred()
@@ -435,8 +435,7 @@ func _refresh_take_buttons() -> void:
 		return
 	for order in game.state.orders:
 		if game.take_dish_problem(order.id) == Game.Problem.NONE:
-			_take_box.add_child(UiStyle.button(UiText.t("MAP_TAKE") % [order.id, UiText.name_of(order.dish)],
-					_take.bind(order.id), "YesButton"))
+			_take_box.add_child(UiStyle.button(UiText.take_label(order), _take.bind(order.id), "YesButton"))
 
 
 func _can_accept_an_offer() -> bool:
@@ -458,6 +457,16 @@ func toggle_pane(which: Pane) -> void:
 
 func open_pane(which: Pane) -> void:
 	_bag_opened_by_take = false
+	_show_pane(which)
+	refresh()
+
+
+func close_pane() -> void:
+	open_pane(Pane.NONE)
+
+
+## Puts this window over the map (or none), without refreshing the views.
+func _show_pane(which: Pane) -> void:
 	pane = which
 	for child in _pane_center.get_children():
 		_pane_center.remove_child(child)
@@ -469,19 +478,13 @@ func open_pane(which: Pane) -> void:
 			_app_tabs.current_tab = AppTab.OFFERS if _can_accept_an_offer() or game.state.orders.is_empty() else AppTab.ORDERS
 		_pane_center.add_child(_panes[which])
 		Motion.appear(_panes[which])
-	refresh()
-
-
-func close_pane() -> void:
-	open_pane(Pane.NONE)
 
 
 ## The profile, the event of the night and the equipment, in a bubble under the (i) of the
 ## narrow top bar.
 func _show_info() -> void:
 	var button := _hud.info_button
-	_help_key = "info"
-	_help.point_at(HudBar.info_text(game.state), button.get_global_rect().get_center() + Vector2(0, button.size.y / 2),
+	_help.point_at(UiText.night_info(game.state), button.get_global_rect().get_center() + Vector2(0, button.size.y / 2),
 			HelpBubble.Placement.BELOW)
 
 
@@ -518,7 +521,8 @@ func _update_help() -> void:
 	else:
 		key = "HELP_END_TURN"
 		target = _top_of(_end_button)
-	if key == _help_key and (key == "" or _help.visible or key == "info"):
+	# Only when the help changes: a bubble that faded or was dismissed does not come back.
+	if key == _help_key:
 		return
 	_help_key = key
 	if key == "":
@@ -717,19 +721,17 @@ func _to_main_menu() -> void:
 
 
 ## The back button of Android (or gesture): closes the menu, puts back the dish in hand, closes
-## the window open over the map, or opens the menu. Without this, Godot would quit the game
-## (project setting application/config/quit_on_go_back).
+## the window open over the map, or opens the menu (also over the windows of the other phases).
+## Without this, Godot would quit the game (project setting application/config/quit_on_go_back).
 func _notification(what: int) -> void:
 	if what != NOTIFICATION_WM_GO_BACK_REQUEST or game == null:
 		return
 	if _menu_open:
 		_menu_open = false
 		refresh()
-	elif _overlay.visible:
-		return
-	elif game.state.bag.held != null:
+	elif game.state.bag.held != null and not _overlay.visible:
 		_after(game.cancel_held())
-	elif pane != Pane.NONE:
+	elif pane != Pane.NONE and not _overlay.visible:
 		close_pane()
 	else:
 		_open_menu()
