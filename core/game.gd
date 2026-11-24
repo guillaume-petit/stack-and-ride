@@ -4,7 +4,8 @@ extends RefCounted
 ##
 ## Each action checks that it is allowed and returns Problem.NONE, or the reason why it is
 ## refused; a refused action changes nothing (one exception, see end_turn()). Everything that happens is also added to
-## state.history (see GameEvent).
+## state.history (see GameEvent), and every accepted action to state.actions, so that a saved run can be
+## played again from its seed (see RunSave).
 
 ## Why an action is refused.
 enum Problem {
@@ -81,6 +82,7 @@ func choose_profile(id: StringName) -> Problem:
 	var columns := profile.bag_columns if profile.bag_columns > 0 else state.config.bag_columns
 	state.bag = Bag.new(columns, state.config.bag_rows)
 	state.deck.append_array(profile.extra_cards)
+	_log(&"choose_profile", String(id))
 	_start_night(1)
 	return Problem.NONE
 
@@ -117,6 +119,7 @@ func accept_offer(id: int) -> Problem:
 		order.pay = part.pay
 		order.modifiers = offer.modifiers
 		state.orders.append(order)
+	_log(&"accept_offer", id)
 	return Problem.NONE
 
 
@@ -153,6 +156,7 @@ func play_card(hand_index: int) -> Problem:
 	if problem != Problem.NONE:
 		return problem
 	var card: CardData = state.content.cards[state.piles.hand[hand_index]]
+	_log(&"play_card", hand_index)
 	var gained := card_steps(card.id)
 	state.piles.take_from_hand(hand_index)
 	if not card.removed_when_played:
@@ -226,6 +230,7 @@ func move_to(target: Vector2i) -> Problem:
 	if problem != Problem.NONE:
 		return problem
 	var distance := from_here.distance_to(target)
+	_log(&"move_to", [target.x, target.y])
 	var previous := state.courier_position
 	var shaken := false
 	for crossroads in from_here.path_to(target):
@@ -269,6 +274,7 @@ func take_dish(order_id: int) -> Problem:
 	item.damaged = order.damaged_before_return
 	state.bag.take_from_restaurant(item)
 	order.picked_up = true
+	_log(&"take_dish", order_id)
 	_deliver_here()
 	return Problem.NONE
 
@@ -279,6 +285,7 @@ func drop_held(column: int) -> Problem:
 		return Problem.WRONG_PHASE
 	var problem := _from_bag(state.bag.drop_held(column))
 	if problem == Problem.NONE:
+		_log(&"drop_held", column)
 		_deliver_here()
 	return problem
 
@@ -289,13 +296,17 @@ func rotate_held() -> Problem:
 	if state.bag.held == null:
 		return Problem.NOTHING_HELD
 	state.bag.rotate_held()
+	_log(&"rotate_held")
 	return Problem.NONE
 
 
 func lift(order_id: int) -> Problem:
 	if not _is_playing():
 		return Problem.WRONG_PHASE
-	return _from_bag(state.bag.lift(order_id))
+	var problem := _from_bag(state.bag.lift(order_id))
+	if problem == Problem.NONE:
+		_log(&"lift", order_id)
+	return problem
 
 
 func set_held_aside() -> Problem:
@@ -304,6 +315,7 @@ func set_held_aside() -> Problem:
 	if state.bag.held == null:
 		return Problem.NOTHING_HELD
 	state.bag.set_held_aside()
+	_log(&"set_held_aside")
 	return Problem.NONE
 
 
@@ -323,6 +335,7 @@ func take_from_aside(order_id: int) -> Problem:
 	if problem != Problem.NONE:
 		return problem
 	state.bag.take_from_aside(order_id)
+	_log(&"take_from_aside", order_id)
 	return Problem.NONE
 
 
@@ -333,10 +346,17 @@ func cancel_held() -> Problem:
 		return Problem.WRONG_PHASE
 	if state.bag.held == null:
 		return Problem.NOTHING_HELD
+	_log(&"cancel_held")
+	_cancel_held()
+	return Problem.NONE
+
+
+func _cancel_held() -> void:
+	if state.bag.held == null:
+		return
 	var back_to_restaurant := state.bag.cancel_held()
 	if back_to_restaurant != null:
 		_given_back(back_to_restaurant)
-	return Problem.NONE
 
 
 ## The dish went back to the restaurant: its order waits there again.
@@ -373,7 +393,7 @@ func end_turn() -> Problem:
 	var problem := end_turn_problem()
 	if problem != Problem.NONE:
 		return problem
-	cancel_held()
+	_cancel_held()
 	for item in state.bag.return_aside_to_restaurant():
 		_given_back(item)
 		var returned := GameEvent.new(GameEvent.Kind.RETURNED_TO_RESTAURANT)
@@ -381,7 +401,10 @@ func end_turn() -> Problem:
 		returned.order = state.find_order(item.order_id)
 		_record(returned)
 	if state.bag.is_sorting():
+		# Refused, but the dishes were put back: played again, it must give the same answer.
+		_log(&"end_turn", null, Problem.SORTING)
 		return Problem.SORTING
+	_log(&"end_turn")
 
 	if not state.offers.is_empty():
 		_change_acceptance(state.config.ignore_acceptance * state.offers.size())
@@ -426,6 +449,7 @@ func choose_reward(index: int) -> Problem:
 		return Problem.WRONG_PHASE
 	if index < 0 or index >= state.reward_choices.size():
 		return Problem.NO_SUCH_REWARD
+	_log(&"choose_reward", index)
 	state.reward_choices[index].apply(state)
 	state.reward_choices.clear()
 	_open_shop()
@@ -460,6 +484,7 @@ func buy(index: int) -> Problem:
 	if problem != Problem.NONE:
 		return problem
 	var item := state.shop.items[index]
+	_log(&"buy", index)
 	state.wallet -= item.price
 	item.sold = true
 	item.reward.apply(state)
@@ -470,6 +495,7 @@ func buy(index: int) -> Problem:
 func start_next_night() -> Problem:
 	if state.phase != GameState.Phase.SHOPPING:
 		return Problem.WRONG_PHASE
+	_log(&"start_next_night")
 	state.shop = null
 	_start_night(state.night + 1)
 	return Problem.NONE
@@ -656,6 +682,15 @@ func _change_acceptance(points: int) -> void:
 
 func _record(event: GameEvent) -> void:
 	state.history.append(event)
+
+
+## Remembers an accepted action, in a form that can be written to a file: [name, argument], plus
+## the problem when the action changed the state but was refused (end_turn()).
+func _log(action: StringName, argument: Variant = null, problem: Problem = Problem.NONE) -> void:
+	var entry: Array = [String(action), argument]
+	if problem != Problem.NONE:
+		entry.append(Problem.keys()[problem])
+	state.actions.append(entry)
 
 
 static func _from_bag(problem: Bag.Problem) -> Problem:

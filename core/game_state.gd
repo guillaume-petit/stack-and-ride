@@ -85,6 +85,9 @@ var total_earnings: int = 0
 
 ## What happened, oldest first.
 var history: Array[GameEvent] = []
+## Every action accepted since the start of the run, oldest first, as [name, argument] (see
+## Game._log()). With the seed, they are enough to play the run again (RunSave).
+var actions: Array[Array] = []
 
 
 ## Starts a new run: the city is drawn from the seed and every value is reset.
