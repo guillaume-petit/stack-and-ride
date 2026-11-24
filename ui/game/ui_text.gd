@@ -244,3 +244,14 @@ static func night_info(state: GameState) -> String:
 	if not state.equipment.is_empty():
 		lines.append(t("HUD_INFO_EQUIPMENT") % [t("HUD_EQUIPMENT"), ", ".join(equipment_names(state))])
 	return "\n\n".join(lines)
+
+
+## The saved run, on the button "Continue" of the main menu: where it is, the profile, the rating.
+static func saved_run(state: GameState) -> String:
+	var where: String
+	if state.phase == GameState.Phase.PLAYING:
+		where = t("SAVED_RUN_PLAYING") % [state.night, state.turn]
+	else:
+		where = t("SAVED_RUN_BETWEEN") % [state.night, state.night + 1]
+	var profile := name_of(state.content.profiles[state.profile]) if state.content.profiles.has(state.profile) else ""
+	return t("SAVED_RUN") % [where, profile, stars(state.rating_tenths)]

@@ -33,6 +33,16 @@ func refresh() -> void:
 	_seen = history.size()
 
 
+## A resumed run: shows the last messages of its history, without sending them (no snack bar).
+func catch_up() -> void:
+	var history := game.state.history
+	for index in range(maxi(0, history.size() - MAX_LINES), history.size()):
+		var line := UiText.event_line(history[index], game.state)
+		if line != null:
+			add_line(line)
+	_seen = history.size()
+
+
 func add_line(line: UiText.Line) -> void:
 	var panel := PanelContainer.new()
 	panel.theme_type_variation = "Inset"

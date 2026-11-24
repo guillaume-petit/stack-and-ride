@@ -14,7 +14,7 @@ const FOLDER := "res://assets/sounds/"
 ## How many sounds can play at once.
 const VOICES := 8
 
-## Off: nothing plays (an option will set it, iteration 6).
+## Off: nothing plays. The volume of the options is the volume of the main bus (see Settings.apply()).
 static var enabled: bool = true
 
 static var _voices: Array[AudioStreamPlayer] = []

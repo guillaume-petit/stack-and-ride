@@ -25,6 +25,163 @@ msgstr "Nouvelle partie"
 msgid "MENU_QUIT"
 msgstr "Quitter"
 
+msgid "MENU_CONTINUE"
+msgstr "Continuer"
+
+msgid "MENU_HOW_TO_PLAY"
+msgstr "Comment jouer"
+
+msgid "MENU_OPTIONS"
+msgstr "Options"
+
+msgid "MENU_SAVE_BROKEN"
+msgstr "Ta partie sauvegardée ne marche plus avec cette version du jeu : elle a été effacée."
+
+msgid "MENU_NEW_RUN_TITLE"
+msgstr "Nouvelle partie ?"
+
+msgid "MENU_NEW_RUN_TEXT"
+msgstr "Ta partie en cours sera perdue."
+
+msgid "MENU_NEW_RUN_CONFIRM"
+msgstr "Recommencer"
+
+msgid "MENU_CANCEL"
+msgstr "Annuler"
+
+# Partie sauvegardée, sur le bouton Continuer (ui/game/ui_text.gd)
+
+#. %s : où en est la partie, puis le profil, puis la note.
+msgid "SAVED_RUN"
+msgstr "%s · %s · %s ★"
+
+msgid "SAVED_RUN_PLAYING"
+msgstr "Soir %d, tour %d"
+
+msgid "SAVED_RUN_BETWEEN"
+msgstr "Entre le soir %d et le soir %d"
+
+# Options (ui/menus/options_dialog.gd)
+
+msgid "OPTIONS_TITLE"
+msgstr "Options"
+
+msgid "OPTIONS_VOLUME"
+msgstr "Volume des sons"
+
+msgid "OPTIONS_VOLUME_OFF"
+msgstr "Coupé"
+
+msgid "OPTIONS_SIZE"
+msgstr "Taille de l'interface"
+
+msgid "OPTIONS_SIZE_0"
+msgstr "Petite"
+
+msgid "OPTIONS_SIZE_1"
+msgstr "Normale"
+
+msgid "OPTIONS_SIZE_2"
+msgstr "Grande"
+
+msgid "OPTIONS_SIZE_3"
+msgstr "Très grande"
+
+msgid "OPTIONS_OFF"
+msgstr "Non"
+
+msgid "OPTIONS_ON"
+msgstr "Oui"
+
+msgid "OPTIONS_FULLSCREEN"
+msgstr "Plein écran"
+
+msgid "OPTIONS_HELP"
+msgstr "Bulles d'aide"
+
+msgid "OPTIONS_HELP_RESTART"
+msgstr "Revoir toute l'aide"
+
+msgid "OPTIONS_HELP_RESTARTED"
+msgstr "L'aide repartira du début"
+
+msgid "OPTIONS_CLOSE"
+msgstr "Fermer"
+
+# Comment jouer (ui/menus/how_to_play_dialog.gd). Dans les textes, un saut de ligne sépare deux paragraphes.
+
+#. %d : la page, puis le nombre de pages.
+msgid "HOWTO_PAGE"
+msgstr "%d / %d"
+
+msgid "HOWTO_PREVIOUS"
+msgstr "Précédent"
+
+msgid "HOWTO_NEXT"
+msgstr "Suivant"
+
+msgid "HOWTO_SKIP"
+msgstr "Passer"
+
+msgid "HOWTO_DONE"
+msgstr "C'est parti"
+
+msgid "HOWTO_GOAL_TITLE"
+msgstr "Le but"
+
+msgid "HOWTO_GOAL_TEXT"
+msgstr ""
+"Tu livres des plats à vélo pour Grailleo. Une partie dure 6 soirs de 10 tours.\n"
+"À la fin de chaque soir, tu paies ton loyer avec ce que tu as gagné. S'il te manque de l'argent, la partie est perdue.\n"
+"Ta note de livreur commence à 5 étoiles. Si elle passe sous 4, l'appli désactive ton compte."
+
+msgid "HOWTO_APP_TITLE"
+msgstr "L'appli"
+
+msgid "HOWTO_APP_TEXT"
+msgstr ""
+"Le téléphone, en bas, ouvre l'appli : elle te propose des courses à chaque tour. Accepte celles qui t'arrangent (4 courses en cours au plus).\n"
+"Une proposition ignorée fait baisser ton taux d'acceptation, une acceptée le remonte. Plus il est haut, mieux l'appli te paie.\n"
+"Urgent : délai court, paie double. VIP : gros pourboire, mais un problème coûte cher. 5ᵉ étage : il faut encore 1 pas pour livrer."
+
+msgid "HOWTO_CARDS_TITLE"
+msgstr "Les cartes"
+
+msgid "HOWTO_CARDS_TEXT"
+msgstr ""
+"Ta main de cartes, en bas, te donne des pas : 1 pas pour aller d'un carrefour au suivant.\n"
+"Tu joues au plus 2 cartes par tour (les gratuites ne comptent pas). Choisis une carte, puis joue-la.\n"
+"Ensuite, choisis un carrefour surligné sur le plan pour y aller. Les chantiers sont barrés ; les pavés secouent le sac.\n"
+"Fin du tour : les pas restants sont perdus, la main se complète, les délais baissent d'un tour."
+
+msgid "HOWTO_BAG_TITLE"
+msgstr "Le sac"
+
+msgid "HOWTO_BAG_TEXT"
+msgstr ""
+"Au restaurant, prends le plat de ta course : le sac s'ouvre. Choisis une colonne, le plat tombe au fond. Tu peux le faire pivoter avant.\n"
+"On ne pose rien sur un plat fragile. Le chaud et le froid ne se touchent pas.\n"
+"Le sprint, le scooter et les pavés secouent le sac : un plat qui n'est pas calé à gauche et à droite (par la paroi ou un autre plat) est abîmé."
+
+msgid "HOWTO_DELIVER_TITLE"
+msgstr "Livrer"
+
+msgid "HOWTO_DELIVER_TEXT"
+msgstr ""
+"Arrête-toi chez le client avec son plat dans le sac : la livraison se fait toute seule. Passer devant sans s'arrêter ne livre pas.\n"
+"Chaque tour d'avance rapporte un pourboire. En retard ou abîmé, le plat rapporte moins et coûte des étoiles.\n"
+"Une course trop en retard est annulée par le client."
+
+msgid "HOWTO_NIGHTS_TITLE"
+msgstr "Entre deux soirs"
+
+msgid "HOWTO_NIGHTS_TEXT"
+msgstr ""
+"Après le loyer, tu choisis une récompense gratuite, puis la boutique vend cartes, équipements et sacs plus grands, avec ton argent.\n"
+"Chaque soir a son événement (pluie, match, grève…), annoncé la veille à la boutique.\n"
+"Ton profil, choisi au début, change les règles pour toute la partie. Tiens 6 soirs !\n"
+"Ta partie est sauvegardée à chaque action : tu peux la quitter et la reprendre plus tard."
+
 # Plats (data/dishes)
 
 msgid "DISH_BURGER"
@@ -724,17 +881,29 @@ msgstr "Nouvelle partie"
 msgid "RUN_END_MENU"
 msgstr "Menu principal"
 
-msgid "MENU_LEAVE_TITLE"
-msgstr "Quitter la partie ?"
+msgid "PAUSE_TITLE"
+msgstr "Pause"
 
-msgid "MENU_LEAVE_TEXT"
-msgstr "La sauvegarde n'existe pas encore : la partie en cours sera perdue."
+msgid "PAUSE_TEXT"
+msgstr "Ta partie est sauvegardée à chaque action : tu peux la reprendre depuis le menu principal."
 
-msgid "MENU_LEAVE_CONFIRM"
-msgstr "Quitter"
+msgid "PAUSE_RESUME"
+msgstr "Reprendre"
 
-msgid "MENU_LEAVE_CANCEL"
-msgstr "Continuer la partie"
+msgid "PAUSE_MAIN_MENU"
+msgstr "Menu principal"
+
+msgid "PAUSE_GIVE_UP"
+msgstr "Abandonner la partie"
+
+msgid "GIVE_UP_TITLE"
+msgstr "Abandonner la partie ?"
+
+msgid "GIVE_UP_TEXT"
+msgstr "La partie s'arrête ici et sa sauvegarde est effacée."
+
+msgid "GIVE_UP_CONFIRM"
+msgstr "Abandonner"
 
 # Noms courts des restaurants, pour le plan
 

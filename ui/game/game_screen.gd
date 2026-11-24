@@ -13,7 +13,11 @@ extends Control
 ## - over the map, a button to take a dish by the courier, the snack bar of the messages and
 ##   help bubbles pointing at what to use next;
 ## - in the middle, the window of the app (offers and orders), of the bag or of the history;
-## - over everything, the windows of the other phases (profile, end of night, shop, end of run).
+## - over everything, the windows of the other phases (profile, end of night, shop, end of run) and
+##   of the menu.
+##
+## The run is saved after every action (RunSave), and the screen resumes the saved run when there is
+## one: the main menu erases it to start a new run.
 ##
 ## On a phone held upright the map is drawn turned to fill the width (CityView), the hand sits
 ## under the buttons, and the top bar keeps to one line (narrow).
@@ -23,6 +27,8 @@ const MAIN_MENU := "res://ui/main.tscn"
 enum Pane { NONE, APP, BAG, HISTORY }
 ## The two screens of the app.
 enum AppTab { OFFERS, ORDERS }
+## The windows of the menu (button ☰).
+enum Menu { NONE, PAUSE, HOW_TO_PLAY, OPTIONS, GIVE_UP }
 ## The pedals sound a little different at each crossroads.
 const PEDAL_PITCH_SPREAD := 0.08
 ## Seeds tried in a row before giving up when no city can be drawn.
@@ -41,6 +47,9 @@ const IDLE_HELP_SECONDS := 8.0
 
 ## Seed of the run; a random one when negative. Set it before adding the screen to the tree.
 var run_seed: int = -1
+## File where the run is saved, and resumed from ("" = not saved). Set by _ready(): the tests,
+## which call start() without adding the screen to the tree, never touch the player's save.
+var save_path: String = ""
 ## Narrow screen (a phone held upright): one-line top bar, stacked cards in the windows.
 ## Chosen from the size of the screen in _ready(); the tests set it.
 var narrow: bool = false
@@ -76,13 +85,13 @@ var _overlay: Control
 var _overlay_center: CenterContainer
 ## Last night whose accounts the player has seen (the window of the end of the night).
 var _night_report_seen: int = 0
-var _menu_open: bool = false
+var _menu := Menu.NONE
+## Number of actions of the run already saved.
+var _saved_actions: int = 0
 ## The bag was opened by taking a dish: it closes once the dish is stowed.
 var _bag_opened_by_take := false
 ## Help that applies now ("" when none).
 var _help_key: String = ""
-## Helps already shown once in this session (kept when a new run starts).
-static var helps_seen: Dictionary[String, bool] = {}
 ## Counts the seconds without any action of the player, to show a help again.
 var _idle_timer: Timer
 ## History entries already shown as animations.
@@ -100,7 +109,9 @@ var _built: bool = false
 func _ready() -> void:
 	if not _built:
 		# Already done by the main menu; needed when this scene is launched alone (F6).
-		Device.apply_scale(get_window())
+		Settings.use_file()
+		Settings.apply(get_window())
+		save_path = RunSave.DEFAULT_PATH
 		var area := get_viewport_rect().size
 		narrow = narrow or Device.is_narrow(area)
 		portrait = portrait or area.y > area.x
@@ -122,9 +133,17 @@ func _start_run() -> void:
 	var problems := content.validate()
 	if not problems.is_empty():
 		push_error("Content problems:\n" + "\n".join(problems))
+	var resumed := false
+	if save_path != "" and RunSave.has_save(save_path):
+		game = RunSave.load_game(content, save_path)
+		resumed = game != null
+		if not resumed:
+			# The main menu already told the player; a broken save would only come back.
+			RunSave.erase(save_path)
 	# The interface may use the global random numbers: only the rules need a seeded GameRng.
 	var seed_value := run_seed if run_seed >= 0 else randi()
-	game = Game.new_run(content, seed_value)
+	if game == null:
+		game = Game.new_run(content, seed_value)
 	# No city for this seed: try the next ones, but not forever (a broken configuration would
 	# never give one).
 	var attempts := 1
@@ -137,7 +156,15 @@ func _start_run() -> void:
 		return
 	for view in _views():
 		view.game = game
-	_events_shown = game.state.history.size()
+	var state := game.state
+	_events_shown = state.history.size()
+	_saved_actions = state.actions.size()
+	if resumed:
+		# The last messages, without popping them up again; the accounts of the night were seen.
+		_feed.catch_up()
+		if state.phase == GameState.Phase.SHOPPING and not state.night_summaries.is_empty():
+			_night_report_seen = state.night_summaries.back().night
+		_sound_phase = state.phase
 	refresh()
 
 
@@ -500,7 +527,8 @@ func _show_info() -> void:
 
 
 ## Points a help bubble at what to use next. Each help shows by itself only the first time it
-## applies (in the session); after that, only when the player does nothing for a while (idle).
+## applies (remembered between launches, Settings.helps_seen); after that, only when the player does
+## nothing for a while (idle). None at all when the player turned them off in the options.
 ## Nothing while a window is open: the bag and the app explain themselves.
 func _update_help(idle: bool = false) -> void:
 	if game == null:
@@ -539,9 +567,11 @@ func _update_help(idle: bool = false) -> void:
 	# The help waits for the messages to go (Toast.cleared calls this again).
 	if _toast.text() != "" and is_inside_tree():
 		return
-	if helps_seen.has(key) and not idle:
+	if not Settings.help_bubbles or (Settings.helps_seen.has(key) and not idle):
 		return
-	helps_seen[key] = true
+	if not Settings.helps_seen.has(key):
+		Settings.helps_seen[key] = true
+		Settings.save()
 	_help.point_at(text if text != "" else UiText.t(key), target, HelpBubble.Placement.ABOVE)
 
 
@@ -573,8 +603,16 @@ func _refresh_overlay() -> void:
 	UiStyle.clear(_overlay_center)
 	var state := game.state
 	var dialog: Dialog = null
-	if _menu_open:
+	if _menu != Menu.NONE:
 		dialog = _menu_dialog()
+	elif state.phase == GameState.Phase.CHOOSE_PROFILE and not Settings.how_to_play_seen:
+		# The first run starts with the rules.
+		var how_to := HowToPlayDialog.new()
+		how_to.closed.connect(func() -> void:
+			Settings.how_to_play_seen = true
+			Settings.save()
+			refresh())
+		dialog = how_to
 	else:
 		match state.phase:
 			GameState.Phase.CHOOSE_PROFILE:
@@ -605,7 +643,7 @@ func _refresh_overlay() -> void:
 		if is_inside_tree():
 			dialog.custom_minimum_size.x = minf(dialog.custom_minimum_size.x, size.x - 24)
 		_overlay_center.add_child(dialog)
-		kind = "menu" if _menu_open else dialog.get_script().get_global_name()
+		kind = dialog.get_script().get_global_name() + str(_menu)
 		if kind != _dialog_kind:
 			Motion.appear(dialog)
 	_dialog_kind = kind
@@ -623,20 +661,71 @@ func _night_dialog() -> NightDialog:
 	return night
 
 
-## Leaving the run: it is not saved yet (iteration 6), so the player confirms.
+## The window of the menu: the pause (resume, how to play, options, main menu, give up), or one
+## of the windows it opens.
 func _menu_dialog() -> Dialog:
-	var menu := Dialog.new()
-	menu.setup(game)
-	menu.custom_minimum_size.x = 420
-	menu.add_title(UiText.t("MENU_LEAVE_TITLE"))
-	menu.add_text(UiText.t("MENU_LEAVE_TEXT"), UiStyle.MUTED)
-	menu.add_buttons([
-		UiStyle.button(UiText.t("MENU_LEAVE_CONFIRM"), _to_main_menu),
-		UiStyle.button(UiText.t("MENU_LEAVE_CANCEL"), func() -> void:
-			_menu_open = false
-			refresh(), "AccentButton"),
-	])
-	return menu
+	match _menu:
+		Menu.HOW_TO_PLAY:
+			var how_to := HowToPlayDialog.new()
+			how_to.closed.connect(_show_menu.bind(Menu.PAUSE))
+			return how_to
+		Menu.OPTIONS:
+			var options := OptionsDialog.new()
+			options.closed.connect(_options_closed)
+			return options
+		Menu.GIVE_UP:
+			var give_up := Dialog.new()
+			give_up.custom_minimum_size.x = 420
+			give_up.add_title(UiText.t("GIVE_UP_TITLE"))
+			give_up.add_text(UiText.t("GIVE_UP_TEXT"), UiStyle.MUTED)
+			give_up.add_buttons([
+				UiStyle.button(UiText.t("MENU_CANCEL"), _show_menu.bind(Menu.PAUSE)),
+				UiStyle.button(UiText.t("GIVE_UP_CONFIRM"), _give_up, "AccentButton"),
+			])
+			return give_up
+	var pause := Dialog.new()
+	pause.custom_minimum_size.x = 380
+	pause.add_title(UiText.t("PAUSE_TITLE"))
+	if save_path != "":
+		pause.add_text(UiText.t("PAUSE_TEXT"), UiStyle.MUTED)
+	var resume := UiStyle.button(UiText.t("PAUSE_RESUME"), _show_menu.bind(Menu.NONE), "AccentButton")
+	var buttons: Array[Button] = [
+		resume,
+		UiStyle.button(UiText.t("MENU_HOW_TO_PLAY"), _show_menu.bind(Menu.HOW_TO_PLAY)),
+		UiStyle.button(UiText.t("MENU_OPTIONS"), _show_menu.bind(Menu.OPTIONS)),
+		UiStyle.button(UiText.t("PAUSE_MAIN_MENU"), _to_main_menu),
+	]
+	if game.state.phase not in [GameState.Phase.WON, GameState.Phase.LOST]:
+		buttons.append(UiStyle.button(UiText.t("PAUSE_GIVE_UP"), _show_menu.bind(Menu.GIVE_UP)))
+	for button in buttons:
+		button.custom_minimum_size.y = 44
+		pause.body.add_child(button)
+	if is_inside_tree():
+		resume.grab_focus.call_deferred()
+	return pause
+
+
+func _show_menu(which: Menu) -> void:
+	_menu = which
+	refresh()
+
+
+## A new size of the interface can make the screen narrow or wide: the screen is then built again
+## (the run is saved, it comes back as it was).
+func _options_closed() -> void:
+	_show_menu(Menu.PAUSE)
+	if not is_inside_tree():
+		return
+	var area := get_viewport_rect().size
+	if Device.is_narrow(area) != narrow or (area.y > area.x) != portrait:
+		get_tree().reload_current_scene()
+
+
+## The run stops here: its save is erased.
+func _give_up() -> void:
+	if save_path != "":
+		RunSave.erase(save_path)
+	_to_main_menu()
 
 
 # --- Actions --------------------------------------------------------------------------------
@@ -644,6 +733,7 @@ func _menu_dialog() -> Dialog:
 ## After every action: a refusal goes to the history and pops up, what happened is animated, then
 ## everything is shown again.
 func _after(problem: Game.Problem) -> void:
+	_save()
 	if problem != Game.Problem.NONE:
 		_feed.add_problem(problem)
 		_toast.show_line(UiText.Line.new(UiText.t("SENDER_REFUSED"), UiText.problem(problem), true))
@@ -651,6 +741,20 @@ func _after(problem: Game.Problem) -> void:
 	_show_events()
 	_ride_seconds = 0.0
 	refresh()
+
+
+## Saves the run when an action was accepted since the last save. A run that is over has nothing
+## left to resume: its save is erased.
+func _save() -> void:
+	if save_path == "" or game == null:
+		return
+	var state := game.state
+	if state.phase in [GameState.Phase.WON, GameState.Phase.LOST]:
+		RunSave.erase(save_path)
+	elif state.actions.size() != _saved_actions:
+		if not RunSave.save_game(game, save_path):
+			push_warning("The run could not be saved in %s" % save_path)
+	_saved_actions = state.actions.size()
 
 
 ## Takes a dish (from the button by the courier or from the app), and opens the bag to stow it.
@@ -733,8 +837,7 @@ func _highlight(crossroads: Array[Vector2i]) -> void:
 
 
 func _open_menu() -> void:
-	_menu_open = true
-	refresh()
+	_show_menu(Menu.PAUSE)
 
 
 func _new_run() -> void:
@@ -745,15 +848,16 @@ func _to_main_menu() -> void:
 	get_tree().change_scene_to_file(MAIN_MENU)
 
 
-## The back button of Android (or gesture): closes the menu, puts back the dish in hand, closes
+## The back button of Android (or gesture): goes back in the menu, puts back the dish in hand, closes
 ## the window open over the map, or opens the menu (also over the windows of the other phases).
 ## Without this, Godot would quit the game (project setting application/config/quit_on_go_back).
 func _notification(what: int) -> void:
 	if what != NOTIFICATION_WM_GO_BACK_REQUEST or game == null:
 		return
-	if _menu_open:
-		_menu_open = false
-		refresh()
+	if _menu == Menu.PAUSE:
+		_show_menu(Menu.NONE)
+	elif _menu != Menu.NONE:
+		_show_menu(Menu.PAUSE)
 	elif game.state.bag.held != null and not _overlay.visible:
 		_after(game.cancel_held())
 	elif pane != Pane.NONE and not _overlay.visible:

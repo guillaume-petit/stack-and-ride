@@ -12,7 +12,9 @@ func before_each() -> void:
 		screen.free()
 	screen = (load("res://ui/game/game_screen.tscn") as PackedScene).instantiate()
 	screen.run_seed = 3
-	GameScreen.helps_seen.clear()
+	# A player who already read the rules: the run starts with the choice of the profile.
+	Settings.reset()
+	Settings.how_to_play_seen = true
 	screen.start()
 
 
@@ -135,9 +137,10 @@ func test_a_help_that_faded_does_not_come_back() -> void:
 func test_the_back_button_opens_the_menu_over_a_phase_window() -> void:
 	assert_true(_dialog() is ProfileDialog)
 	screen._notification(Control.NOTIFICATION_WM_GO_BACK_REQUEST)
-	assert_true(screen._menu_open, "the menu to leave the run")
+	assert_eq(screen._menu, GameScreen.Menu.PAUSE, "the menu")
 	screen._notification(Control.NOTIFICATION_WM_GO_BACK_REQUEST)
-	assert_false(screen._menu_open, "pressed again: closed")
+	assert_eq(screen._menu, GameScreen.Menu.NONE, "pressed again: closed")
+	assert_true(_dialog() is ProfileDialog)
 
 
 func test_the_icons_open_their_windows() -> void:
@@ -182,11 +185,106 @@ func test_the_end_turn_button_shows_the_cards_of_the_turn() -> void:
 	assert_eq(state.turn, 2, "next turn")
 
 
-func test_the_menu_asks_before_leaving() -> void:
+func test_the_menu_opens_the_rules_and_the_options() -> void:
 	screen.game.choose_profile(&"combo")
 	screen._open_menu()
 	assert_true(screen._overlay.visible)
-	assert_true(_dialog() != null)
+	assert_eq(_buttons(_dialog()), [UiText.t("PAUSE_RESUME"), UiText.t("MENU_HOW_TO_PLAY"), UiText.t("MENU_OPTIONS"),
+			UiText.t("PAUSE_MAIN_MENU"), UiText.t("PAUSE_GIVE_UP")])
+	_press(UiText.t("MENU_OPTIONS"))
+	assert_true(_dialog() is OptionsDialog)
+	screen._notification(Control.NOTIFICATION_WM_GO_BACK_REQUEST)
+	assert_eq(screen._menu, GameScreen.Menu.PAUSE, "back: to the pause")
+	_press(UiText.t("MENU_HOW_TO_PLAY"))
+	var how_to := _dialog() as HowToPlayDialog
+	assert_true(how_to != null)
+	how_to.closed.emit()
+	assert_eq(screen._menu, GameScreen.Menu.PAUSE)
+	_press(UiText.t("PAUSE_GIVE_UP"))
+	assert_eq(screen._menu, GameScreen.Menu.GIVE_UP, "giving up asks first")
+	_press(UiText.t("MENU_CANCEL"))
+	_press(UiText.t("PAUSE_RESUME"))
+	assert_eq(screen._menu, GameScreen.Menu.NONE)
+	assert_false(screen._overlay.visible)
+
+
+func test_the_first_run_starts_with_the_rules() -> void:
+	Settings.how_to_play_seen = false
+	screen.refresh()
+	var how_to := _dialog() as HowToPlayDialog
+	assert_true(how_to != null, "the rules first")
+	for page in HowToPlayDialog.PAGES.size() - 1:
+		_press(UiText.t("HOWTO_NEXT"))
+	assert_eq(how_to.page, HowToPlayDialog.PAGES.size() - 1, "last page")
+	_press(UiText.t("HOWTO_DONE"))
+	assert_true(Settings.how_to_play_seen)
+	assert_true(_dialog() is ProfileDialog, "then the profile")
+
+
+func test_no_help_bubble_when_they_are_turned_off() -> void:
+	Settings.help_bubbles = false
+	screen.game.choose_profile(&"combo")
+	screen.refresh()
+	screen._update_help(true)
+	assert_eq(screen._help.text(), "")
+
+
+func test_the_run_is_saved_and_resumed() -> void:
+	var path := "user://test_screen_save.json"
+	RunSave.erase(path)
+	screen.save_path = path
+	screen.game.choose_profile(&"mule")
+	screen._after(Game.Problem.NONE)
+	var state := screen.game.state
+	screen._offers.accept_pressed.emit(state.offers[0].id)
+	screen._end_button.pressed.emit()
+	assert_true(RunSave.has_save(path), "saved after the actions")
+	var resumed: GameScreen = (load("res://ui/game/game_screen.tscn") as PackedScene).instantiate()
+	resumed.save_path = path
+	resumed.start()
+	assert_eq(resumed.game.state.actions, state.actions, "the same run")
+	assert_eq(resumed.game.state.turn, 2)
+	assert_true(resumed._feed._list.get_child_count() > 0, "with its messages")
+	resumed.free()
+	# A run that is over has nothing to resume.
+	state.rating_tenths = 0
+	screen._end_button.pressed.emit()
+	assert_eq(state.phase, GameState.Phase.LOST)
+	assert_false(RunSave.has_save(path), "erased at the end of the run")
+	RunSave.erase(path)
+
+
+func test_the_options_change_the_settings() -> void:
+	var options := OptionsDialog.new()
+	options.setup(null)
+	var big: Button = null
+	for button in options.find_children("*", "Button", true, false):
+		if (button as Button).text == UiText.t("OPTIONS_SIZE_3"):
+			big = button
+	big.pressed.emit()
+	assert_eq(Settings.ui_size, Settings.UI_SIZES[3])
+	var slider := options.find_children("*", "HSlider", true, false)[0] as HSlider
+	# Outside the scene tree, a slider does not send value_changed by itself.
+	slider.value_changed.emit(0.0)
+	assert_eq(Settings.volume, 0.0)
+	options.free()
+
+
+## The texts of the buttons of a window, in order.
+func _buttons(dialog: Dialog) -> Array:
+	var out := []
+	for button in dialog.find_children("*", "Button", true, false):
+		out.append((button as Button).text)
+	return out
+
+
+## Presses the button of the window that has this text.
+func _press(text: String) -> void:
+	for button in _dialog().find_children("*", "Button", true, false):
+		if (button as Button).text == text and not (button as Button).disabled:
+			(button as Button).pressed.emit()
+			return
+	fail("no button \"%s\" in %s" % [text, _buttons(_dialog())])
 
 
 func test_a_whole_run_played_by_the_bot() -> void:

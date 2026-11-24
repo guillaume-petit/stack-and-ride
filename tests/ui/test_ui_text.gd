@@ -47,6 +47,11 @@ func test_keys_completed_in_code_exist() -> void:
 		keys.append("RUN_END_TITLE_" + name)
 		keys.append("RUN_END_TEXT_" + name)
 	assert_eq(GameState.LossReason.keys(), ["NONE", "RATING", "RENT"], "a new loss reason needs its texts")
+	for i in Settings.UI_SIZES.size():
+		keys.append("OPTIONS_SIZE_%d" % i)
+	for page in HowToPlayDialog.PAGES:
+		keys.append("HOWTO_%s_TITLE" % page)
+		keys.append("HOWTO_%s_TEXT" % page)
 	var content := GameContent.load_from()
 	for restaurant: RestaurantData in content.restaurants.values():
 		keys.append(UiText.short_name_key(restaurant))

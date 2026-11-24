@@ -11,7 +11,9 @@ func before_each() -> void:
 		screen.free()
 	screen = (load("res://ui/game/game_screen.tscn") as PackedScene).instantiate()
 	screen.run_seed = 3
-	GameScreen.helps_seen.clear()
+	# A player who already read the rules: the run starts with the choice of the profile.
+	Settings.reset()
+	Settings.how_to_play_seen = true
 	screen.narrow = true
 	screen.portrait = true
 	screen.start()

@@ -91,6 +91,25 @@ static func make_theme() -> Theme:
 	_set_button(theme, "YesButton", OK, Color.WHITE, 2, FONT_SIZE - 1)
 	theme.set_type_variation("SmallButton", "Button")
 	_set_button(theme, "SmallButton", PANEL, INK, 2, FONT_SIZE - 1)
+	# One choice among several (the options): the chosen one is dark.
+	theme.set_type_variation("ChoiceButton", "Button")
+	_set_button(theme, "ChoiceButton", PANEL, INK, 2, FONT_SIZE - 1)
+	var chosen := box(INK, INK, 2, RADIUS, 6)
+	chosen.content_margin_left = 12
+	chosen.content_margin_right = 12
+	for state in ["pressed", "hover_pressed"]:
+		theme.set_stylebox(state, "ChoiceButton", chosen)
+	for state in ["font_pressed_color", "font_hover_pressed_color"]:
+		theme.set_color(state, "ChoiceButton", Color.WHITE)
+	# The slider of the volume: a thick track, filled with the accent color up to the value.
+	var track := box(ROAD, ROAD, 0, 4, 0)
+	track.content_margin_top = 4
+	track.content_margin_bottom = 4
+	theme.set_stylebox("slider", "HSlider", track)
+	var filled := track.duplicate() as StyleBoxFlat
+	filled.bg_color = ACCENT
+	theme.set_stylebox("grabber_area", "HSlider", filled)
+	theme.set_stylebox("grabber_area_highlight", "HSlider", filled)
 
 	theme.set_stylebox("panel", "PanelContainer", box(PANEL, LINE, 1, 14, 12))
 	theme.set_type_variation("Inset", "PanelContainer")

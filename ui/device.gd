@@ -28,15 +28,17 @@ static var _forced_narrow := false
 static var _forced_touch := false
 
 
-## Enlarges the interface of the window to suit its screen. Safe to call more than once.
-static func apply_scale(window: Window) -> void:
+## Enlarges the interface of the window to suit its screen, then multiplies it by the size the
+## player chose in the options (1 = as chosen for the screen). Safe to call more than once.
+static func apply_scale(window: Window, player_size: float = 1.0) -> void:
 	_read_args()
 	var factor := _forced_scale
 	if factor <= 0.0 and OS.has_feature("mobile"):
 		var screen := DisplayServer.screen_get_size(window.current_screen)
 		factor = scale_for(Vector2(screen), DisplayServer.screen_get_dpi(window.current_screen))
-	if factor > 0.0:
-		window.content_scale_factor = factor
+	if factor <= 0.0:
+		factor = 1.0
+	window.content_scale_factor = factor * player_size
 
 
 ## Extra scale so that one unit of the interface measures PHONE_UNIT_DP on a screen of this
