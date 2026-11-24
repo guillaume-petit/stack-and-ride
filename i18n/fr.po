@@ -305,14 +305,14 @@ msgstr "Tour"
 msgid "HUD_RATING"
 msgstr "Note"
 
-msgid "HUD_WALLET"
-msgstr "Portefeuille"
-
-msgid "HUD_RENT"
-msgstr "Loyer ce soir"
-
 msgid "HUD_WALLET_RENT"
 msgstr "Argent / loyer"
+
+msgid "HUD_INFO_LINE"
+msgstr "%s : %s. %s"
+
+msgid "HUD_INFO_EQUIPMENT"
+msgstr "%s : %s."
 
 msgid "HUD_PROFILE"
 msgstr "Profil"
@@ -332,17 +332,8 @@ msgstr "Base"
 msgid "CLIENT_NUMBER"
 msgstr "n° %d"
 
-msgid "TURN_STEPS"
-msgstr "Pas : %d"
-
-msgid "TURN_CARDS"
-msgstr "cartes jouées %d/%d"
-
 msgid "TURN_DRAW_PILE"
 msgstr "pioche %d"
-
-msgid "TURN_CROSSING_WORKS"
-msgstr "chantiers franchissables"
 
 msgid "TURN_END"
 msgstr "Fin du tour"
@@ -362,55 +353,58 @@ msgstr "Gratuite"
 msgid "CARD_TAG_SHAKE"
 msgstr "Secousse"
 
-msgid "HINT_HELD"
-msgstr "Clique une colonne du sac pour y lâcher le plat. R : pivoter. Échap : annuler."
+# Plateau (itération 5 bis) : icônes, fenêtres, aide
 
-msgid "HINT_ASIDE"
-msgstr "Range les plats posés à côté du sac avant de repartir ou de finir le tour."
+msgid "ICON_APP"
+msgstr "L'appli Grailleo : propositions et courses en cours"
 
-msgid "HINT_ASIDE_RETURN"
-msgstr "Range les plats posés à côté avant de repartir. Ceux qui ne rentrent pas retourneront au resto en fin de tour."
+msgid "ICON_BAG"
+msgstr "Le sac"
 
-msgid "HINT_AT_RESTAURANT"
-msgstr "Tu es au restaurant : prends le plat dans tes courses acceptées."
+msgid "ICON_HISTORY"
+msgstr "Toutes les notifications"
 
-msgid "HINT_MOVE"
+msgid "APP_NAME"
+msgstr "Grailleo"
+
+msgid "APP_TAB_OFFERS"
+msgstr "Propositions (%d)"
+
+msgid "APP_TAB_ORDERS"
+msgstr "Mes courses %d/%d"
+
+msgid "PANE_CLOSE"
+msgstr "Fermer"
+
+msgid "MAP_TAKE"
+msgstr "Prendre #%d %s"
+
+msgid "TURN_CARDS_TOOLTIP"
+msgstr "Cartes jouées ce tour : %d sur %d (les gratuites ne comptent pas)."
+
+msgid "HELP_ACCEPT"
+msgstr "Des courses t'attendent dans l'appli : ouvre-la pour en accepter."
+
+msgid "HELP_PLAY_CARDS"
+msgstr "Clique une carte pour la choisir, puis encore pour la jouer (jusqu'à %d par tour)."
+
+msgid "HELP_PLAY_CARDS_TOUCH"
+msgstr "Touche une carte pour la choisir, puis encore pour la jouer (jusqu'à %d par tour)."
+
+msgid "HELP_MOVE"
 msgstr "Clique un carrefour surligné. Tu livres le client où ton trajet s'arrête."
 
-msgid "HINT_ACCEPT"
-msgstr "Accepte une proposition (survole-la pour la voir sur le plan), puis joue tes cartes."
-
-msgid "HINT_HELD_TOUCH"
-msgstr "Touche une colonne du sac pour voir où le plat tombe, puis touche-la encore pour l'y lâcher."
-
-msgid "HINT_MOVE_TOUCH"
+msgid "HELP_MOVE_TOUCH"
 msgstr "Touche un carrefour surligné pour voir le trajet, puis touche-le encore pour y aller."
 
-msgid "HINT_ACCEPT_TOUCH"
-msgstr "Accepte une proposition (touche-la pour la voir sur le plan), puis joue tes cartes."
+msgid "HELP_TAKE"
+msgstr "Tu es au restaurant : prends le plat."
 
-msgid "HINT_PLAY_CARDS"
-msgstr "Joue jusqu'à %d cartes pour gagner des pas, puis termine le tour."
+msgid "HELP_BAG"
+msgstr "Un plat attend d'être rangé : ouvre le sac."
 
-# Onglets de la mise en page compacte (téléphones, itération 5)
-
-msgid "TAB_CARDS"
-msgstr "Cartes (%d)"
-
-msgid "TAB_OFFERS"
-msgstr "Appli (%d)"
-
-msgid "TAB_ORDERS"
-msgstr "Courses (%d)"
-
-msgid "TAB_BAG"
-msgstr "Sac"
-
-msgid "TAB_FEED"
-msgstr "Fil"
-
-msgid "OFFERS_TITLE"
-msgstr "Propositions"
+msgid "HELP_END_TURN"
+msgstr "Plus rien à jouer : termine le tour."
 
 msgid "OFFERS_ACCEPTANCE"
 msgstr "Taux d'acceptation %d %%"
@@ -441,12 +435,6 @@ msgstr "5ᵉ étage"
 
 msgid "MODIFIER_GROUPED"
 msgstr "Groupée"
-
-msgid "ORDERS_TITLE"
-msgstr "Courses acceptées"
-
-msgid "ORDERS_COUNT"
-msgstr "%d/%d · tours restants"
 
 msgid "ORDERS_EMPTY"
 msgstr "Aucune course en cours. Accepte une proposition."

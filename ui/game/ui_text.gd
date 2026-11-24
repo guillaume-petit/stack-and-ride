@@ -218,3 +218,29 @@ static func _dishes(state: GameState, order_ids: Array[int]) -> String:
 		var order := state.find_order(id)
 		names.append("#%d %s" % [id, name_of(order.dish)] if order != null else "#%d" % id)
 	return ", ".join(names)
+
+
+## The label of the button that takes the dish of this order (by the courier, on the map).
+static func take_label(order: Order) -> String:
+	return t("MAP_TAKE") % [order.id, name_of(order.dish)]
+
+
+## Names of the equipment bought during the run.
+static func equipment_names(state: GameState) -> PackedStringArray:
+	var names := PackedStringArray()
+	for id in state.equipment:
+		names.append(name_of(state.content.equipment[id]))
+	return names
+
+
+## What the (i) of the narrow top bar shows: the profile, the event of the night and the equipment.
+static func night_info(state: GameState) -> String:
+	var profile: ProfileData = state.content.profiles[state.profile]
+	var event: EventData = state.content.events[state.event]
+	var lines := PackedStringArray([
+		t("HUD_INFO_LINE") % [t("HUD_PROFILE"), name_of(profile), description_of(profile)],
+		t("HUD_INFO_LINE") % [t("HUD_EVENT"), name_of(event), description_of(event)],
+	])
+	if not state.equipment.is_empty():
+		lines.append(t("HUD_INFO_EQUIPMENT") % [t("HUD_EQUIPMENT"), ", ".join(equipment_names(state))])
+	return "\n\n".join(lines)

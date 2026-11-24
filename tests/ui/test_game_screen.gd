@@ -1,7 +1,8 @@
 extends TestCase
-## The game screen, without drawing: it builds the right window for each phase and sends the
-## player's actions to the core. A whole run played by the bot is shown step by step, so that
-## every view meets real states (an error in a view fails the test).
+## The game screen, without drawing: it builds the right window for each phase, sends the
+## player's actions to the core and points the help at what to use next. A whole run played by
+## the bot is shown step by step, so that every view meets real states (an error in a view fails
+## the test).
 
 var screen: GameScreen
 
@@ -11,6 +12,7 @@ func before_each() -> void:
 		screen.free()
 	screen = (load("res://ui/game/game_screen.tscn") as PackedScene).instantiate()
 	screen.run_seed = 3
+	GameScreen.helps_seen.clear()
 	screen.start()
 
 
@@ -41,7 +43,7 @@ func test_actions_from_the_views_reach_the_core() -> void:
 	assert_true(state.find_offer(offer.id) == null, "offer accepted")
 	assert_eq(state.orders.size(), offer.parts.size())
 	state.piles.hand = [&"ped3"] as Array[StringName]
-	screen._hand.card_clicked.emit(0)
+	screen._fan.card_clicked.emit(0)
 	assert_eq(state.steps, 3)
 
 
@@ -68,11 +70,116 @@ func test_a_dish_from_this_restaurant_can_be_given_back_from_aside() -> void:
 	state.courier_position = order.restaurant
 	screen.game.take_dish(order.id)
 	screen._bag.set_aside_pressed.emit()
-	assert_eq(screen._hud.hint.text, UiText.t("HINT_ASIDE_RETURN"))
+	screen.close_pane()
+	screen._update_help()
+	assert_eq(screen._help_key, "HELP_BAG", "the help points at the bag")
 	screen._bag.aside_dish_clicked.emit(order.id)
 	assert_eq(screen._bag._cancel_button.text, UiText.t("BAG_CANCEL_RESTAURANT"))
 	screen._bag.cancel_pressed.emit()
 	assert_false(order.picked_up, "back at the restaurant")
+
+
+func test_the_help_follows_the_turn() -> void:
+	screen.game.choose_profile(&"combo")
+	screen.refresh()
+	screen._update_help()
+	assert_eq(screen._help_key, "HELP_ACCEPT", "first, the app")
+	var state := screen.game.state
+	screen._offers.accept_pressed.emit(state.offers[0].id)
+	screen._update_help()
+	assert_eq(screen._help_key, "HELP_PLAY_CARDS", "then the cards")
+	state.steps = 2
+	screen.refresh()
+	screen._update_help()
+	assert_true(screen._help_key in ["HELP_MOVE", "HELP_MOVE_TOUCH"], "then the map")
+
+
+func test_a_help_shows_once_then_only_after_a_pause() -> void:
+	screen.game.choose_profile(&"combo")
+	screen.refresh()
+	screen._update_help()
+	assert_eq(screen._help.text(), UiText.t("HELP_ACCEPT"), "the first time")
+	screen._help.hide()
+	screen._update_help()
+	assert_eq(screen._help.text(), "", "not again by itself")
+	screen._update_help(true)
+	assert_eq(screen._help.text(), UiText.t("HELP_ACCEPT"), "after a pause")
+
+
+func test_a_card_is_picked_then_played() -> void:
+	screen.game.choose_profile(&"combo")
+	var state := screen.game.state
+	state.piles.hand = [&"ped2", &"ped3"] as Array[StringName]
+	screen.refresh()
+	screen._fan._cards[1].pressed.emit()
+	assert_eq(screen._fan.picked(), 1, "picked")
+	assert_eq(state.steps, 0, "not played yet")
+	screen._fan._cards[0].pressed.emit()
+	assert_eq(screen._fan.picked(), 0, "another card picked instead")
+	screen._fan._cards[0].pressed.emit()
+	assert_eq(state.steps, 2, "played")
+	assert_eq(screen._fan.picked(), -1)
+
+
+func test_a_help_that_faded_does_not_come_back() -> void:
+	screen.game.choose_profile(&"combo")
+	screen.refresh()
+	screen._update_help()
+	assert_eq(screen._help.text(), UiText.t("HELP_ACCEPT"))
+	screen._help.hide()
+	screen.refresh()
+	screen._update_help()
+	assert_eq(screen._help.text(), "", "same help: not shown again")
+
+
+func test_the_back_button_opens_the_menu_over_a_phase_window() -> void:
+	assert_true(_dialog() is ProfileDialog)
+	screen._notification(Control.NOTIFICATION_WM_GO_BACK_REQUEST)
+	assert_true(screen._menu_open, "the menu to leave the run")
+	screen._notification(Control.NOTIFICATION_WM_GO_BACK_REQUEST)
+	assert_false(screen._menu_open, "pressed again: closed")
+
+
+func test_the_icons_open_their_windows() -> void:
+	screen.game.choose_profile(&"combo")
+	screen.refresh()
+	screen._app_button.pressed.emit()
+	assert_eq(screen.pane, GameScreen.Pane.APP)
+	assert_true(screen._pane_layer.visible)
+	assert_eq(screen._app_button.badge, str(screen.game.state.offers.size()), "offers to accept")
+	screen._bag_button.pressed.emit()
+	assert_eq(screen.pane, GameScreen.Pane.BAG, "one window at a time")
+	screen._bag_button.pressed.emit()
+	assert_eq(screen.pane, GameScreen.Pane.NONE, "pressed again: closed")
+	assert_false(screen._pane_layer.visible)
+
+
+func test_taking_a_dish_opens_the_bag_until_it_is_stowed() -> void:
+	screen.game.choose_profile(&"combo")
+	var state := screen.game.state
+	screen._offers.accept_pressed.emit(state.offers[0].id)
+	var order := state.orders[0]
+	state.courier_position = order.restaurant
+	screen.refresh()
+	assert_true(screen._take_box.get_child_count() > 0, "a take button by the courier")
+	screen._take(order.id)
+	assert_eq(screen.pane, GameScreen.Pane.BAG)
+	assert_eq(screen._bag_button.badge, "!")
+	screen._bag.column_clicked.emit(0)
+	assert_true(state.bag.held == null, "the dish is in the bag")
+	assert_eq(screen.pane, GameScreen.Pane.NONE, "the bag closed by itself")
+
+
+func test_the_end_turn_button_shows_the_cards_of_the_turn() -> void:
+	screen.game.choose_profile(&"combo")
+	var state := screen.game.state
+	state.piles.hand = [&"ped2"] as Array[StringName]
+	screen.refresh()
+	assert_eq(screen._end_button.tooltip_text, UiText.t("TURN_CARDS_TOOLTIP") % [0, state.max_paid_cards()])
+	screen._fan.card_clicked.emit(0)
+	assert_eq(screen._end_button.tooltip_text, UiText.t("TURN_CARDS_TOOLTIP") % [1, state.max_paid_cards()])
+	screen._end_button.pressed.emit()
+	assert_eq(state.turn, 2, "next turn")
 
 
 func test_the_menu_asks_before_leaving() -> void:
@@ -85,6 +192,8 @@ func test_the_menu_asks_before_leaving() -> void:
 func test_a_whole_run_played_by_the_bot() -> void:
 	screen.game.choose_profile(&"sprinter")
 	screen.refresh()
+	# The bag open during the whole run: it is refreshed too.
+	screen.open_pane(GameScreen.Pane.BAG)
 	var bot := Bot.new(screen.game)
 	var state := screen.game.state
 	var steps := 0

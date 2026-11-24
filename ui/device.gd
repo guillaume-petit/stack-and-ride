@@ -5,12 +5,12 @@ extends RefCounted
 ##
 ## Godot stretches the 1280 × 720 interface to fill the window (project settings, Display >
 ## Window > Stretch). On a phone, that makes texts and buttons a few millimetres high: apply_scale()
-## enlarges the interface according to the density of the screen, and the game screen then
-## picks its compact layout (is_compact()).
+## enlarges the interface according to the density of the screen. On a narrow screen (a phone
+## held upright, is_narrow()), the top bar keeps to one line and the windows stack their cards.
 ##
-## To try the phone version on a computer, add arguments after "--" when launching the game,
-## e.g. `godot --path . -- --ui-scale=1.6 --touch`:
-## --ui-scale=X enlarges the interface X times, --compact forces the compact layout,
+## To try the phone version on a computer, give the window the shape of a phone and add
+## arguments after "--", e.g. `godot --path . --resolution 540x1200 -- --ui-scale=2.8 --touch`:
+## --ui-scale=X enlarges the interface X times, --narrow forces the narrow version,
 ## --touch makes the mouse behave like a finger.
 
 const BASE_SIZE := Vector2(1280, 720)
@@ -18,13 +18,13 @@ const BASE_SIZE := Vector2(1280, 720)
 ## the unit of Android). Above 1, everything is bigger.
 const PHONE_UNIT_DP := 0.9
 const DP_PER_INCH := 160.0
-const MAX_SCALE := 3.0
-## Below this size (in units of the interface), the compact layout is used.
-const COMPACT_BELOW := Vector2(1100, 600)
+const MAX_SCALE := 4.0
+## Below this width (in units of the interface), the screen is narrow.
+const NARROW_BELOW := 700.0
 
 static var _args_read := false
 static var _forced_scale := 0.0
-static var _forced_compact := false
+static var _forced_narrow := false
 static var _forced_touch := false
 
 
@@ -50,10 +50,10 @@ static func scale_for(screen_size: Vector2, dpi: int) -> float:
 	return clampf(wanted / stretch, 1.0, MAX_SCALE)
 
 
-## Whether a screen of this size (in units of the interface) needs the compact layout.
-static func is_compact(visible_size: Vector2) -> bool:
+## Whether a screen of this size (in units of the interface) is narrow, like a phone held upright.
+static func is_narrow(visible_size: Vector2) -> bool:
 	_read_args()
-	return _forced_compact or visible_size.x < COMPACT_BELOW.x or visible_size.y < COMPACT_BELOW.y
+	return _forced_narrow or visible_size.x < NARROW_BELOW
 
 
 ## Whether the player plays with a finger: texts say "touche" instead of "clique" and nothing
@@ -93,8 +93,8 @@ static func _read_args() -> void:
 		return
 	_args_read = true
 	for arg in OS.get_cmdline_user_args():
-		if arg == "--compact":
-			_forced_compact = true
+		if arg == "--narrow":
+			_forced_narrow = true
 		elif arg == "--touch":
 			_forced_touch = true
 		elif arg.begins_with("--ui-scale="):

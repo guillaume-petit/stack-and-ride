@@ -11,7 +11,7 @@ func setup(p_game: Game) -> void:
 	add_title(UiText.t("PROFILE_TITLE"))
 	add_text(UiText.t("PROFILE_INTRO"), UiStyle.MUTED)
 	var grid := GridContainer.new()
-	grid.columns = 2
+	grid.columns = 1 if narrow else 2
 	grid.add_theme_constant_override("h_separation", 10)
 	grid.add_theme_constant_override("v_separation", 10)
 	for id in game.state.content.profile_ids():

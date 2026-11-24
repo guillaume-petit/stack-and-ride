@@ -12,12 +12,10 @@ signal dish_clicked(order_id: int)
 ## The column under the mouse changed (-1 when the mouse left the bag).
 signal hover_changed(column: int)
 
-const MAX_CELL := 46.0
-## The cells get smaller when the bag has many rows, so that the panel keeps its height.
-const MAX_GRID_HEIGHT := 190.0
-## In the compact layout, the bag has its own tab: bigger cells, easier to hit with a finger.
-const COMPACT_MAX_CELL := 56.0
-const COMPACT_MAX_GRID_HEIGHT := 250.0
+## Big cells, easy to hit with a finger; they get smaller when the bag has many rows, so that the
+## window keeps its height.
+const MAX_CELL := 56.0
+const MAX_GRID_HEIGHT := 250.0
 const GAP := 3.0
 const FLOOR := 8.0
 ## A dish dropped in the bag falls from above it; dishes left without support fall too.
@@ -31,7 +29,6 @@ const PREVIEW_OK := Color(0.13, 0.57, 0.35, 0.55)
 const PREVIEW_BAD := Color(0.81, 0.21, 0.16, 0.55)
 
 var game: Game
-var compact: bool = false
 
 ## Column under the mouse, or chosen by a first touch (-1: none).
 var _hover_column: int = -1
@@ -275,8 +272,7 @@ func _cell_size() -> float:
 
 
 func _max_cell() -> float:
-	var height := COMPACT_MAX_GRID_HEIGHT if compact else MAX_GRID_HEIGHT
-	return minf(COMPACT_MAX_CELL if compact else MAX_CELL, floorf(height / game.state.bag.rows))
+	return minf(MAX_CELL, floorf(MAX_GRID_HEIGHT / game.state.bag.rows))
 
 
 ## Top left of the bag grid, centered horizontally, below the row for dishes that do not fit.
