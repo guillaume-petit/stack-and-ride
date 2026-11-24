@@ -386,7 +386,10 @@ msgid "HELP_ACCEPT"
 msgstr "Des courses t'attendent dans l'appli : ouvre-la pour en accepter."
 
 msgid "HELP_PLAY_CARDS"
-msgstr "Joue jusqu'à %d cartes pour avancer."
+msgstr "Clique une carte pour la choisir, puis encore pour la jouer (jusqu'à %d par tour)."
+
+msgid "HELP_PLAY_CARDS_TOUCH"
+msgstr "Touche une carte pour la choisir, puis encore pour la jouer (jusqu'à %d par tour)."
 
 msgid "HELP_MOVE"
 msgstr "Clique un carrefour surligné. Tu livres le client où ton trajet s'arrête."

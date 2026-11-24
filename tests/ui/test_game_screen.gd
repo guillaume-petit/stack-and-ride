@@ -12,6 +12,7 @@ func before_each() -> void:
 		screen.free()
 	screen = (load("res://ui/game/game_screen.tscn") as PackedScene).instantiate()
 	screen.run_seed = 3
+	GameScreen.helps_seen.clear()
 	screen.start()
 
 
@@ -91,6 +92,33 @@ func test_the_help_follows_the_turn() -> void:
 	screen.refresh()
 	screen._update_help()
 	assert_true(screen._help_key in ["HELP_MOVE", "HELP_MOVE_TOUCH"], "then the map")
+
+
+func test_a_help_shows_once_then_only_after_a_pause() -> void:
+	screen.game.choose_profile(&"combo")
+	screen.refresh()
+	screen._update_help()
+	assert_eq(screen._help.text(), UiText.t("HELP_ACCEPT"), "the first time")
+	screen._help.hide()
+	screen._update_help()
+	assert_eq(screen._help.text(), "", "not again by itself")
+	screen._update_help(true)
+	assert_eq(screen._help.text(), UiText.t("HELP_ACCEPT"), "after a pause")
+
+
+func test_a_card_is_picked_then_played() -> void:
+	screen.game.choose_profile(&"combo")
+	var state := screen.game.state
+	state.piles.hand = [&"ped2", &"ped3"] as Array[StringName]
+	screen.refresh()
+	screen._fan._cards[1].pressed.emit()
+	assert_eq(screen._fan.picked(), 1, "picked")
+	assert_eq(state.steps, 0, "not played yet")
+	screen._fan._cards[0].pressed.emit()
+	assert_eq(screen._fan.picked(), 0, "another card picked instead")
+	screen._fan._cards[0].pressed.emit()
+	assert_eq(state.steps, 2, "played")
+	assert_eq(screen._fan.picked(), -1)
 
 
 func test_a_help_that_faded_does_not_come_back() -> void:

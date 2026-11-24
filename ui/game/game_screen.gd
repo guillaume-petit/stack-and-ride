@@ -36,6 +36,8 @@ const NARROW_CARD_SCALE := 0.9
 const HAND_OVERLAP := 24.0
 const APP_SIZE := Vector2(340, 500)
 const HISTORY_SIZE := Vector2(380, 440)
+## Seconds without any action before a help already seen shows again.
+const IDLE_HELP_SECONDS := 8.0
 
 ## Seed of the run; a random one when negative. Set it before adding the screen to the tree.
 var run_seed: int = -1
@@ -77,8 +79,12 @@ var _night_report_seen: int = 0
 var _menu_open: bool = false
 ## The bag was opened by taking a dish: it closes once the dish is stowed.
 var _bag_opened_by_take := false
-## Help last shown, to show a bubble only when it changes.
+## Help that applies now ("" when none).
 var _help_key: String = ""
+## Helps already shown once in this session (kept when a new run starts).
+static var helps_seen: Dictionary[String, bool] = {}
+## Counts the seconds without any action of the player, to show a help again.
+var _idle_timer: Timer
 ## History entries already shown as animations.
 var _events_shown: int = 0
 ## Seconds the courier's ride lasts after the last move (what happens at the end waits for it).
@@ -173,6 +179,10 @@ func _build() -> void:
 	_help = HelpBubble.new()
 	# The help waits for the messages to go, not to cover them.
 	_toast.cleared.connect(_update_help)
+	_idle_timer = Timer.new()
+	_idle_timer.one_shot = true
+	_idle_timer.timeout.connect(_update_help.bind(true))
+	add_child(_idle_timer)
 	add_child(_help)
 	_build_panes()
 	add_child(_toast)
@@ -203,7 +213,7 @@ func _build_bottom(safe: PackedFloat32Array) -> void:
 	_fan.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if narrow:
 		_fan.card_size = HandFan.CARD_SIZE * NARROW_CARD_SCALE
-	_fan.card_clicked.connect(func(index: int) -> void: _after(game.play_card(index)))
+	_fan.card_clicked.connect(func(index: int) -> void: _after(_sound_if_done(game.play_card(index), Sfx.Sound.CARD)))
 
 	_bottom = _margins(MarginContainer.new(), EDGE, safe)
 	_bottom.add_theme_constant_override("margin_top", 0)
@@ -414,6 +424,7 @@ func refresh() -> void:
 	if is_inside_tree():
 		_layout.call_deferred()
 		_update_help.call_deferred()
+		_restart_idle()
 
 
 func _refresh_icons() -> void:
@@ -488,18 +499,17 @@ func _show_info() -> void:
 			HelpBubble.Placement.BELOW)
 
 
-## Points a help bubble at what to use next, when that changes. Nothing while a window is open:
-## the bag and the app explain themselves.
-func _update_help() -> void:
+## Points a help bubble at what to use next. Each help shows by itself only the first time it
+## applies (in the session); after that, only when the player does nothing for a while (idle).
+## Nothing while a window is open: the bag and the app explain themselves.
+func _update_help(idle: bool = false) -> void:
 	if game == null:
 		return
 	var state := game.state
 	var key := ""
 	var text := ""
 	var target := Vector2.ZERO
-	var placement := HelpBubble.Placement.ABOVE
-	if _toast.text() != "" and is_inside_tree():
-		return
+	var touch := Device.touch_screen()
 	if state.phase != GameState.Phase.PLAYING or pane != Pane.NONE or _overlay.visible:
 		pass
 	elif state.bag.held != null or not state.bag.aside_items().is_empty():
@@ -512,23 +522,38 @@ func _update_help() -> void:
 		key = "HELP_ACCEPT"
 		target = _top_of(_app_button)
 	elif state.steps > 0:
-		key = "HELP_MOVE_TOUCH" if Device.touch_screen() else "HELP_MOVE"
+		key = "HELP_MOVE_TOUCH" if touch else "HELP_MOVE"
 		target = _city.point_of(state.courier_position) - Vector2(0, _city.spacing() * 0.35)
 	elif _can_play_a_card():
-		key = "HELP_PLAY_CARDS"
+		key = "HELP_PLAY_CARDS_TOUCH" if touch else "HELP_PLAY_CARDS"
 		text = UiText.t(key) % state.max_paid_cards()
 		target = _top_of(_fan)
 	else:
 		key = "HELP_END_TURN"
 		target = _top_of(_end_button)
-	# Only when the help changes: a bubble that faded or was dismissed does not come back.
-	if key == _help_key:
-		return
-	_help_key = key
-	if key == "":
+	if key != _help_key:
+		_help_key = key
 		_help.hide()
-	else:
-		_help.point_at(text if text != "" else UiText.t(key), target, placement)
+	if key == "" or _help.visible:
+		return
+	# The help waits for the messages to go (Toast.cleared calls this again).
+	if _toast.text() != "" and is_inside_tree():
+		return
+	if helps_seen.has(key) and not idle:
+		return
+	helps_seen[key] = true
+	_help.point_at(text if text != "" else UiText.t(key), target, HelpBubble.Placement.ABOVE)
+
+
+## The player did something: the help waits again for a pause before coming back.
+func _restart_idle() -> void:
+	if is_inside_tree():
+		_idle_timer.start(IDLE_HELP_SECONDS)
+
+
+func _input(event: InputEvent) -> void:
+	if (event is InputEventMouseButton or event is InputEventKey or event is InputEventScreenTouch) and event.is_pressed():
+		_restart_idle()
 
 
 func _top_of(control: Control) -> Vector2:

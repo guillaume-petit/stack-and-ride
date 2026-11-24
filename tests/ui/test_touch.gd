@@ -11,6 +11,7 @@ func before_each() -> void:
 		screen.free()
 	screen = (load("res://ui/game/game_screen.tscn") as PackedScene).instantiate()
 	screen.run_seed = 3
+	GameScreen.helps_seen.clear()
 	screen.narrow = true
 	screen.portrait = true
 	screen.start()

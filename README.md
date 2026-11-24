@@ -18,12 +18,13 @@ Au premier lancement, Godot crée un dossier `.godot/` (cache local, ignoré par
 
 ## Jouer
 
-Tout se fait à la souris ou au doigt. Le plan occupe l'écran ; des bulles d'aide montrent quoi utiliser ensuite.
+Tout se fait à la souris ou au doigt. Le plan occupe l'écran. Des bulles d'aide montrent quoi utiliser ensuite :
+chacune une seule fois, puis seulement si tu restes quelques secondes sans rien faire.
 
 - **En haut**, les compteurs : soir, tour, note, argent et loyer, puis le profil et l'événement du soir (sur
   téléphone, derrière le bouton **i**). Le bouton ☰ ouvre le menu.
-- **En bas**, ta main de cartes : clique une carte pour gagner des pas (2 cartes par tour, les gratuites ne
-  comptent pas). Le bouton **Fin du tour** montre les cartes jouées ce tour (petites cartes pleines) et la pioche.
+- **En bas**, ta main de cartes : clique une carte pour la choisir (elle se soulève), puis encore pour la jouer
+  et gagner des pas (2 cartes par tour, les gratuites ne comptent pas). Le bouton **Fin du tour** montre les cartes jouées ce tour (petites cartes pleines) et la pioche.
 - **Les icônes à côté** ouvrent :
   - **le téléphone** : l'appli Grailleo, avec les **propositions** à accepter (la pastille rouge les compte) et
     **mes courses** en cours, en détail ;

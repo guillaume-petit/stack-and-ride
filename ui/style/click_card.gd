@@ -14,6 +14,12 @@ var disabled: bool = false:
 		modulate.a = 0.45 if value else 1.0
 		_update_style()
 
+## Shown with the hover look even without the mouse, e.g. the card picked in the hand.
+var lit: bool = false:
+	set(value):
+		lit = value
+		_update_style()
+
 ## Contents go in this box.
 var content: VBoxContainer
 ## Played when the card is pressed.
@@ -71,7 +77,7 @@ func _gui_input(event: InputEvent) -> void:
 
 
 func _update_style() -> void:
-	add_theme_stylebox_override("panel", _hover if _hovered and not disabled else _normal)
+	add_theme_stylebox_override("panel", _hover if (_hovered or lit) and not disabled else _normal)
 
 
 static func _ignore_mouse(control: Control) -> void:
